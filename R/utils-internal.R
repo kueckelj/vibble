@@ -76,3 +76,15 @@ stopif <- function(cond) {
     stop(msg, call. = FALSE)
   }
 }
+
+vbl_ccs_axes <- c("x", "y", "z")
+
+vbl_data_var_types <- c("label", "mask", "numeric")
+
+vbl_planes <- c("Sagittal" = "sag", "Axial" = "axi", "Coronal" = "cor")
+
+within_limits <- function(x, l){
+
+  x > min(l) & x < max(l)
+
+}

@@ -1,49 +1,8 @@
 
 
-#' @importFrom glue glue
-#' @importFrom rlang caller_env
-glue_message <- function(..., defer = FALSE, verbose = TRUE){
-
-  if(verbose){
-
-    msg <- glue::glue(..., .envir = caller_env(n = 1))
-
-    if(is.numeric(defer)){
-
-      withr::defer(message(msg), envir = caller_env(n = 1))
-
-    } else {
-
-      message(msg)
-
-    }
-
-  }
 
 
-}
 
-#' @importFrom glue glue
-#' @importFrom rlang caller_env
-glue_warning <- function(..., .envir = caller_env(), verbose = TRUE){
-
-  if(!verbose){
-
-    return(invisible(NULL))
-
-  }
-
-  warning(glue(..., .envir = .envir), call. = FALSE)
-
-}
-
-#' @importFrom glue glue
-#' @importFrom rlang caller_env
-glue_stop <- function(..., envir = caller_env()){
-
-  stop(glue(..., envir = .envir), call. = FALSE)
-
-}
 
 #' @importFrom rlang sym
 identify_head <- function(vbl, var, var_out = "head", seed = 123, verbose = TRUE){
@@ -173,6 +132,97 @@ set_up_progress_bar <- function(total,
 
 }
 
+
+
+#' @title Variable selectors for vibble columns
+#' @description
+#' Helpers to retrieve column names from a vibble based on their type.
+#'
+#' @param type Character value. The data variable type of interest. Must be one of *c('label', 'mask', 'numeric')*.
+#' @inherit vbl_doc params
+#'
+#' @return A character vector with column names:
+#'
+#' \itemize{
+#'   \item \link{vars_data}() names of all non-spatial variables.
+#'   \item \link{vars_label}() names of non-spatial variables stored as factors or character labels.
+#'   \item \link{vars_mask}() names of non-spatial variables stored as logical masks.
+#'   \item \link{vars_numeric}() names of non-spatial variables stored as numeric vectors.
+#'   \item \link{vars_spatial}() names of spatial coordinate variables such as `x`, `y`, `z`, `col`, `row`, and `slice`.
+#'   \item \link{vars_type}() names of the variables of the requested type.
+#' }
+#'
+#' If no variables match the requirements the output is an empty character vector.
+#'
+#' @name vars_vibble
+NULL
+
+#' @rdname vars_vibble
+#' @export
+vars_data <- function(vbl){
+
+  spatial <- vars_spatial(vbl)
+
+  setdiff(colnames(vbl), spatial)
+
+}
+
+#' @rdname vars_vibble
+#' @export
+vars_label <- function(vbl){
+
+  vars_type(vbl, "label")
+
+}
+
+#' @rdname vars_vibble
+#' @export
+vars_mask <- function(vbl){
+
+   vars_type(vbl, "mask")
+
+}
+
+#' @rdname vars_vibble
+#' @export
+vars_numeric <- function(vbl){
+
+  vars_type(vbl, "numeric")
+
+}
+
+#' @rdname vars_vibble
+#' @export
+vars_spatial <- function(vbl){
+
+  spatial <- c("x", "y", "z", "col", "row", "slice")
+
+  intersect(colnames(vbl), spatial)
+
+}
+
+#' @rdname vars_vibble
+#' @importFrom purrr keep
+#' @export
+vars_type <- function(vbl, type){
+
+  type <- match.arg(type, choices = vbl_data_var_types)
+
+  if(type == "label"){
+
+    names(keep(.x = vbl[,vars_data(vbl)], .p = is_label_var))
+
+  } else if(type == "mask"){
+
+    names(keep(.x = vbl[,vars_data(vbl)], .p = is_mask_var))
+
+  } else if(type == "numeric"){
+
+    names(keep(.x = vbl[,vars_data(vbl)], .p = is_numeric_var))
+
+  }
+
+}
 
 
 

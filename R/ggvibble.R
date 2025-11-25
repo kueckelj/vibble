@@ -150,9 +150,6 @@ ggplane <- function(vbl,
 
   }
 
-  # input for coord_equal
-  ratio <- max(vbl2D$col)/max(vbl2D$row)
-
   # define limits
   if(is.numeric(lim)){
 
@@ -182,7 +179,7 @@ ggplane <- function(vbl,
     ggplot2::geom_raster(mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]), interpolate = interpolate) +
     scale_fill_numeric(clrsp = clrsp, limits = var_smr(vbl2D, var)$limits, ...) +
     ggplot2::scale_y_reverse() +
-    ggplot2::coord_equal(ratio = ratio, xlim = xlim, ylim = ylim, expand = expand) +
+    ggplot2::coord_equal(ratio = ratio2D(vbl2D), xlim = xlim, ylim = ylim, expand = expand) +
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.background = ggplot2::element_rect(fill = "black"),

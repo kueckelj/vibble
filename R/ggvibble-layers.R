@@ -35,6 +35,8 @@ layer_bb <- function(var,
                            buffer = 0.05,
                            ...){
 
+  is_vartype(vbl2D, var = var, type = "mask")
+
   list(
     ggplot2::geom_rect(
       data = bb2D(vbl2D, var = var, buffer = buffer),
@@ -93,7 +95,7 @@ layer_label <- function(var,
                               alpha = 0.45,
                               ...){
 
-  stopifnot(is.factor(vbl2D[[var]]) | is.character(vbl2D[[var]]))
+  is_vartype(vbl2D, var = var, type = "label")
 
   vbl2D <- vbl2D[!is.na(vbl2D[[var]]), ]
 
@@ -173,7 +175,8 @@ layer_mask <- function(var,
                              nv = 50,
                              ...){
 
-  stopifnot(is.logical(vbl2D[[var]]))
+  is_vartype(vbl2D, var = var, type = "mask")
+
   data <- vbl2D[vbl2D[[var]], ]
 
   layer_lst <- list()
@@ -264,6 +267,8 @@ layer_numeric <- function(var,
                                 alpha = c(0.2, 0.45),
                                 interpolate = TRUE,
                                 ...){
+
+  is_vartype(vbl2D, var = var, type = "numeric")
 
   list(
     ggnewscale::new_scale_fill(),

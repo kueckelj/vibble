@@ -13,50 +13,6 @@ densify_poly <- function(df, n = 50){
   )
 }
 
-grid_intercepts <- function(input, limits){
-
-  if(length(input) > 1){
-
-    out <- input
-
-  } else if(length(input) == 1){
-
-    if(input < 1){
-
-      input <- max(limits)*input
-
-    }
-
-    half <- max(limits)/2
-
-    icpts1 <- half
-    while(max(icpts1) < max(limits)){
-
-      n <- length(icpts1)
-      icpts1[n + 1] <- half + input*n
-
-    }
-
-    icpts2 <- half
-    while(min(icpts2) > 0){
-
-      n <- length(icpts2)
-      icpts2[n + 1] <- half - input*n
-
-    }
-
-    out <- unique(c(icpts1, icpts2))
-
-  } else {
-
-    out <- NULL
-
-  }
-
-  return(out)
-
-}
-
 eval_tidy_alpha <- function(vbl2D, alpha){
 
   alpha_inp <- rlang::eval_tidy(alpha, data = vbl2D)
@@ -121,5 +77,64 @@ filter_slices <- function(vbl2D, slices = NULL, cond = enquo()){
   }
 
   return(vbl2D)
+
+}
+
+
+grid_intercepts <- function(input, limits){
+
+  if(length(input) > 1){
+
+    out <- input
+
+  } else if(length(input) == 1){
+
+    if(input < 1){
+
+      input <- max(limits)*input
+
+    }
+
+    half <- max(limits)/2
+
+    icpts1 <- half
+    while(max(icpts1) < max(limits)){
+
+      n <- length(icpts1)
+      icpts1[n + 1] <- half + input*n
+
+    }
+
+    icpts2 <- half
+    while(min(icpts2) > 0){
+
+      n <- length(icpts2)
+      icpts2[n + 1] <- half - input*n
+
+    }
+
+    out <- unique(c(icpts1, icpts2))
+
+  } else {
+
+    out <- NULL
+
+  }
+
+  return(out)
+
+}
+
+
+
+ratio2D <- function(vbl2D){
+
+  axes <- req_axes_2d(plane(vbl2D))
+
+  col <- max(ccs_limits(vbl2D)[[axes[["col"]]]])
+
+  row <- max(ccs_limits(vbl2D)[[axes[["row"]]]])
+
+  col/row
 
 }

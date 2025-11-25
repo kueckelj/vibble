@@ -80,8 +80,14 @@ NULL
 #' @param lut
 #' Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 #' and character labels.
-#' @param vbl
-#' A \link{vibble}.
+#' @param offset_dir Direction in which to shift voxels when `offset_dist > 0`.
+#' Valid options are *c('left', 'right', 'top', 'bottom')*. A *'-flip'* suffix as
+#' in *'left-flip'* is also valid and flips the slice ordering.
+#' @param offset_dist Distance by which voxels are shifted along `offset_dir` in the 2D plane.
+#' Values `< 1` are interpreted as a proportion of the maximal coordinate,
+#' values `>= 1` as an absolute distance in coordinate units.
+#' @param vbl A \link{vibble}.
+#' @param vbl2D A \link{vibble2D}.
 #'
 #' @keywords internal
 NULL

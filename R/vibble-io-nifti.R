@@ -355,7 +355,7 @@ nifti_to_vbl <- function(nifti,
   vbl <-
     reshape2::melt(nifti@.Data, varnames = unname(pointers), value.name = var) %>%
     tibble::as_tibble() %>%
-    dplyr::select(!!!pointers[c("x", "y", "z")], !!rlang::sym(var))
+    dplyr::select(!!!pointers[c(ccs_labels)], !!rlang::sym(var))
 
   # identify logical input
   if(is_mask_candidate(vbl[[var]])){
@@ -368,7 +368,7 @@ nifti_to_vbl <- function(nifti,
   class(vbl) <- c("vbl", class(vbl))
   attr(vbl, which = "orientation_orig") <- RNifti::orientation(nifti, useQuaternionFirst = TRUE)
   attr(vbl, which = "ccs_mapping") <- list(x = "L", y = "I", z = "P")  # currently fixed XYZ = LIP
-  attr(vbl, which = "ccs_limits") <- purrr::map(vbl[,c("x", "y", "z")], .f = range)
+  attr(vbl, which = "ccs_limits") <- purrr::map(vbl[,c(ccs_labels)], .f = range)
 
   nifti@.Data <- array()
   attr(vbl, which = "nifti") <- nifti # required meta data for backwards compatibility

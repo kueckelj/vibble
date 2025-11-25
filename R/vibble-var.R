@@ -58,7 +58,7 @@ summarize_var <- function(dvar){
 
 update_var_smr <- function(vbl, vars = NULL){
 
-  vars <- vars[!vars %in% ccs_labels]
+  vars <- vars[!vars %in% vbl_ccs_axes]
 
   if(is.character(vars)){
 
@@ -67,7 +67,7 @@ update_var_smr <- function(vbl, vars = NULL){
   } else {
 
     vars <- colnames(vbl)
-    vars <- vars[!vars %in% ccs_labels]
+    vars <- vars[!vars %in% vbl_ccs_axes]
 
   }
 
@@ -154,7 +154,7 @@ var_type <- function(x){
 
   } else {
 
-    NA
+    "unknown"
 
   }
 

@@ -290,40 +290,7 @@ impute_scores <- function(vbl, var_mask, var_score, mx_dst = Inf, verbose = TRUE
 
 
 
-#' @title Join vibbles
-#' @description
-#' Join two vibble objects by their voxel coordinates, optionally renaming
-#' variables in the second input and creating it from file if needed.
-#'
-#' @details
-#' The function checks that both inputs share the same spatial space, coordinate
-#' limits, and coordinate mapping. If `b` is a character path, it is converted
-#' into a vibble via `make_vibble()`. An optional renaming function `.rfn` is
-#' applied to all non-coordinate variables of `b` before the join, if specified.
-#' Variable name collisions are not allowed. The final merge is performed using a full, inner,
-#' left, or right join on `ccs_labels` where `x` of the input for `<type>_join()`
-#' is the input for `a` and `y` of the join corresponds to resulting vibble from
-#' input for `b`.
-#'
-#' @param a A vibble data.frame.
-#' @param b A vibble data.frame or a character path to a NIfTI file or folder.
-#' @param .rfn Optional renaming function or formula applied to non-coordinate
-#' variables of `b`.
-#' @param join Type of join to perform: `"full"`, `"inner"`, `"left"`, `"right"`.
-#' @param ... Additional arguments passed to `make_vibble()` when `b` is a
-#' character path.
-#'
-#' @return A vibble.
-#'
-#' @examples
-#' \dontrun{
-#' join_vibbles(a = vibble_a, b = vibble_b)
-#' join_vibbles(a, "path/to/folder", space = "orig")
-#' join_vibbles(a, b, .rfn = ~ paste0("b_", .x))
-#' }
-#'
 #' @export
-
 join_vibbles <- function(a, b, .rfn = NULL, join = "full", ...){
 
   require(dplyr)
