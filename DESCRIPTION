@@ -1,12 +1,11 @@
 Package: vibble
-Title: What the Package Does (One Line, Title Case)
+Title: Tidy-Data Utilies for Medical Imaging Data
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
-    license
+    person("Jan", "Kueckelhaus", , "jan.kueckelhaus@uk-erlangen.de", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-4211-4386"))
+Description: A tidy-data framework for voxel-based medical imaging. Defines the “vibble”, a tibble representation of voxel data in shared spatial spaces, with tools for reading, transforming, annotating, and visualising 3D volumes. Includes utilities for 2D slicing, spatial metadata handling, and a ggplot2-compatible plotting grammar for masks, labels, and numeric overlays.
+License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
