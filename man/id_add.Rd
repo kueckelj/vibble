@@ -5,23 +5,25 @@
 \alias{id_split}
 \title{Add or reconstruct voxel IDs based on spatial coordinates}
 \usage{
-id_add(vbl, arrange = TRUE, rm_coords = FALSE)
+id_add(vbl, rm_coords = FALSE)
 
 id_split(vbl)
 }
 \arguments{
 \item{vbl}{A \link{vibble}.}
 
-\item{arrange}{Logical. If \code{TRUE}, rows are arranged by the newly created \code{id}.}
-
 \item{rm_coords}{Logical. If \code{TRUE}, remove the original coordinate columns after creating the ID.}
+
+\item{arrange}{Logical. If \code{TRUE}, rows are arranged by the newly created \code{id}.}
 }
 \value{
 For \code{id_add()}: A tibble with a new integer column \code{id}.
 For \code{id_split()}: A tibble in which \code{id} has been split back into \code{x}, \code{y}, and \code{z}.
 }
 \description{
-Create a unique integer voxel identifier from zero-padded \code{x}, \code{y}, \code{z} coordinates or reconstruct spatial coordinates from such an ID. These helpers provide a reversible mapping between 3D voxel positions and a single integer key.
+Create a unique integer voxel identifier from zero-padded
+\code{x}, \code{y}, \code{z} coordinates or reconstruct spatial coordinates from such an ID.
+See section Voxel ID encoding.
 }
 \details{
 The width of each coordinate block is defined by the maximum observed coordinate
@@ -42,7 +44,8 @@ encoding, enabling safe concatenation and later reversal.
 \item Converts each back into integer coordinates.
 }
 
-These functions provide a deterministic and reversible mapping useful for joins, indexing, hashing, and storage of voxel-based data.
+These functions provide a deterministic and reversible mapping useful for joins,
+indexing, hashing, and storage of voxel-based data.
 }
 \note{
 IDs are not required for standard operations because each voxel is already uniquely
@@ -54,6 +57,20 @@ or performing joins that benefit from a single-column identifier.
 An integer ID column as created with zero-padding has the advantage of more
 efficient storage usage. See examples.
 }
+\section{Voxel ID encoding}{
+
+IDs are encoded as \verb{<pseudodigit><x><y><z>}, where each of \code{x}, \code{y}, and \code{z}
+is zero-padded to a fixed number of digits. The padding widths are determined
+by \code{ccs_limits()}, which provides the maximal coordinate range in each axis
+and therefore the number of digits required to represent all voxels.
+
+IDs are stored as integers rather than character strings to reduce memory
+footprint. The leading pseudodigit (1) ensures that the full padded width is
+preserved even after converting the ID to an integer, because integers cannot
+store leading zeros. When decoding, the pseudodigit is removed and the remaining
+string is split according to the known padding lengths, making the mapping reversible.
+}
+
 \examples{
 library(dplyr)
 library(pryr)
@@ -73,6 +90,8 @@ object_size(vbl_no_ccs) # only id
 
 # Reconstruct coordinates
 vbl_split <- id_split(vbl_id)
+
+identical(vbl_split, vbl)
 
 }
 \seealso{

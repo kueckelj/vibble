@@ -11,3 +11,24 @@ Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 URL: https://github.com/kueckelj/vibble
 BugReports: https://github.com/kueckelj/vibble/issues
+Imports: 
+    concaveman,
+    dbscan,
+    dplyr,
+    forcats,
+    ggnewscale,
+    ggplot2,
+    magrittr,
+    oro.nifti,
+    pillar,
+    progress,
+    pryr,
+    purrr,
+    reshape2,
+    rlang,
+    RNifti,
+    sp,
+    stringi,
+    stringr,
+    tibble,
+    tidyr

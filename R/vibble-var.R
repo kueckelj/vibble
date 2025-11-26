@@ -1,10 +1,77 @@
 # Vibble attributes and variable metadata and summaries.
 
+#' @title Get or set coordinate-space limits of a vibble
+#' @description Retrieve or update the coordinate-space limits (`ccs_limits`) of a vibble.
+#' These limits define the spatial extent of the voxel volume and are used to constrain, align,
+#' and merge voxel-wise data originating from different sources.
+#'
+#' @param value A named list of numeric vectors of length two specifying new spatial limits
+#'   for one or more coordinate axes. Names must match entries in `ccs_labels`.
+#'
+#' @inheritParams vbl_doc
+#'
+#' @return
+#' * `ccs_limits(vbl)` returns a named list of numeric vectors defining lower and upper limits
+#'   for each coordinate axis.
+#' * `ccs_limits(vbl) <- value` returns an updated vibble with adjusted limits and
+#'   filtered voxel rows to remain within the updated bounding box.
+#'
+#' @details
+#' The getter extracts the `ccs_limits` attribute from the vibble.
+#' The setter validates the input, updates only the supplied axes,
+#' ensures each axis range is sorted via `range()`, merges the result into
+#' the existing limit list, and filters the vibble using \link{filter_bb3D}()
+#' so that all included voxels lie inside the updated spatial bounds.
+#'
+#' @note
+#' The `ccs_limits` attribute defines the **image volume space** of the vibble.
+#' It is a core structural component and **must match the spatial grid** used
+#' when merging or aligning additional NIfTI files.
+#' Modifying these limits can irreversibly alter which voxels are retained.
+#' Users should **only adjust `ccs_limits` if they fully understand the
+#' implications for spatial consistency, voxel indexing, and downstream analyses**.
+#'
+#' @seealso
+#' \link{filter_bb3D}() for filtering using bounding boxes.
+#' \link{is_bb3D}() for validating bounding box structures.
+#'
+#' @importFrom purrr map map_lgl
+#'
+#' @examples
+#' # Example 1: Get limits
+#' vbl <- example_vbl()
+#' ccs_limits(vbl)
+#'
+#' # Example 2: Restrict the z-range
+#' vbl2 <- vbl
+#' ccs_limits(vbl2) <- list(z = c(20, 40))
+#' ccs_limits(vbl2)
+#'
+#' @export
 ccs_limits <- function(vbl){ attr(vbl, which = "ccs_limits") }
 
+#' @rdname ccs_limits
+#' @export
+`ccs_limits<-` <- function(vbl, value){
+
+  # sanity check
+  value <- value[names(value) %in% ccs_labels]
+  stopifnot(all(map_lgl(value, .f = ~ is.numeric(.x) && length(.x) == 2)))
+  value <- map(value, .f = range) # sort min,max
+
+  # extract, exchange, put back
+  ccs_lim <- ccs_limits(vbl)
+  ccs_lim[names(value)] <- value
+
+  vbl <- filter_bb3D(vbl, bb3D = ccs_lim)
+
+  attr(vbl, which = "ccs_limits") <- ccs_lim
+
+  return(vbl)
+}
+
+
 ccs_mapping <- function(vbl){ attr(vbl, which = "ccs_mapping") }
-
-
 
 
 #' @title Create variable-level metadata
@@ -135,7 +202,6 @@ var_smr <- function(vbl, var = NULL){
   return(vbl)
 
 }
-
 
 
 var_type <- function(x){

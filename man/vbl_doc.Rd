@@ -4,6 +4,13 @@
 \alias{vbl_doc}
 \title{Dummy documentation for recurring parameters}
 \arguments{
+\item{alpha}{Controls the fill transparency. May be a single value in \verb{[0,1]},
+a numeric vector of length two, or an expression evaluated with
+\link[rlang:args_data_masking]{tidyverse's data-masking} semantics.
+See \link[=ggvible_doc_alpha]{Details} for more information.}
+
+\item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with numeric vectors for \code{x}, \code{y}, and/or \code{z}.}
+
 \item{lut}{Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 and character labels.}
 
@@ -14,6 +21,10 @@ in \emph{'left-flip'} is also valid and flips the slice ordering.}
 \item{offset_dist}{Distance by which voxels are shifted along \code{offset_dir} in the 2D plane.
 Values \verb{< 1} are interpreted as a proportion of the maximal coordinate,
 values \verb{>= 1} as an absolute distance in coordinate units.}
+
+\item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+
+\item{slices}{Numeric vector. The slice indices of interest.}
 
 \item{vbl}{A \link{vibble}.}
 

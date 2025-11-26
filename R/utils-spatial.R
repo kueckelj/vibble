@@ -22,3 +22,54 @@ identify_nearest_voxel <- function(vbl_query, vbl_data){
   return(vbl_query)
 
 }
+
+
+#' @title Check whether values lie within numeric limits
+#' @description Test whether numeric values fall strictly between a lower and
+#' upper bound. Returns a logical vector with one entry per element of `x`.
+#'
+#' @param x A numeric vector to be tested.
+#' @param l A numeric vector of length two specifying lower and upper limits.
+#'   Must satisfy the conditions checked by \link{is_limit}().
+#' @param null_ok Logical. If `TRUE` and l is `NULL`, the function returns `TRUE`
+#' for all elements of `x`.
+#'
+#' @return A logical vector indicating whether each element of `x` lies within
+#' the specified limits.
+#'
+#' @details
+#' If limits are provided, they must be valid according to \link{is_limit}().
+#' The function performs strict comparisons (`>=` and `=<`).
+#'
+#' @seealso \link{is_limit}()
+#'
+#' @examples
+#' # Example 1: Basic usage
+#' x <- c(5, 10, 15, 20)
+#' within_limits(x, l = c(9, 18))
+#'
+#' # Example 2: Open limits when l = NULL
+#' within_limits(x, l = NULL, null_ok = FALSE)
+#' within_limits(x, l = NULL, null_ok = TRUE)
+#'
+#' @export
+within_limits <- function(x, l, null_ok = FALSE){
+
+  if(isTRUE(null_ok) && is.null(l)){
+
+    rep(TRUE, length(x))
+
+  } else {
+
+    stopifnot(is_limit(l))
+
+    x >= min(l) & x <= max(l)
+
+  }
+
+}
+
+
+
+
+

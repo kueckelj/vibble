@@ -225,6 +225,53 @@ dbscan3D <- function(vbl,
 }
 
 
+#' @title Filter vibble by 3D bounding box
+#' @description Filter voxels that lie inside a 3D bounding box.
+#' Returns a subset of `vbl` restricted to the specified coordinate limits.
+#'
+#' @inheritParams vbl_doc
+#'
+#' @return A `vibble` (or tibble) containing only rows whose spatial coordinates fall within the limits given by `bb3D`.
+#'
+#' @details The function checks that `bb3D` is a valid 3D bounding box via \link{is_bb3D}().
+#' It then filters rows where all three coordinates lie within the specified limits using \link{within_limits}`(..., null_ok = TRUE)`.
+#'
+#' @note The \link{ccs_limits} remain untouched. While the output vibble contains
+#' only voxels within the bounding box they still remain in the same space.
+#'
+#' @seealso \link{is_bb3D}(), \link{ccs_limits}()
+#'
+#' @importFrom dplyr filter
+#'
+#' @examples
+#' # Example 1: Filter to a manually defined bounding box
+#' vbl <- example_vbl()
+#' bb3D <- list(
+#'   x = c(10, 50),
+#'   y = c(20, 60),
+#'   z = c( 5, 40)
+#' )
+#' vbl_sub <- filter_bb3D(vbl, bb3D)
+#'
+#' # Example 2: Use the bounding box of a mask region
+#' vbl <- example_vbl()
+#' bb_tumor <- bb3D(vbl, var = "tumor")
+#' vbl_tumor_area <- filter_bb3D(vbl, bb_tumor)
+#'
+#' @export
+filter_bb3D <- function(vbl, bb3D){
+
+  stopifnot(is_bb3D(bb3D))
+
+  dplyr::filter(
+    .data = vbl,
+    within_limits(x, bb3D$x) &
+      within_limits(y, bb3D$y) &
+      within_limits(z, bb3D$z)
+  )
+
+}
+
 impute_scores <- function(vbl, var_mask, var_score, mx_dst = Inf, verbose = TRUE){
 
   require(rlang)
@@ -350,10 +397,10 @@ join_vibbles <- function(a, b, .rfn = NULL, join = "full", ...){
 
   # no NAs in logical variables
   out <-
-    mutate(
+    dplyr::mutate(
       .data = out,
-      across(
-        .cols = where(is.logical),
+      dplyr::across(
+        .cols = dplyr::where(is.logical),
         .fns = ~ tidyr::replace_na(.x, replace = FALSE))
     )
 

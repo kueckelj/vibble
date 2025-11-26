@@ -8,6 +8,7 @@ vibble2D(
   vbl,
   plane,
   slices = NULL,
+  lim = NULL,
   offset_dist = 0,
   offset_dir = "left",
   cond = enquo()
@@ -15,6 +16,8 @@ vibble2D(
 }
 \arguments{
 \item{vbl}{A \link{vibble}.}
+
+\item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
 \item{slices}{Optional numeric vector of slice positions in the selected \code{plane}
 to keep. If \code{NULL}, all slices are retained.}
@@ -26,6 +29,9 @@ values \verb{>= 1} as an absolute distance in coordinate units.}
 \item{offset_dir}{Direction in which to shift voxels when \code{offset_dist > 0}.
 Valid options are \emph{c('left', 'right', 'top', 'bottom')}. A \emph{'-flip'} suffix as
 in \emph{'left-flip'} is also valid and flips the slice ordering.}
+
+\item{cond}{An expression evaluated with \link[rlang:args_data_masking]{tidyverse's data-masking}
+to filter voxels. If \code{NULL}, all voxels are retained.}
 }
 \value{
 A \code{tibble} with class \code{vbl2D} containing columns \code{col}, \code{row}, \code{slice},

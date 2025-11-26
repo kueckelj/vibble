@@ -1,4 +1,55 @@
 
+#' @title Check if object is a 3D bounding box
+#' @description Test whether an object encodes a valid 3D bounding box.
+#' Returns `TRUE` if the structure and values fulfill the requirements.
+#'
+#' @param x An object to be tested for being a valid 3D bounding box.
+#'
+#' @return A logical scalar.
+#'
+#' @details A valid 3D bounding box
+#' \itemize{
+#'   \item must be at least of length 1, max of length 3
+#'   \item must be a named list, where names correspond to x, y, and/or z
+#'   \item must contain only valid \link[=is_limit]{limits}
+#' }
+#'
+#' @seealso \link{filter_bb3D}()
+#'
+#' @importFrom purrr map_lgl
+#' @importFrom dplyr n_distinct
+#'
+#' @examples
+#' # Example 1: Valid 3D bounding box
+#' bb3D <- list(
+#'   x = c(10, 20),
+#'   y = c( 5, 30),
+#'   z = c( 1, 10)
+#' )
+#' is_bb3D(bb3D)
+#'
+#' # Example 2: Invalid bounding box (contains zero)
+#' bb_wrong <- list(
+#'   x = c(10, 20),
+#'   y = c( 0, 30),  # 0 violates the >= 1 rule
+#'   z = c( 1, 10)
+#' )
+#' is_bb3D(bb_wrong)
+#'
+#' @export
+is_bb3D <- function(x){
+
+  a <- length(x) %in% 1:3
+
+  b <- all(names(x) %in% ccs_labels)
+
+  b <- all(map_lgl(.x = x, .f = is_limit))
+
+  a & b & c
+
+}
+
+
 #' @title Identify voxel-value type candidates
 #' @description
 #' These helper functions test whether a numeric vector extracted from a NIfTI
@@ -41,6 +92,7 @@ is_label_candidate <- function(x){
   is.numeric(x) && all(x == as.integer(x)) && !is_mask_candidate(x)
 
 }
+
 
 #' @rdname voxel_type_candidates
 is_mask_candidate <- function(x){
@@ -100,11 +152,58 @@ is_mask_var <- is.logical
 is_numeric_var <- is.numeric
 
 
-is_offset <- function(vbl2D){
+#' @title Check validity of numeric limit specification
+#' @description Validate whether an object represents a proper numeric limit
+#' consisting of two distinct, non-negative values.
+#'
+#' @param x An object to test.
+#'
+#' @return A logical scalar.
+#'
+#' @details
+#' A valid limit
+#' \itemize{
+#'   \item is numeric,
+#'   \item can be unambiguously interpreted as an integer
+#'   \item has length two,
+#'   \item contains two distinct values,
+#'   \item contains only values greater than or equal to 1.
+#' }
+#'
+#'
+#' @seealso \link{within_limits}()
+#'
+#' @examples
+#' # Example 1: Valid limit
+#' is_limit(c(10, 20))
+#'
+#' # Example 2: Invalid limit (duplicate values)
+#' is_limit(c(10, 10))
+#'
+#' # Example 3: Invalid limit (not integer)
+#' is_limit(c(10, 15.4))
+#'
+#' @export
+is_limit <- function(x){
 
-  if(!"vbl2D" %in% class(vbl2D)){ warning("Input is not a vbl2D.")}
+  a <- is.numeric(x)
+  b <- all(x == as.integer(x))
+  c <- length(x) == 2
+  d <- dplyr::n_distinct(x) == 2
+  e <- all(x >= 1)
 
-  isTRUE(attr(vbl2D, which = "offset"))
+  a & b & c & d
+
+}
+
+
+#' @rdname vbl2D_attr
+#' @export
+is_offset <- function(x){
+
+  if(!is_vbl2D(x)){ warning("Input is not a vbl2D.")}
+
+  .vbl_attr(x, which = "offset_dist") > 0
 
 }
 

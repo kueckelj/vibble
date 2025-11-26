@@ -5,71 +5,99 @@
 \alias{vibble}
 \title{Vibble objects}
 \description{
-A vibble is a voxel-level data structure (tibble/data.frame) that represents
-one or more 3D volumes registered to the same space in long format. Each row corresponds to a single voxel,
-identified by integer coordinates, and each additional column stores voxel-wise
-values (e.g. intensities, masks, labels, scores).
-}
-\details{
-A vibble is implemented as a tibble or data.frame with an additional class
-\code{vbl} and a set of required columns and attributes. Conceptually, it is a
-tidy representation of NIfTI-like volumes:
+A vibble is a voxel-level tidy-data structure (tibble/data.frame) that represents
+one or more 3D volumes registered to the same space.
+
 \itemize{
-\item Each row = one voxel.
-\item Each voxel is addressed by integer coordinates.
-\item Each non-coordinate column stores a voxel-level variable.
+\item{Rows}{ correspond to voxels, identified by integer coordinates.}
+\item{Columns}{ store voxel-wise values (e.g. intensities, masks, labels, scores).}
 }
+
+Every column is referred to as variable in tidy-data terms. A vibble knows four types of variables:
+
+\itemize{
+\item{Spatial:}{ Variables with \emph{fixed naming} x, y and z give the unique position of each voxel in the 3D space.
+They serve as both, for spatial localization and as a unique identifier.}
+\item{Label:}{ Variables of class \link{factor} storing categorical classifications or ordinal scores.}
+\item{Mask:}{ Variables of class \link{logical} storing binary information.}
+\item{Numeric:}{ Variables of class \link{numeric} storing information that can be interpreted on a continuous numeric scale.}
 }
+
+Label, mask and numeric variables are referred to as \link[=vars_data]{data variables}. Spatial variables
+x, y, and z are referred to as \link[=vars_spatial]{spatial variables}.
+
+For a vibble to be valid, the following requirements must hold.
+}
+\section{Required class}{
+
+Vibbles extent the \link[tibble:tibble]{tbl} class with \code{c("vbl", <underlying class>)}.
+}
+
 \section{Required columns}{
 
 A vibble must contain at least the following columns:
 \itemize{
-\item \code{x}, \code{y}, \code{z}: integer voxel coordinates in a
-Cartesian grid.
-\item At least one additional column with voxel values (numeric, logical,
-factor, or character).
+\item{ \code{x}, \code{y}, \code{z}: integer voxel coordinates in a
+Cartesian grid. This coordinate triplet must uniquely identify each row.}
+\item{ One additional column with voxel values (label, mask or numeric) }.
 }
-The coordinate triplet (\code{x}, \code{y}, \code{z}) should uniquely identify
-each row.
 }
 
-\section{Class and attributes}{
+\section{Required spatial mapping}{
 
-Vibbles have class \code{c("vbl", <underlying class>)} and typically carry
-the following attributes:
+The spatial information hold by the \code{x}, \code{y} and \code{z} variables is fixed and
+maps to the anatomical axes as follows:
+
+\itemize{
+\item{x:}{ Gives the integer position of a voxel along the right-left-axis. Increasing values move
+the voxel towards the \strong{left}.}
+\item{y:}{ Gives the integer position of a voxel along the superior-inferior-axis. Increasing values move
+the voxel towards \strong{inferior}.}
+\item{z:}{ Gives the integer position of a voxel along the anterior-posterior-axis. Increasing values move
+the voxel towards \strong{posterior}.}
+}
+
+Accordingly, XYZ in a Cartesian coordinate system map to LIP in voxel orientation code.
+}
+
+\section{Required attributes}{
+
+A vibble must contain the following attributes:
+\itemize{
+\item \code{ccs_mapping}: named list mapping \code{x}, \code{y}, \code{z}
+to anatomical axes (x = L, y = I, z = P). This is fixed and cannot be changed.
+\item \code{ccs_limits}: list of length three containing the coordinate
+ranges for \code{x}, \code{y}, \code{z} as valid \link[=is_limit]{limits}. They define
+the space in which the volume-data lives. Vibbles can only be \link[=join_vibbles]{joined} if their space is equal.
+\item \code{var_smr}: named list with per-variable summaries; each entry
+is created by \link{summarize_var}() upon initial creation of the variable
+and is used for comprehensive mapping of color schemes and statistical
+analysis in the absence of the whole data set.
+}
+}
+
+\section{Optional attributes}{
+
+A vibble usually contains the following attributes:
 \itemize{
 \item \code{orientation_orig}: character string describing the original
 image orientation (e.g. from \code{RNifti::orientation()}).
-\item \code{ccs_limits}: list of length three containing the coordinate
-ranges for \code{x}, \code{y}, \code{z}.
-\item \code{ccs_mapping}: named list mapping \code{x}, \code{y}, \code{z}
-to anatomical axes (e.g. L/R, A/P, S/I).
 \item \code{nifti}: the NIfTI object used to create the vibble without
-slot @.Data for backwards compatibility.
-\item \code{var_smr}: named list with per-variable summaries; each entry
-is typically created by \link{summarize_var}.
+slot @.Data for facilitated backwards compatibility.
+}
 }
 
-Additional attributes can be used to store image-space information (e.g.
-voxel spacing, reference NIfTI header) depending on the package design.
-}
+\section{Behaviour}{
 
-\section{Requirements and invariants}{
-
-Functions operating on vibbles usually assume:
-\itemize{
-\item \code{x}, \code{y}, \code{z} are integer-valued and form a regular
-3D grid.
-\item Coordinate ranges in \code{ccs_limits} match the observed ranges of
-\code{x}, \code{y}, \code{z}.
-\item \code{ccs_mapping} and \code{orientation_orig} are consistent with
-the original image space.
-\item \code{var_smr} entries (if present) are in sync with the current
-columns, especially after variable creation or removal.
+A vibble behaves in almost all regards like a tibble. There are only two aspects
+that are hardcoded:
+\enumerate{
+\item{Spatial variables x, y and z can not be renamed, removed or manipulated.}
+\item{Vibble attributes remain unchanged / are restored after grouped dplyr operations.}
 }
 }
 
 \seealso{
-\code{\link{nifti_to_voxel_df}} for creating a vibble from a NIfTI image,
-\code{\link{update_var_smr}} for refreshing \code{var_smr}.
+\link{nifti_to_vbl}() for creating a vibble from a NIfTI image,
+\link{update_var_smr}() for refreshing \code{var_smr}.
 }

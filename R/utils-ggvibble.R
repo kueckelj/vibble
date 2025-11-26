@@ -13,7 +13,7 @@ densify_poly <- function(df, n = 50){
   )
 }
 
-eval_tidy_alpha <- function(vbl2D, alpha){
+eval_tidy_alpha <- function(vbl2D, alpha, var){
 
   alpha_inp <- rlang::eval_tidy(alpha, data = vbl2D)
 
@@ -24,6 +24,12 @@ eval_tidy_alpha <- function(vbl2D, alpha){
       alpha_use <- alpha_inp
 
     } else if(length(alpha_inp) == 2) {
+
+      if(!is_vartype(vbl2D, var, "numeric", fdb = NULL)){
+
+        stop("If `alpha`is of length 2, `var` must be of type numeric.")
+
+      }
 
       alpha_use <-
         scales::rescale(
@@ -136,5 +142,51 @@ ratio2D <- function(vbl2D){
   row <- max(ccs_limits(vbl2D)[[axes[["row"]]]])
 
   col/row
+
+}
+
+.slice_num_col <- function(col, pos, axis, buffer){
+
+  cr <- range(col)
+  dst <- diff(cr)
+
+  if(axis == "h"){
+
+    min(cr) + (dst/2)
+
+  } else if(axis == "v") {
+
+    val <- ifelse(pos == "left", min(cr), max(cr))
+
+    buffer <- ifelse(buffer < 1, dst*buffer, buffer)
+
+    buffer <- ifelse(pos == "left", -buffer, abs(buffer))
+
+    val + buffer
+
+  }
+
+}
+
+.slice_num_row <- function(row, pos, axis, buffer){
+
+  rr <- range(row)
+  dst <- diff(rr)
+
+  if(axis == "v"){
+
+    min(rr) + (dst/2)
+
+  } else if(axis == "h") {
+
+    val <- ifelse(pos == "top", min(rr), max(rr))
+
+    buffer <- ifelse(buffer < 1, dst*buffer, buffer)
+
+    buffer <- ifelse(pos == "top", -buffer, abs(buffer))
+
+    val + buffer
+
+  }
 
 }

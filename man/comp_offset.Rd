@@ -2,13 +2,13 @@
 % Please edit documentation in R/vibble-space.R
 \name{comp_offset}
 \alias{comp_offset}
-\alias{comp_offset_col}
-\alias{comp_offset_row}
+\alias{.comp_offset_col}
+\alias{.comp_offset_row}
 \title{Compute slice-wise coordinate offsets}
 \usage{
-comp_offset_col(col, idx, dir, dist)
+.comp_offset_col(col, idx, dir, dist)
 
-comp_offset_row(row, idx, dir, dist)
+.comp_offset_row(row, idx, dir, dist)
 }
 \arguments{
 \item{col, row}{Numeric vectors of column or row coordinates to be shifted.}
@@ -16,8 +16,8 @@ comp_offset_row(row, idx, dir, dist)
 \item{idx}{Numeric scalar or vector giving the per-slice index used to scale \code{dist}.}
 
 \item{dir}{Character string indicating the direction of the shift. For
-\code{comp_offset_col()} it should contain \code{"left"} or \code{"right"}. For
-\code{comp_offset_row()} it should contain \code{"top"} or \code{"bottom"}.}
+\code{.comp_offset_col()} it should contain \code{"left"} or \code{"right"}. For
+\code{.comp_offset_row()} it should contain \code{"top"} or \code{"bottom"}.}
 
 \item{dist}{Numeric base distance by which coordinates are shifted per unit of \code{idx}.}
 }
@@ -25,7 +25,7 @@ comp_offset_row(row, idx, dir, dist)
 A numeric vector of shifted coordinates (\code{col} or \code{row}).
 }
 \description{
-Helper functions used by \link{apply_offset}() to shift \code{col} and \code{row}
+Helper functions used by \link{.apply_offset}() to shift \code{col} and \code{row}
 coordinates for slice-wise layout of 2D vibbles.
 }
 \details{
