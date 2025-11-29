@@ -2,87 +2,78 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_slice_number}
 \alias{layer_slice_number}
-\title{Add slice numbers to an offset ggvibble plot}
+\title{Add slice-number labels}
 \usage{
 layer_slice_number(
-  pos = NULL,
-  buffer = 0.1,
+  anchor = NULL,
   wrap = NULL,
-  angle = NULL,
+  angle = 0,
   alpha = 0.8,
   color = "white",
   size = 3.5,
+  align = TRUE,
   ...
 )
 }
 \arguments{
-\item{pos}{Character specifying where the slice number should be placed
-relative to the 2D slice. If \code{NULL}, valid options and default depend on \code{offset_dir}
-from the \link{ggplane}() call:
+\item{anchor}{Anchor position for placing the label.
+Accepted inputs differ between offset and non-offset layouts:
+
 \itemize{
-\item \code{"top"} or \code{"bottom"} when slices were offset horizontally (default: \emph{'top'})
-\item \code{"left"} or \code{"right"} when slices were offset vertically (default: \emph{'left'})
+\item{ Offset layout:}{ Character anchors only.\if{html}{\out{<br>}}
+If slices are offset left–right, valid anchors are \code{c("top", "bottom")}.\if{html}{\out{<br>}}
+If slices are offset top–bottom, valid anchors are \code{c("left", "right")}.\if{html}{\out{<br>}}
+Defaults are \code{"top"} for left–right offsets and \code{"left"} for top–bottom offsets.}\if{html}{\out{<br>}}
+\item{Non-offset layout:}{ Any relative or absolute \link[=is_img_anchor]{image anchor}.
+Supports named anchors (e.g. \code{"top-left"}) and numeric anchors.}
 }}
 
-\item{buffer}{Numeric offset controlling how far the slice number is placed
-from the slice edge. Values \verb{<1} are treated as proportions of the axis
-range; values \verb{>=1} are treated as absolute offsets. Direction depends on
-\code{pos} and the offset orientation.}
+\item{wrap}{Optional. Character template for constructing labels. Uses glue syntax, e.g. \code{"{slice}"}.}
 
-\item{wrap}{Optional character template used to format slice labels. Must be
-of length 1. The placeholder \code{{slice}} is replaced with the numeric slice
-value (e.g., \code{wrap = "Slice {slice}"}).}
+\item{angle}{Rotation angle of the text.}
 
-\item{angle}{Numeric rotation angle for the text label. If \code{NULL},
-orientation defaults to commonly readable angles depending on the chosen
-\code{pos} (0°, 90°, 270°).}
+\item{alpha, color, size}{Passed to the respective standard parameters
+of \link{geom_text}() to control opacity, color and size of the drawn labels.}
 
-\item{alpha}{Numeric transparency in \verb{[0,1]}.}
+\item{align}{Logical. If \code{TRUE}, ensures slice numbers align across slices when offsets are applied.}
 
-\item{color}{Color of the slice label.}
-
-\item{size}{Text size passed to \link{geom_text}().}
-
-\item{...}{Additional arguments forwarded to \link{geom_text}() like \code{hjust},
-\code{vjust}, \code{fontsize}.}
+\item{...}{Additional arguments passed to \code{ggplot2::geom_text()}.}
 }
 \value{
-A \code{ggvibble_layer} that annotates each slice with its slice number.
+A \code{ggvibble_layer} object containing the supplied function. When
+added to a \code{ggvibble}, the function is executed and its returned layers are
+inserted into the plot.
 }
 \description{
-Display the numeric slice index on each offset slice.
-The placement and orientation of the slice number adapts automatically
-to the offset direction used in the \link{ggplane()} call.
+Draw slice numbers as text labels on each slice of a \code{ggvibble}. Supports both
+regular slice layouts and offset layouts produced by \code{offset_dist} / \code{offset_dir}
+in the \link{ggplane}() call.
 }
 \details{
-\code{layer_slice_number()} is designed for use with offset visualizations created
-by \link{ggplane}(). Slice labels are positioned along the appropriate axis
-depending on whether \link{vibble2D}() offset the slice horizontally or
-vertically. The internal implementation computes:
+Two internal implementations exist depending on whether the \code{vbl2D} has slice offsets
+as determined by \code{offset_dist} and \code{offset_dir} in \code{ggplane()}.
 
+\strong{Non-offset layout:}
 \itemize{
-\item the orientation (\code{"h"} or \code{"v"}) via \link{offset_dir}()
-\item default positions (\code{"top"}, \code{"bottom"}, \code{"right"}, \code{"left"})
-\item default angles for readability
-\item the absolute plotting coordinates using \link{slice_num_col}() and
-\link{slice_num_row}()
+\item Uses the provided \code{anchor} directly (\code{rel} or \code{abs}).
+\item Converts it to absolute coordinates via \code{as_img_anchor_abs(anchor, lim(vbl2D))}.
+\item Places labels exactly at the slice-specific anchoring point.
+\item Simple, consistent placement for grid/faceted layouts.
 }
 
-A custom label format can be supplied via \code{wrap}, and aesthetics (color,
-transparency, size) behave as in \link{geom_text}().
+\strong{Offset layout:}
+\itemize{
+\item If \code{anchor} is missing, a default is chosen along the axis \emph{orthogonal} to the offset direction
+(e.g. \code{"top"} for left–right offsets, \code{"left"} for top–bottom offsets).
+\item Anchors must be \strong{character names}, not numeric.
+\item Anchor coordinates are derived slice-wise from \code{slice_bb()}.
+\item If \code{align = TRUE}, slice labels are aligned along the axis \emph{not} affected by the offset
+to avoid staggered-looking label positions.
+\item Additional nudging is applied to place the label visually centered between the slice bounding box
+and the overall plotting region (\code{lim_plot()}).
 }
-\examples{
-vbl <- example_vbl()
 
-# Default slice numbering
-ggplane(vbl, "axi", slices = 88:92, var = "raw_t1") +
-  layer_slice_number()
-
-# Custom position and formatting
-ggplane(vbl, "axi", slices = 88:92, var = "raw_t1") +
-  layer_slice_number(pos = "top", wrap = "Slice {slice}", color = "yellow")
-
-}
-\seealso{
-\link{ggplane}(), \link{offset_dir}(), \link{vibble2D}()
+In short:
+\strong{non-offset = direct placement at a global anchor},
+\strong{offset = anchor restricted to the offset geometry, with optional cross-slice alignment and nudging}.
 }

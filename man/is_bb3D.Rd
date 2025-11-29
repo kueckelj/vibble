@@ -19,8 +19,9 @@ Returns \code{TRUE} if the structure and values fulfill the requirements.
 \details{
 A valid 3D bounding box
 \itemize{
+\item must be a list
 \item must be at least of length 1, max of length 3
-\item must be a named list, where names correspond to x, y, and/or z
+\item must be named, where names correspond to x, y, and/or z
 \item must contain only valid \link[=is_limit]{limits}
 }
 }

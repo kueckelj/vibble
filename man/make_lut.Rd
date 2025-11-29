@@ -9,8 +9,7 @@ make_lut(vbl, var)
 \arguments{
 \item{vbl}{A \link{vibble}.}
 
-\item{var}{Character. Must refer to a factor column in the
-\link{vibble} encoding categorical voxel classes.}
+\item{var}{Character. The name of a label (factor) column.}
 }
 \value{
 A tibble with columns \code{index} and \code{label}.

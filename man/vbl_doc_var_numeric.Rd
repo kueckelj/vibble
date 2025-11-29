@@ -4,8 +4,7 @@
 \alias{vbl_doc_var_numeric}
 \title{Dummy documentation for numeric voxel variables}
 \arguments{
-\item{var}{Character. Must refer to a column in the
-\link{vibble} containing continuous or integer-valued numeric data.}
+\item{var}{Character. The name of a numeric column.}
 }
 \description{
 Dummy documentation for numeric voxel variables

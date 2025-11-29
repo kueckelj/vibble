@@ -9,7 +9,7 @@ filter_bb3D(vbl, bb3D)
 \arguments{
 \item{vbl}{A \link{vibble}.}
 
-\item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with numeric vectors for \code{x}, \code{y}, and/or \code{z}.}
+\item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.}
 }
 \value{
 A \code{vibble} (or tibble) containing only rows whose spatial coordinates fall within the limits given by \code{bb3D}.

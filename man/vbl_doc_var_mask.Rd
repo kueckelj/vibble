@@ -4,8 +4,7 @@
 \alias{vbl_doc_var_mask}
 \title{Dummy documentation for logical mask variables}
 \arguments{
-\item{var}{Character. Must refer to a column in the
-\link{vibble} containing \code{TRUE}/\code{FALSE} mask values.}
+\item{var}{Character. The name of a mask (logical) column.}
 }
 \description{
 Dummy documentation for logical mask variables

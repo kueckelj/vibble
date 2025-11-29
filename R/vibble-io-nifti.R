@@ -303,7 +303,7 @@ nifti_to_vbl <- function(nifti,
                          var = "value",
                          lut = NULL,
                          ordered = FALSE,
-                         add_id = TRUE,
+                         add_id = FALSE,
                          rm0 = TRUE,
                          verbose = TRUE,
                          ...){
@@ -502,8 +502,8 @@ niftis_to_vbl <- function(input,
                           rgx_fp = ".*",
                           rgx_var = ".*",
                           recursive = FALSE,
-                          rm0 = FALSE,
                           join = "full",
+                          rm0 = FALSE,
                           verbose = TRUE){
 
   stopifnot(is.character(input))
@@ -516,13 +516,13 @@ niftis_to_vbl <- function(input,
       list.files(path = input, full.names = TRUE, recursive = recursive) %>%
       stringr::str_subset(pattern = ".nii.gz$")
 
-    if(length(nii_paths) == 0){ glue_stop("No NIFTI files found in '{input}'.") }
+    if(length(nii_paths) == 0){ .glue_stop("No NIFTI files found in '{input}'.") }
 
   } else { # set of nifti file paths
 
     nii_paths <- stringr::str_subset(input, pattern = ".nii.gz$")
 
-    if(length(nii_paths) == 0){ glue_stop("No NIFTI files found in `input`.") }
+    if(length(nii_paths) == 0){ .glue_stop("No NIFTI files found in `input`.") }
 
   }
 
@@ -530,7 +530,7 @@ niftis_to_vbl <- function(input,
   stopifnot(is.character(rgx_fp) && length(rgx_fp) == 1)
   nii_paths <- stringr::str_subset(nii_paths, pattern = rgx_fp)
 
-  if(length(nii_paths) == 0){ glue_stop("No NIFTI files remain with rgx_fp = '{rgx_fp}'.") }
+  if(length(nii_paths) == 0){ .glue_stop("No NIFTI files remain with rgx_fp = '{rgx_fp}'.") }
 
   # handle varnames
   nii_files <- stringr::str_remove_all(basename(nii_paths), pattern = ".nii.gz$")
@@ -541,7 +541,7 @@ niftis_to_vbl <- function(input,
   if(any(is.na(var_names))){
 
     bad <- stringr::str_c(nii_files[is.na(var_names)], collapse = ", ")
-    glue_stop("Could not extract var_names with rgx_var = '{rgx_var}' from: {bad}")
+    .glue_stop("Could not extract var_names with rgx_var = '{rgx_var}' from: {bad}")
 
   }
 
@@ -549,7 +549,7 @@ niftis_to_vbl <- function(input,
   if(length(duplicates) != 0){
 
     duplicates <- stringr::str_c(duplicates, collapse = ", ")
-    glue_stop("Duplicated variable names with rgx_var = '{rgx_var}': {duplicates}")
+    .glue_stop("Duplicated variable names with rgx_var = '{rgx_var}': {duplicates}")
 
   }
 

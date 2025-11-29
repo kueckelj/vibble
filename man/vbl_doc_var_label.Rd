@@ -4,8 +4,7 @@
 \alias{vbl_doc_var_label}
 \title{Dummy documentation for labeled voxel variables}
 \arguments{
-\item{var}{Character. Must refer to a factor column in the
-\link{vibble} encoding categorical voxel classes.}
+\item{var}{Character. The name of a label (factor) column.}
 }
 \description{
 Dummy documentation for labeled voxel variables

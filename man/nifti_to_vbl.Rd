@@ -9,7 +9,7 @@ nifti_to_vbl(
   var = "value",
   lut = NULL,
   ordered = FALSE,
-  add_id = TRUE,
+  add_id = FALSE,
   rm0 = TRUE,
   verbose = TRUE,
   ...

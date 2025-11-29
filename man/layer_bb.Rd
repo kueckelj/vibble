@@ -2,22 +2,22 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_bb}
 \alias{layer_bb}
-\title{Add a bounding-box layer for mask variables}
+\title{Add a 2D bounding-box}
 \usage{
-layer_bb(var, color, buffer = 0.05, slices = NULL, ...)
+layer_bb(color, fill = NA, expand = FALSE, .cond = NULL, .by = NULL, ...)
 }
 \arguments{
-\item{var}{Character. Must refer to a column in the
-\link{vibble} containing \code{TRUE}/\code{FALSE} mask values.}
-
 \item{color}{Color of the bounding-box outline.}
 
-\item{slices}{Optional numeric vector of slice indices on which this layer
-should be drawn. This restricts the layer at the slice level, in contrast to
-\code{cond}, which restricts the layer at the voxel level.
+\item{fill}{Fill of the bounding-box.}
 
-If \code{NULL}, the layer is applied to all slices included in the corresponding
-\link{ggplane}() call.}
+\item{.cond}{Optional. An additional logical filter expression that determines the specific
+voxels for which this layer is drawn. The expression is evaluated via
+\link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
+into this layer by \link{ggplane}(). See \link[=ggvibble_doc_cond]{Details} for more information and examples.}
+
+\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}.}
 
 \item{...}{Additional arguments passed to \link{geom_rect}().}
 }
@@ -27,23 +27,12 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Draw a rectangular bounding box around the extent of a mask
-variable in a \code{vbl2D} object. Useful for quickly highlighting the spatial
-footprint of binary structures such as tumors, regions, or segmentations.
+Draw a rectangular bounding box around the extent of voxels
+that match a certain condition.
 }
 \details{
-\code{layer_bb()} computes the 2D bounding box of a mask variable based on the
-minimal and maximal \code{col} and \code{row} coordinates where the mask is \code{TRUE}.
+\code{layer_bb()} computes and visualizes a 2D bounding box for voxels based on the
+minimal and maximal \code{col} and \code{row} coordinates where \code{.cond} evaluates to \code{TRUE}.
 The bounding box can be expanded by \code{buffer}, which adds a proportional
-margin to all sides. Internally, the bounding box is calculated via
-\code{bb2D()}, and the graphical rendering is handled by \verb{\link{geom_rect}()}.
-}
-\examples{
-vbl <- example_vbl()
-p <- ggplane(vbl, plane = "axi", slices = 90, var = "raw_t1")
-p + layer_bb(var = "tumor", color = "red")
-
-}
-\seealso{
-\link{ggplane}(), \link{bb2D}()
+margin to all sides. The graphical rendering is handled by \link{geom_rect}().
 }

@@ -2,19 +2,12 @@
 % Please edit documentation in R/vibble-space.R
 \name{bb3D}
 \alias{bb3D}
-\title{Compute 3D bounding box}
+\title{Compute a 3D bounding box}
 \usage{
-bb3D(vbl, cond = enquo(), buffer = 0)
+bb3D(vbl, .cond, buffer = 0)
 }
 \arguments{
 \item{vbl}{A \link{vibble}.}
-
-\item{cond}{Optional tidy-selection condition used to filter the vibble before computing the bounding box.
-Use unquoted expressions, e.g. \code{brain == TRUE}. If omitted, all rows are considered.}
-
-\item{buffer}{Numeric scalar defining how much to expand the bounding box. If \code{buffer >= 1}, it
-is interpreted as an absolute number of voxels.If \verb{0 < buffer < 1}, it is interpreted as a
-proportion of the axis-specific range.}
 }
 \value{
 A named list of length three (for \code{x}, \code{y}, \code{z}) where each element is a numeric
@@ -46,7 +39,7 @@ vbl <- example_vbl()
 bb <- bb3D(vbl)
 
 # Example 2: Bounding box around tumor region with a proportional buffer
-bb_tumor <- bb3D(vbl, cond = tumor == TRUE, buffer = 0.1)
+bb_tumor <- bb3D(vbl, .cond = tumor == TRUE, buffer = 0.1)
 
 }
 \seealso{

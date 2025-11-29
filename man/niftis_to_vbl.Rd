@@ -9,8 +9,8 @@ niftis_to_vbl(
   rgx_fp = ".*",
   rgx_var = ".*",
   recursive = FALSE,
-  rm0 = FALSE,
   join = "full",
+  rm0 = FALSE,
   verbose = TRUE
 )
 }
@@ -26,11 +26,11 @@ the basename (without extension) of each NIfTI file.}
 
 \item{recursive}{Logical. If \code{TRUE} and \code{input} is a directory it is searched recursively for NIfTI files.}
 
-\item{rm0}{Logical. Forwarded to \link{nifti_to_vbl()}. If \code{TRUE}, zero-valued
-voxels are removed from each individual vibble.}
-
 \item{join}{Join method passed to \link{join_vibbles()}. One of
 \code{"full"}, \code{"inner"}, \code{"left"}, or \code{"right"}.}
+
+\item{rm0}{Logical. Forwarded to \link{nifti_to_vbl()}. If \code{TRUE}, zero-valued
+voxels are removed from each individual vibble.}
 
 \item{verbose}{Logical. If \code{TRUE}, print messages about file discovery and reading.}
 }

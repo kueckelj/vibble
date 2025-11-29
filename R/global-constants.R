@@ -1,3 +1,15 @@
+
+#' @title Default image anchors
+#' @export
+img_anchors <- list(
+  "top" = c(0.5, 1),
+  "bottom" = c(0.5, 0),
+  "left" = c(0, 0.5),
+  "right" = c(1, 0.5)
+)
+
+
+
 #' @title Offset directions
 #' @description
 #' Contains the valid direction choices used for offsetting 2D vibbles
@@ -6,10 +18,7 @@
 #' @return A character vector with allowed offset directions.
 #'
 #' @export
-offset_dir_choices <-
-  c("left", "right", "top", "bottom") %>%
-  c(., paste0(., "-flip"))
-
+offset_directions <- c("left", "right", "top", "bottom")
 
 #' @export
 vbl_ccs_axes <- c("x", "y", "z")
@@ -22,3 +31,5 @@ vbl_planes <- c("Sagittal" = "sag", "Axial" = "axi", "Coronal" = "cor")
 
 #' @export
 vbl_planes_pretty <- c("sag" = "Sagittal", "axi" = "Axial", "cor" = "Coronal")
+
+

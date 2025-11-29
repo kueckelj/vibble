@@ -1,51 +1,47 @@
 # ggvibble overlays and themes
 
 
-# data --------------------------------------------------------------------
+# non-data ----------------------------------------------------------------
 
-
-#' @title Add a bounding-box layer for mask variables
-#' @description Draw a rectangular bounding box around the extent of a mask
-#' variable in a `vbl2D` object. Useful for quickly highlighting the spatial
-#' footprint of binary structures such as tumors, regions, or segmentations.
+#' @title Add a 2D bounding-box
+#' @description Draw a rectangular bounding box around the extent of voxels
+#' that match a certain condition.
 #'
 #' @param color Color of the bounding-box outline.
+#' @param fill Fill of the bounding-box.
 #' @param ... Additional arguments passed to \link{geom_rect}().
 #'
-#' @inherit vbl_doc_vbl_layer params return
+#' @inherit vbl_doc_layer params return
 #'
 #' @inheritParams vbl_doc_var_mask
 #' @inheritParams vbl_doc
 #'
 #' @details
-#' `layer_bb()` computes the 2D bounding box of a mask variable based on the
-#' minimal and maximal `col` and `row` coordinates where the mask is `TRUE`.
+#' `layer_bb()` computes and visualizes a 2D bounding box for voxels based on the
+#' minimal and maximal `col` and `row` coordinates where `.cond` evaluates to `TRUE`.
 #' The bounding box can be expanded by `buffer`, which adds a proportional
-#' margin to all sides. Internally, the bounding box is calculated via
-#' `bb2D()`, and the graphical rendering is handled by `\link{geom_rect}()`.
+#' margin to all sides. The graphical rendering is handled by \link{geom_rect}().
 #'
-#' @seealso \link{ggplane}(), \link{bb2D}()
-#'
-#' @examples
-#' vbl <- example_vbl()
-#' p <- ggplane(vbl, plane = "axi", slices = 90, var = "raw_t1")
-#' p + layer_bb(var = "tumor", color = "red")
-#'
-layer_bb <- function(var,
-                     color,
-                     buffer = 0.05,
-                     slices = NULL,
+#' @export
+layer_bb <- function(color,
+                     fill = NA,
+                     expand = FALSE,
+                     .cond = NULL,
+                     .by = NULL,
                      ...){
+
+  .cond_quo <- rlang::enquo(.cond)
 
   vbl_layer(
     fun = function(vbl2D){
 
-      vbl2D <- filter_slices(vbl2D, slices)
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = "layer_bb()")
 
       .layer_bb_impl(
         vbl2D = vbl2D,
         color = color,
-        buffer = buffer,
+        fill = fill,
+        expand = expand,
         ...
       )
 
@@ -57,374 +53,23 @@ layer_bb <- function(var,
 
 #' @keywords internal
 .layer_bb_impl <- function(vbl2D,
-                           var,
                            color,
-                           buffer = 0.05,
+                           fill,
+                           expand = FALSE,
                            ...){
-
-  is_vartype(vbl2D, var = var, type = "mask")
 
   list(
     ggplot2::geom_rect(
-      data = bb2D(vbl2D, var = var, buffer = buffer),
+      data = bb2D_df(vbl2D, expand = expand),
       mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
       color = color,
-      fill = NA,
+      fill = fill,
       ...
     )
   )
 
 }
 
-
-
-#' @title Add a label layer for categorical variables
-#' @description Overlay a categorical label variable on a `ggplane()` plot by
-#' filling voxels with discrete colors. The layer is designed for variables of
-#' vartype `"label"` and can be restricted to selected labels, slices, or
-#' conditions.
-#'
-#' @param labels Optional character vector of label values to keep. If supplied,
-#' only voxels whose label is in `labels` are rendered.
-#' @param labels_rm Optional character vector of label values to remove. If
-#' supplied, voxels whose label is in `labels_rm` are excluded.
-#' @param ... Additional arguments passed to \link{scale_fill_manual}().
-#'
-#' @inherit vbl_doc_vbl_layer params return
-#'
-#' @inheritParams vbl_doc_var_label
-#' @inheritParams vbl_doc
-#'
-#' @seealso \link{ggplane}(), \link{layer_mask}(), \link{layer_numeric}()
-#'
-#' @examples
-#' vbl <- example_vbl()
-#'
-#' p <- ggplane(
-#'   vbl = vbl,
-#'   plane = "axi",
-#'   slices = 90,
-#'   var = "raw_t1"
-#' )
-#'
-#' p + layer_label(
-#'   var = "region",
-#'   labels = c("frontal", "parietal"),
-#'   clrp = "default",
-#'   alpha = 0.45
-#' )
-#' @export
-
-layer_label <- function(var,
-                        labels = NULL,
-                        labels_rm = NULL,
-                        clrp = "default",
-                        clrp_adjust = NULL,
-                        alpha = 0.45,
-                        slices = NULL,
-                        cond = NULL,
-                        ...){
-
-  alpha_quo <- rlang::enquo(alpha)
-  cond_quo <- rlang::enquo(cond)
-
-  vbl_layer(
-    fun = function(vbl2D){
-
-      vbl2D <- filter_slices(vbl2D, slices, cond_quo)
-
-      .layer_label_impl(
-        vbl2D = vbl2D,
-        var = var,
-        labels = labels,
-        labels_rm = labels_rm,
-        clrp = clrp,
-        clrp_adjust = clrp_adjust,
-        alpha = alpha_quo,
-        ...
-      )
-
-    }
-  )
-
-}
-
-
-#' @keywords internal
-.layer_label_impl <- function(vbl2D,
-                              var,
-                              labels = NULL,
-                              labels_rm = NULL,
-                              clrp = "default",
-                              clrp_adjust = NULL,
-                              alpha = 0.45,
-                              ...){
-
-  is_vartype(vbl2D, var = var, type = "label")
-
-  vbl2D <- vbl2D[!is.na(vbl2D[[var]]), ]
-
-  if(is.character(labels)){ vbl2D <- vbl2D[vbl2D[[var]] %in% labels, ] }
-
-  if(is.character(labels_rm)){ vbl2D <- vbl2D[!vbl2D[[var]] %in% labels, ] }
-
-  if(is.character(vbl2D[[var]])){ vbl2D[[var]] <- as.factor(vbl2D[[var]]) }
-
-  color_mapping <-
-    confuns::color_vector(
-      clrp = clrp,
-      names = levels(vbl2D[[var]]),
-      clrp.adjust = clrp_adjust
-    )
-
-  list(
-    ggnewscale::new_scale_fill(),
-    ggplot2::geom_raster(
-      data = vbl2D,
-      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      alpha = eval_tidy_alpha(vbl2D, alpha = alpha, var = var)
-    ),
-    ggplot2::scale_fill_manual(values = color_mapping, ...)
-  )
-
-}
-
-
-#' @title Add a mask layer for logical variables
-#' @description Overlay a logical mask variable on a `ggplane()` plot by filling
-#' voxels and/or drawing polygon outlines around mask regions.
-#'
-#' @param color Color used for the mask fill and outline.
-#' @param fill Logical. If `TRUE`, draw a filled raster layer over mask voxels.
-#' @param outline Logical. If `TRUE`, draw polygon outlines around connected
-#' mask regions.
-#' @param concavity Numeric passed to \link{concaveman}() to control the shape
-#' of the concave hull used for outlines.
-#' @param nv Integer. Number of vertices used by `densify_poly()` to densify each
-#' polygon outline.
-#' @param ... Additional arguments passed to \link{geom_polygon}() for the outline.
-#'
-#' @inherit vbl_doc_vbl_layer params return
-#' @inheritParams vbl_doc_var_mask
-#' @inheritParams vbl_doc
-#'
-#' @seealso \link{ggplane}(), \link{layer_label}(), \link{layer_bb}(),
-#'
-#' @examples
-#' vbl <- example_vbl()
-#'
-#' p <- ggplane(
-#'   vbl = vbl,
-#'   plane = "axi",
-#'   slices = 90,
-#'   var = "raw_t1"
-#' )
-#'
-#' # Filled mask overlay
-#' p + layer_mask(var = "tumor", color = "red")
-#'
-#' # Outline only
-#' p + layer_mask(var = "tumor", color = "red", fill = FALSE, outline = TRUE)
-#'
-#' @inherit vbl_layer return
-#' @export
-layer_mask <- function(var,
-                       color,
-                       alpha = 0.25,
-                       fill = TRUE,
-                       outline = TRUE,
-                       concavity = 2.5,
-                       nv = 50,
-                       slices = NULL,
-                       cond = NULL,
-                       ...){
-
-  alpha_quo <- rlang::enquo(alpha)
-  cond_quo <- rlang::enquo(cond)
-
-  vbl_layer(
-    fun = function(vbl2D){
-
-      vbl2D <- filter_slices(vbl2D, slices, cond_quo)
-
-      .layer_mask_impl(
-        vbl2D = vbl2D,
-        var = var,
-        color = color,
-        alpha = alpha_quo,
-        fill = fill,
-        outline = outline,
-        concavity = concavity,
-        nv = nv,
-        ...
-      )
-
-    }
-  )
-
-}
-
-#' @keywords internal
-.layer_mask_impl <- function(vbl2D,
-                             var,
-                             color,
-                             alpha = 0.45,
-                             fill = TRUE,
-                             outline = TRUE,
-                             concavity = 2.5,
-                             nv = 50,
-                             ...){
-
-  is_vartype(vbl2D, var = var, type = "mask")
-
-  data <- vbl2D[vbl2D[[var]], ]
-
-  layer_lst <- list()
-
-  if(isTRUE(fill)){
-
-    layer_lst$fill <-
-      ggplot2::geom_raster(
-        mapping = ggplot2::aes(x = col, y = row),
-        data = data,
-        alpha = eval_tidy_alpha(data, alpha = alpha, var = var),
-        fill = color
-      )
-
-  }
-
-  if(isTRUE(outline)){
-
-    outline_df <-
-      dplyr::group_by(data, slice) %>%
-      dplyr::group_split() %>%
-      purrr::map_dfr(.f = ~ dbscan2D(.x, var = var, rm0 = TRUE)) %>%
-      dplyr::group_by(slice, !!rlang::sym(var)) %>%
-      dplyr::group_split() %>%
-      purrr::imap_dfr(.f = function(df, idx){
-
-        concaveman::concaveman(
-          points = as.matrix(df[,c("col", "row")]),
-          concavity = concavity
-          ) %>%
-          tibble::as_tibble() %>%
-          magrittr::set_colnames(value = c("col", "row")) %>%
-          densify_poly(n = nv) %>%
-          dplyr::mutate(outline_idx = idx, slice = unique(df$slice))
-
-      })
-
-    layer_lst$outline <-
-      ggplot2::geom_polygon(
-        data = outline_df,
-        mapping = ggplot2::aes(x = col, y = row, group = outline_idx),
-        color = color,
-        fill = NA,
-        ...
-      )
-
-  }
-
-  return(layer_lst)
-
-}
-
-
-
-#' @title Add a numeric layer to a ggvibble plot
-#' @description Overlay a numeric variable on a `ggplane()` plot by mapping its
-#' values to a continuous fill scale.
-#'
-#' @param clrsp Color specification passed to \link{scale_fill_numeric}() to
-#' define the numeric color mapping.
-#' @param ... Additional arguments passed to \link{scale_fill_numeric}().
-#'
-#' @inherit vbl_doc_vbl_layer params return
-#' @inheritParams vbl_doc_var_numeric
-#' @inheritParams vbl_doc
-#'
-#' @details
-#' `layer_numeric()` draws a raster layer of `var` using `geom_raster()`. Transparency is
-#' computed by `eval_tidy_alpha()` based on `alpha` and the values of `var`. The fill scale is
-#' constructed by \link{scale_fill_numeric}(), using `clrsp` and the numeric range obtained from
-#' `var_smr()`. A new fill scale is created via `ggnewscale::new_scale_fill()` so that numeric layers do not
-#' interfere with previously defined fill scales.
-#'
-#' @examples
-#' vbl <- example_vbl()
-#'
-#' ggplane(
-#'   vbl = vbl,
-#'   plane = "axi",
-#'   slices = 90,
-#'   var = "raw_t1"
-#' ) +
-#'   layer_numeric(
-#'     var = "score",
-#'     clrsp = "Inferno",
-#'     alpha = c(0.2, 0.6)
-#'   )
-#'
-#' @export
-layer_numeric <- function(var,
-                          clrsp,
-                          alpha = c(0.2, 0.45),
-                          interpolate = .vbl_opt("interpolate"),
-                          slices = NULL,
-                          cond = NULL,
-                          ...){
-
-  cond_quo <- rlang::enquo(cond)
-  alpha_quo <- rlang::enquo(alpha)
-
-  vbl_layer(
-    fun = function(vbl2D){
-
-      vbl2D <- filter_slices(vbl2D, slices, cond_quo)
-
-      .layer_numeric_impl(
-        vbl2D = vbl2D,
-        var = var,
-        clrsp = clrsp,
-        alpha = alpha_quo,
-        interpolate = interpolate,
-        ...
-      )
-
-    }
-  )
-
-}
-
-#' @keywords internal
-.layer_numeric_impl <- function(vbl2D,
-                                var,
-                                clrsp,
-                                alpha = c(0.2, 0.45),
-                                interpolate = .vbl_opt("interpolate"),
-                                ...){
-
-  is_vartype(vbl2D, var = var, type = "numeric")
-
-  list(
-    ggnewscale::new_scale_fill(),
-    ggplot2::geom_raster(
-      data = vbl2D,
-      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      alpha = eval_tidy_alpha(vbl2D, alpha = alpha, var = var),
-      interpolate = interpolate
-    ),
-    scale_fill_numeric(
-      clrsp,
-      limits = var_smr(vbl, var)$limits,
-      ...
-    )
-  )
-
-}
-
-
-# non-data ----------------------------------------------------------------
 
 #' @title Add grid lines to a ggvibble plot
 #' @description Draw vertical and/or horizontal grid lines at regular positions
@@ -441,7 +86,7 @@ layer_numeric <- function(var,
 #'   the center.
 #'   \item `NULL` or length 0: no vertical grid lines are drawn.
 #' }
-#' @param alpha,color,linewidth,linetype Aesthetic settings for grid appearance.
+#' @param alpha,line_color,linewidth,linetype Aesthetic settings for grid appearance.
 #' Each can be supplied either as a single value or as a vector of length 2:
 #' \itemize{
 #'   \item \strong{Length 1}: The value is applied to both axes (vertical and
@@ -460,7 +105,7 @@ layer_numeric <- function(var,
 #'   \item \strong{linetype}: Any valid line type (e.g., `"solid"`, `"dashed"`).
 #' }
 #'
-#' @inherit vbl_doc_vbl_layer params return
+#' @inherit vbl_doc_layer return
 #'
 #' @details
 #' `layer_grid()` computes grid-line positions using \link{grid_intercepts}()
@@ -472,35 +117,19 @@ layer_numeric <- function(var,
 #' This layer is primarily intended for visual guidance and debugging and can
 #' be combined with numeric, mask, or label layers in the `ggplane()` framework.
 #'
-#' @examples
-#' vbl <- example_vbl()
-#'
-#' # Regular grid at 10-voxel spacing on both axes
-#' ggplane(vbl, "axi", 90, var = "raw_t1") +
-#'   layer_grid(col = 10, row = 10)
-#'
-#' # Relative spacing: grid every 10% of the maximum extent
-#' ggplane(vbl, "axi", 90, var = "raw_t1") +
-#'   layer_grid(col = 0.1, row = 0.1)
-#'
-#' # Only horizontal grid lines
-#' ggplane(vbl, "axi", 90, var = "raw_t1") +
-#'   layer_grid(col = NULL, row = 20)
-#'
 #' @export
 layer_grid <- function(col = 0.1,
                        row = 0.1,
-                       alpha = 0.2,
+                       alpha = 0.25,
                        color = "lightgrey",
                        linewidth = 0.5,
-                       linetype = "solid",
-                       slices = NULL
+                       linetype = "solid"
                        ){
+
+  .cond_quo <- rlang::enquo(.cond)
 
   vbl_layer(
     fun = function(vbl2D){
-
-      vbl2D <- filter_slices(vbl2D, slices)
 
       .layer_grid_impl(
         vbl2D = vbl2D,
@@ -508,8 +137,8 @@ layer_grid <- function(col = 0.1,
         row = row,
         alpha = alpha,
         color = color,
-        linewidth = linewidth,
-        slices = slices
+        linetype = linetype,
+        linewidth = linewidth
       )
 
     }
@@ -535,8 +164,8 @@ layer_grid <- function(col = 0.1,
   data <-
     tidyr::expand_grid(
       slice = sort(unique(vbl2D$slice)),
-      col = grid_intercepts(col, limits = attr(vbl2D, "var_smr")[["col"]]$limits),
-      row = grid_intercepts(row, limits = attr(vbl2D, "var_smr")[["row"]]$limits)
+      col = .grid_intercepts(col, limits = attr(vbl2D, "var_smr")[["col"]]$limits),
+      row = .grid_intercepts(row, limits = attr(vbl2D, "var_smr")[["row"]]$limits)
     )
 
   layer_lst <- list()
@@ -574,93 +203,39 @@ layer_grid <- function(col = 0.1,
 }
 
 
-#' @title Add slice numbers to an offset ggvibble plot
-#' @description Display the numeric slice index on each offset slice.
-#' The placement and orientation of the slice number adapts automatically
-#' to the offset direction used in the \link{ggplane()} call.
+#' @title Add the plotting limits
+#' @description
+#' Add a layer that draws rectangles for the current 2D limits (`lim`) of each slice in a `vbl2D`.
 #'
-#' @param pos Character specifying where the slice number should be placed
-#' relative to the 2D slice. If `NULL`, valid options and default depend on `offset_dir`
-#' from the \link{ggplane}() call:
-#' \itemize{
-#'   \item `"top"` or `"bottom"` when slices were offset horizontally (default: *'top'*)
-#'   \item `"left"` or `"right"` when slices were offset vertically (default: *'left'*)
-#' }
+#' @param color Color of the rectangle outline.
+#' @param fill Fill color for the rectangles. Defaults to `NA`.
+#' @param slices Optional numeric vector of slice indices to include.
+#' If `NULL`, all slices in the underlying `vbl2D` are used.
+#' @param ... Additional arguments passed to `ggplot2::geom_rect()`.
 #'
-#' @param buffer Numeric offset controlling how far the slice number is placed
-#' from the slice edge. Values `<1` are treated as proportions of the axis
-#' range; values `>=1` are treated as absolute offsets. Direction depends on
-#' `pos` and the offset orientation.
-#'
-#' @param wrap Optional character template used to format slice labels. Must be
-#' of length 1. The placeholder `{slice}` is replaced with the numeric slice
-#' value (e.g., `wrap = "Slice {slice}"`).
-#'
-#' @param angle Numeric rotation angle for the text label. If `NULL`,
-#' orientation defaults to commonly readable angles depending on the chosen
-#' `pos` (0°, 90°, 270°).
-#'
-#' @param alpha Numeric transparency in `[0,1]`.
-#' @param color Color of the slice label.
-#' @param size Text size passed to \link{geom_text}().
-#' @param ... Additional arguments forwarded to \link{geom_text}() like `hjust`,
-#' `vjust`, `fontsize`.
-#' @inherit vbl_doc params
-#'
-#' @return A `ggvibble_layer` that annotates each slice with its slice number.
+#' @inherit vbl_doc_layer params return
+#' @inheritParams vbl_doc
 #'
 #' @details
-#' `layer_slice_number()` is designed for use with offset visualizations created
-#' by \link{ggplane}(). Slice labels are positioned along the appropriate axis
-#' depending on whether \link{vibble2D}() offset the slice horizontally or
-#' vertically. The internal implementation computes:
-#'
-#' \itemize{
-#'   \item the orientation (`"h"` or `"v"`) via \link{offset_dir}()
-#'   \item default positions (`"top"`, `"bottom"`, `"right"`, `"left"`)
-#'   \item default angles for readability
-#'   \item the absolute plotting coordinates using \link{slice_num_col}() and
-#'   \link{slice_num_row}()
-#' }
-#'
-#' A custom label format can be supplied via `wrap`, and aesthetics (color,
-#' transparency, size) behave as in \link{geom_text}().
-#'
-#' @seealso \link{ggplane}(), \link{offset_dir}(), \link{vibble2D}()
-#'
-#' @examples
-#' vbl <- example_vbl()
-#'
-#' # Default slice numbering
-#' ggplane(vbl, "axi", slices = 88:92, var = "raw_t1") +
-#'   layer_slice_number()
-#'
-#' # Custom position and formatting
-#' ggplane(vbl, "axi", slices = 88:92, var = "raw_t1") +
-#'   layer_slice_number(pos = "top", wrap = "Slice {slice}", color = "yellow")
+#' For each slice, `lim_slice()` returns a list with `col` and `row` limits.
+#' These are converted into `cmin`, `cmax`, `rmin`, and `rmax` and passed to `ggplot2::geom_rect()`.
+#' This is useful for visualising the effective plotting region and checking limit or offset settings.
 #'
 #' @export
-layer_slice_number <- function(pos = NULL,
-                               buffer = 0.1,
-                               wrap = NULL,
-                               angle = NULL,
-                               alpha = 0.8,
-                               color = "white",
-                               size = 3.5,
-                               ...){
+layer_lim <- function(color,
+                      fill = NA,
+                      slices = NULL,
+                      ...){
+
+  if(is.numeric(slices)){ vbl2D <- dplyr::filter(vbl2D, slice %in% slices) }
 
   vbl_layer(
     fun = function(vbl2D){
 
-      .layer_slice_number_impl(
+      .layer_lim_impl(
         vbl2D = vbl2D,
-        pos = pos,
-        wrap = wrap,
-        buffer = buffer,
-        angle = angle,
-        alpha = alpha,
         color = color,
-        size = size,
+        fill = fill,
         ...
       )
 
@@ -669,63 +244,296 @@ layer_slice_number <- function(pos = NULL,
 
 }
 
+
+#' @keywords internal
+#' @rdname layer_lim
+.layer_lim_impl <- function(vbl2D,
+                            color,
+                            fill,
+                            ...){
+
+  data <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = function(slice){
+
+        ls <- lim_slice(vbl2D, slice = slice)
+
+        tibble::tibble(
+          slice = slice,
+          cmin = ls$col[1],
+          cmax = ls$col[2],
+          rmin = ls$row[1],
+          rmax = ls$row[2]
+        )
+
+      }
+    )
+
+  list(
+    ggplot2::geom_rect(
+      data = data,
+      mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
+      color = color,
+      fill = fill,
+      ...
+    )
+  )
+
+}
+
+#' @title Add slice-number labels
+#' @description
+#' Draw slice numbers as text labels on each slice of a `ggvibble`. Supports both
+#' regular slice layouts and offset layouts produced by `offset_dist` / `offset_dir`
+#' in the \link{ggplane}() call.
+#'
+#' @param anchor Anchor position for placing the label.
+#'   Accepted inputs differ between offset and non-offset layouts:
+#'
+#'   \itemize{
+#'     \item{ Offset layout:}{ Character anchors only.<br>
+#'       If slices are offset left–right, valid anchors are `c("top", "bottom")`.<br>
+#'       If slices are offset top–bottom, valid anchors are `c("left", "right")`.<br>
+#'       Defaults are `"top"` for left–right offsets and `"left"` for top–bottom offsets.}<br>
+#'     \item{Non-offset layout:}{ Any relative or absolute \link[=is_img_anchor]{image anchor}.
+#'       Supports named anchors (e.g. `"top-left"`) and numeric anchors.}
+#'   }
+#'
+#' @param align Logical. If `TRUE`, ensures slice numbers align across slices when offsets are applied.
+#'
+#' @param wrap Optional. Character template for constructing labels. Uses glue syntax, e.g. `"{slice}"`.
+#' @param angle Rotation angle of the text.
+#' @param alpha,color,size Passed to the respective standard parameters
+#' of \link{geom_text}() to control opacity, color and size of the drawn labels.
+#' @param ... Additional arguments passed to `ggplot2::geom_text()`.
+#'
+#' @inherit vbl_doc_layer return
+#'
+#' @details
+#' Two internal implementations exist depending on whether the `vbl2D` has slice offsets
+#' as determined by `offset_dist` and `offset_dir` in `ggplane()`.
+#'
+#' **Non-offset layout:**
+#' \itemize{
+#'   \item Uses the provided `anchor` directly (`rel` or `abs`).
+#'   \item Converts it to absolute coordinates via `as_img_anchor_abs(anchor, lim(vbl2D))`.
+#'   \item Places labels exactly at the slice-specific anchoring point.
+#'   \item Simple, consistent placement for grid/faceted layouts.
+#' }
+#'
+#' **Offset layout:**
+#' \itemize{
+#'   \item If `anchor` is missing, a default is chosen along the axis *orthogonal* to the offset direction
+#'     (e.g. `"top"` for left–right offsets, `"left"` for top–bottom offsets).
+#'   \item Anchors must be **character names**, not numeric.
+#'   \item Anchor coordinates are derived slice-wise from `slice_bb()`.
+#'   \item If `align = TRUE`, slice labels are aligned along the axis *not* affected by the offset
+#'     to avoid staggered-looking label positions.
+#'   \item Additional nudging is applied to place the label visually centered between the slice bounding box
+#'     and the overall plotting region (`lim_plot()`).
+#' }
+#'
+#' In short:
+#' **non-offset = direct placement at a global anchor**,
+#' **offset = anchor restricted to the offset geometry, with optional cross-slice alignment and nudging**.
+#'
+#' @export
+layer_slice_number <- function(anchor = NULL,
+                               wrap = NULL,
+                               angle = 0,
+                               alpha = 0.8,
+                               color = "white",
+                               size = 3.5,
+                               align = TRUE,
+                               ...){
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      if(is_offset(vbl2D)){
+
+        .layer_slice_number_offset_impl(
+          vbl2D = vbl2D,
+          anchor = anchor,
+          wrap = wrap,
+          angle = angle,
+          alpha = alpha,
+          color = color,
+          size = size,
+          align = align,
+          ...
+        )
+
+      } else {
+
+        .layer_slice_number_impl(
+          vbl2D = vbl2D,
+          anchor = anchor,
+          wrap = wrap,
+          angle = angle,
+          alpha = alpha,
+          color = color,
+          size = size,
+          ...
+        )
+
+      }
+
+    }
+  )
+
+}
+
 #' @keywords internal
 .layer_slice_number_impl <- function(vbl2D,
-                                     pos = NULL,
+                                     anchor = NULL,
                                      wrap = NULL,
-                                     buffer = 0.05,
-                                     angle = NULL,
+                                     angle = 0,
                                      alpha = 0.8,
                                      color = "white",
                                      size = 3.5,
                                      ...){
 
-  # horizontal offset vs vertical
-  offset_axis <- ifelse(grepl("left|right", offset_dir(vbl2D)), "h", "v")
+  stopifnot(within_limits(angle, c(0, 360)))
+  stopifnot(is_img_anchor_abs(anchor) | is_img_anchor_rel(anchor))
 
-  # relative positioning
-  pos <- if(is.null(pos)){ ifelse(offset_axis == "h", "top", "left") } else { pos }
+  # construct data.frame
+  wrap <- ifelse(is.character(wrap), wrap[1], "{slice}")
 
-  if(offset_axis == "h"){
-
-    pos <- match.arg(pos, choices = c("top", "bottom"))
-
-  } else if(offset_axis == "v"){
-
-    pos <- match.arg(pos, choices = c("right", "left"))
-
-  }
-
-  # angle
-  defaults <- c("top" = 0, "bottom" = 0, "right" = 270, "left" = 90)
-  angle <- ifelse(is.numeric(angle), angle, defaults[pos])
-
-  # absolute positioning
   df <-
-    dplyr::group_by(vbl2D, slice) %>%
-    dplyr::select(slice, col, row) %>%
-    dplyr::summarise(
-      col = .slice_num_col(col, pos, offset_axis, buffer),
-      row = .slice_num_row(row, pos, offset_axis, buffer),
-      .groups = "drop"
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = ~ as_img_anchor_abs(anchor, lim(vbl2D))
+    ) %>%
+    dplyr::mutate(
+      slice = slices(vbl2D),
+      label = as.character(glue::glue(wrap))
     )
 
-  adj <- ifelse(offset_axis == "h", "row", "col")
+  # plot
+  list(
+    ggplot2::geom_text(
+      data = df,
+      mapping = ggplot2::aes(x = col, y = row, label = label),
+      alpha = alpha,
+      angle = angle,
+      color = color,
+      size = size,
+      ...
+    ),
+    ggplot2::theme(
+      strip.background = ggplot2::element_blank(),
+      strip.text = ggplot2::element_blank(),
+    )
+  )
 
-  df[[adj]] <- ifelse(pos %in% c("right", "top"), min(df[[adj]]), max(df[[adj]]))
+}
 
-  if(is.character(wrap)){
+#' @keywords internal
+.layer_slice_number_offset_impl <- function(vbl2D,
+                                            anchor = NULL,
+                                            wrap = NULL,
+                                            angle = 0,
+                                            alpha = 0.8,
+                                            color = "white",
+                                            size = 3.5,
+                                            align = TRUE,
+                                            ...){
 
-    stopifnot(length(wrap) == 1)
+  stopifnot(within_limits(angle, c(0, 360)))
 
-    df[["label"]] <- as.character(glue::glue(wrap, slice = df$slice))
+  # anchor instructions
+  if(is.null(anchor)){ # apply defaults - anchor
+
+    anchor <- ifelse(.offset_axis(vbl2D) == "col", "top", "left")
 
   } else {
 
-    df[["label"]] <- as.character(df$slice)
+    stopifnot(is_img_anchor_chr(anchor))
+
+    if(.offset_axis(vbl2D) == "col"){
+
+      anchor <- match.arg(anchor, c("top", "bottom"))
+
+    } else if(.offset_axis(vbl2D) == "row"){
+
+      anchor <- match.arg(anchor, c("left", "right"))
+
+    }
 
   }
 
+  anchor_chr <- anchor
+  anchor_rel <- img_anchors[[anchor]]
+
+  # construct data.frame
+  wrap <- ifelse(is.character(wrap), wrap[1], "{slice}")
+
+  df <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = ~ as_img_anchor_abs(anchor_rel, slice_bb(vbl2D, .x))
+    ) %>%
+    dplyr::mutate(
+      slice = slices(vbl2D),
+      label = as.character(glue::glue(wrap))
+    )
+
+
+  # ensure alignment of slice num positions across slices, if desired
+  if(isTRUE(align)){
+
+    axis <- setdiff(x = c("col", "row"), y = .offset_axis(vbl2D))
+
+    idx <- which(c("col", "row") == axis)
+
+    if(axis == "row"){
+
+      fn <- ifelse(anchor_rel[idx] > 0.5, min, max)
+
+    } else {
+
+      fn <- ifelse(anchor_rel[idx] > 0.5, max, min)
+
+    }
+
+    df[[axis]] <- fn(range(vbl2D[[axis]]))
+
+  }
+
+  # nudge the positions in the middle between lim_plot() and slice_bb()
+  lp <- lim_plot(vbl2D)
+  lp_df <- tibble::tibble(
+    cmin = rep(min(lp$col), nrow(df)),
+    cmax = rep(max(lp$col), nrow(df)),
+    rmin = rep(min(lp$row), nrow(df)),
+    rmax = rep(max(lp$row), nrow(df))
+  )
+
+  df <- cbind(df, lp_df)
+
+  cvar <-
+    ifelse(
+      test = grepl("left", anchor_chr),
+      yes = "cmin",
+      no = ifelse(grepl("right", anchor_chr), "cmax", "col")
+    )
+
+  df$nudge_x <- purrr::map2_dbl(.x = df$col, .y = df[[cvar]], .f = ~ diff(c(.x, .y))/2)
+  df$col <- df$col + df$nudge_x
+
+  rvar <-
+    ifelse(
+      test = grepl("top", anchor_chr),
+      yes = "rmin",
+      no = ifelse(grepl("bottom", anchor_chr), "rmax", "row")
+    )
+
+  df$nudge_y <- purrr::map2_dbl(.x = df$row, .y = df[[rvar]], .f = ~ diff(c(.x, .y))/2)
+  df$row <- df$row + df$nudge_y
+
+  # plot
   list(
     ggplot2::geom_text(
       data = df,
@@ -739,7 +547,6 @@ layer_slice_number <- function(pos = NULL,
   )
 
 }
-
 
 
 

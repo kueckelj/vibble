@@ -1,4 +1,37 @@
 
+
+#' @title Check if object is a 2D bounding box
+#' @description Test whether an object encodes a valid 2D bounding box.
+#' Returns `TRUE` if the structure and values fulfill the requirements.
+#'
+#' @param x An object to be tested for being a valid 2D bounding box.
+#'
+#' @return A logical scalar.
+#'
+#' @details A valid 2D bounding box
+#' \itemize{
+#'   \item must be a list
+#'   \item must be of length 1 or 2
+#'   \item must be named, where names correspond to col and/or row
+#'   \item must contain only valid \link[=is_limit]{limits}
+#' }
+#'
+#' @seealso \link{filter_bb3D}()
+#'
+#' @importFrom purrr map_lgl
+#' @importFrom dplyr n_distinct
+#'
+#' @export
+is_bb2D <- function(x){
+
+  is.list(x) &&
+  length(x) %in% 1:2 &&
+  all(names(x) %in% c("col", "row")) &&
+  all(map_lgl(.x = x, .f = is_limit))
+
+}
+
+
 #' @title Check if object is a 3D bounding box
 #' @description Test whether an object encodes a valid 3D bounding box.
 #' Returns `TRUE` if the structure and values fulfill the requirements.
@@ -9,8 +42,9 @@
 #'
 #' @details A valid 3D bounding box
 #' \itemize{
+#'   \item must be a list
 #'   \item must be at least of length 1, max of length 3
-#'   \item must be a named list, where names correspond to x, y, and/or z
+#'   \item must be named, where names correspond to x, y, and/or z
 #'   \item must contain only valid \link[=is_limit]{limits}
 #' }
 #'
@@ -39,13 +73,10 @@
 #' @export
 is_bb3D <- function(x){
 
-  a <- length(x) %in% 1:3
-
-  b <- all(names(x) %in% ccs_labels)
-
-  b <- all(map_lgl(.x = x, .f = is_limit))
-
-  a & b & c
+  is.list(x) &&
+  length(x) %in% 1:3 &&
+  all(names(x) %in% ccs_labels) &&
+  all(map_lgl(.x = x, .f = is_limit))
 
 }
 
@@ -153,8 +184,7 @@ is_numeric_var <- is.numeric
 
 
 #' @title Check validity of numeric limit specification
-#' @description Validate whether an object represents a proper numeric limit
-#' consisting of two distinct, non-negative values.
+#' @description Validate whether an object represents a proper numeric limit.
 #'
 #' @param x An object to test.
 #'
@@ -164,12 +194,9 @@ is_numeric_var <- is.numeric
 #' A valid limit
 #' \itemize{
 #'   \item is numeric,
-#'   \item can be unambiguously interpreted as an integer
 #'   \item has length two,
 #'   \item contains two distinct values,
-#'   \item contains only values greater than or equal to 1.
 #' }
-#'
 #'
 #' @seealso \link{within_limits}()
 #'
@@ -180,19 +207,15 @@ is_numeric_var <- is.numeric
 #' # Example 2: Invalid limit (duplicate values)
 #' is_limit(c(10, 10))
 #'
-#' # Example 3: Invalid limit (not integer)
-#' is_limit(c(10, 15.4))
 #'
 #' @export
 is_limit <- function(x){
 
   a <- is.numeric(x)
-  b <- all(x == as.integer(x))
-  c <- length(x) == 2
-  d <- dplyr::n_distinct(x) == 2
-  e <- all(x >= 1)
+  b <- length(x) == 2
+  c <- dplyr::n_distinct(x) == 2
 
-  a & b & c & d
+  a & b & c
 
 }
 
@@ -203,7 +226,9 @@ is_offset <- function(x){
 
   if(!is_vbl2D(x)){ warning("Input is not a vbl2D.")}
 
-  .vbl_attr(x, which = "offset_dist") > 0
+  offset <- .vbl_attr(x, which = "offset_dist")
+
+  is.numeric(offset) && offset > 0
 
 }
 

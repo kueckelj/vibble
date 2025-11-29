@@ -14,7 +14,10 @@
 #'  \item{Columns}{ store voxel-wise values (e.g. intensities, masks, labels, scores).}
 #' }
 #'
-#' Every column is referred to as variable in tidy-data terms. A vibble knows four types of variables:
+#' Every column is referred to as variable in tidy-data terms.
+#'
+#' @section Variables:
+#' A vibble knows four types of variables:
 #'
 #' \itemize{
 #'  \item{Spatial:}{ Variables with *fixed naming* x, y and z give the unique position of each voxel in the 3D space.
@@ -91,63 +94,74 @@
 #' \link{update_var_smr}() for refreshing \code{var_smr}.
 NULL
 
+# params ------------------------------------------------------------------
 
-#' @title Transparancy in ggvibble plots using alpha
-#' @name ggvible_doc_alpha
-#' @section Input options:
-#' The `alpha` argument supports constant, ranged, and voxel-wise transparency.
-#' It follows tidyverse data-masking semantics and is interpreted as follows:
+#' @title Dummy documentation for recurring parameters
+#' @name vbl_doc
+#' @param alpha Controls the fill transparency. May be a single value in `[0,1]`,
+#' a numeric vector of length two, or an expression evaluated via
+#' \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble
+#' underlying this layer.
+#'
+#' See \link[=ggvible_doc_alpha]{Details} for more information.
+#'
+#' @param .by Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+#' group by before applying the filtering logic of `.cond`.
+#'
+#' @param bb2D A named list that defines a \link[=is_bb2D]{2D bounding box} with \link[=is_limit]{limits} for col and row.
+#' @param bb3D A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.
+#' @param clrp Character scalar specifying the categorical palette.
+#' Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.
+#' @param clrp_adjust Optional named vector of named hex colors used to override
+#' colors of specific labels (see \link{color_vector}()).
+#' @param clrsp Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}()`.
+#' @param interpolate Logical scalar indicating whether to interpolate raster tiles.
+#' @param lut Either a file path to a LUT, character vector of labels or a data.frame with integer indices
+#' and character labels.
+#' @param offset_dir Direction in which to shift voxels when `offset_dist` is not 0.
+#' Valid options are *c('left', 'right', 'top', 'bottom')*.
+#' @param offset_dist If not 0, shifts the slices in the 2D layout.
+#'   Interpreted as:
+#'   * **absolute** when supplied as an integer (e.g. `2L`) or marked via `as_abs()`.
+#'   * **relative** when supplied as a double (e.g. `0.1`) or marked via `as_rel()`,
+#'     in which case the shift is computed as a proportion of the full axis range.
+#' @param opacity Controls voxel transparency. Accepts constants, ranges, or
+#' data-masked expressions. See section *Opacity options* for details.
+#' @param plane The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
+#' @param slice Integer value. The slice of interest.
+#' @param slices Integer vector. The slices of interest.
+#' @param vbl A \link{vibble}.
+#' @param vbl2D A \link{vibble2D}.
+#'
+#' @section Opacity options:
+#' The `opacity` parameter supports constant, ranged, and voxel-wise inputs.
+#' In all cases, the used values are guaranteed to lie within `[0,1]`,
+#' where `0` corresponds to full opacity (completely invisible) and `1`
+#' corresponds to full opacity (no shine-through).
+#'
+#' It is interpreted as follows:
 #'
 #' \itemize{
 #'
 #'   \item \strong{Single numeric value: }
-#'   A constant transparency in `[0,1]` applied to all voxels.
+#'   A constant opacity in `[0,1]` applied to all voxels.
 #'   No scaling is performed. Example A.
 #'
 #'   \item \strong{Numeric vector of length 2: }
-#'   Requires a numeric variable mapped to the coloring. Interpreted as a
-#'   lower and upper transparency bound. The numeric variable being plotted
-#'   is rescaled into this interval using \link{scales::rescale}(), with the
-#'   input range given by `var_smr(vbl2D, var)$limits`. Example B.
+#'   Interpreted as a lower and upper opacity bound. The numeric variable being plotted
+#'   is rescaled into this interval, with the input range given by \link{var_limits}`(vbl2D, var)`.
+#'   Restricted to \link{layer_numeric_var()}. Example B.
 #'
 #'   \item \strong{Data-masked expressions: }
-#'   Any expression using column names of `vbl2D` (e.g., `alpha = score`,
-#'   `alpha = if_else(tumor, 0.5, 0.2)`. are evaluated with
+#'   Any expression using column names of `vbl2D` are evaluated with
 #'   \link{eval_tidy}(), meaning variable names refer to columns rather than
-#'   R objects. See \link[rlang:args_data_masking]{tidyverse's data-masking}.
-#'   Example C.
+#'   R objects. See \link[rlang:args_data_masking]{data-masking}. Example C.
 #'
 #'   \item \strong{Invalid input: }
 #'   Non-numeric inputs or numeric vectors of unsupported length cause an error.
 #'   Example D.
 #'
 #' }
-#'
-#' In all cases, the returned values are guaranteed to lie within `[0,1]`.
-NULL
-
-
-# params ------------------------------------------------------------------
-
-#' @title Dummy documentation for recurring parameters
-#' @name vbl_doc
-#' @param alpha Controls the fill transparency. May be a single value in `[0,1]`,
-#' a numeric vector of length two, or an expression evaluated with
-#' \link[rlang:args_data_masking]{tidyverse's data-masking} semantics.
-#' See \link[=ggvible_doc_alpha]{Details} for more information.
-#' @param bb3D A named list that defines a \link[=is_bb3D]{3D bounding box} with numeric vectors for `x`, `y`, and/or `z`.
-#' @param lut Either a file path to a LUT, character vector of labels or a data.frame with integer indices
-#' and character labels.
-#' @param offset_dir Direction in which to shift voxels when `offset_dist > 0`.
-#' Valid options are *c('left', 'right', 'top', 'bottom')*. A *'-flip'* suffix as
-#' in *'left-flip'* is also valid and flips the slice ordering.
-#' @param offset_dist Distance by which voxels are shifted along `offset_dir` in the 2D plane.
-#' Values `< 1` are interpreted as a proportion of the maximal coordinate,
-#' values `>= 1` as an absolute distance in coordinate units.
-#' @param plane The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
-#' @param slices Numeric vector. The slice indices of interest.
-#' @param vbl A \link{vibble}.
-#' @param vbl2D A \link{vibble2D}.
 #'
 #' @keywords internal
 NULL
@@ -156,8 +170,7 @@ NULL
 #' @name vbl_doc_var_label
 #'
 #' @param var
-#' Character. Must refer to a factor column in the
-#' \link{vibble} encoding categorical voxel classes.
+#' Character. The name of a label (factor) column.
 #'
 #' @keywords internal
 NULL
@@ -166,8 +179,7 @@ NULL
 #' @name vbl_doc_var_mask
 #'
 #' @param var
-#' Character. Must refer to a column in the
-#' \link{vibble} containing `TRUE`/`FALSE` mask values.
+#' Character. The name of a mask (logical) column.
 #'
 #' @keywords internal
 NULL
@@ -176,31 +188,18 @@ NULL
 #' @name vbl_doc_var_numeric
 #'
 #' @param var
-#' Character. Must refer to a column in the
-#' \link{vibble} containing continuous or integer-valued numeric data.
+#' Character. The name of a numeric column.
 #'
 #' @keywords internal
 NULL
 
 #' @title Dummy documentation for vibble layers
-#' @name vbl_doc_vbl_layer
+#' @name vbl_doc_layer
 #'
-#' @param cond Optional logical filter expression that determines the specific
-#' voxels on which this layer is drawn. This allows fine-grained, voxel-level
-#' filtering beyond whole-slice selection. The expression is evaluated with
-#' \link[rlang:args_data_masking]{tidyverse's data-masking} semantics
-#' on the \link{vibble2D}() passed into the layer by the \link{ggplane}() call.
-#' See \link[=ggvibble_doc_cond]{Details} for more information and examples.
-#'
-#' If `NULL`, the layer is drawn for all voxels included in the corresponding
-#' \link{ggplane}() call.
-#'
-#' @param slices Optional numeric vector of slice indices on which this layer
-#' should be drawn. This restricts the layer at the slice level, in contrast to
-#' `cond`, which restricts the layer at the voxel level.
-#'
-#' If `NULL`, the layer is applied to all slices included in the corresponding
-#' \link{ggplane}() call.
+#' @param .cond Optional. An additional logical filter expression that determines the specific
+#' voxels for which this layer is drawn. The expression is evaluated via
+#' \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
+#' into this layer by \link{ggplane}(). See \link[=ggvibble_doc_cond]{Details} for more information and examples.
 #'
 #' @return A `ggvibble_layer` object containing the supplied function. When
 #' added to a `ggvibble`, the function is executed and its returned layers are

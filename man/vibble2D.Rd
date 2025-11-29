@@ -9,9 +9,11 @@ vibble2D(
   plane,
   slices = NULL,
   lim = NULL,
+  expand = FALSE,
   offset_dist = 0,
   offset_dir = "left",
-  cond = enquo()
+  .cond = NULL,
+  .by = NULL
 )
 }
 \arguments{
@@ -19,19 +21,41 @@ vibble2D(
 
 \item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
-\item{slices}{Optional numeric vector of slice positions in the selected \code{plane}
+\item{slices}{Optional. Integer vector of slice positions in the selected \code{plane}
 to keep. If \code{NULL}, all slices are retained.}
 
-\item{offset_dist}{Distance by which voxels are shifted along \code{offset_dir} in the 2D plane.
-Values \verb{< 1} are interpreted as a proportion of the maximal coordinate,
-values \verb{>= 1} as an absolute distance in coordinate units.}
+\item{lim}{Defines the 2D spatial limits of the resulting \code{vbl2D}. By default, the
+\link[=ccs_limits]{coordinate-space} limits of the input vibble are and mapped to
+col, row and slice depending on \code{plane}. User can adjust that by supplying:
 
-\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist > 0}.
-Valid options are \emph{c('left', 'right', 'top', 'bottom')}. A \emph{'-flip'} suffix as
-in \emph{'left-flip'} is also valid and flips the slice ordering.}
+\itemize{
+\item  a valid \link[=is_limit]{limit}: a numeric vector of length two which is recycled for col and row.
+\item a list with \code{col} and \code{row} elements, each being a \link[=is_limit]{limit} for the respective axis.
+}
 
-\item{cond}{An expression evaluated with \link[rlang:args_data_masking]{tidyverse's data-masking}
+When the supplied \link[=is_bb2D]{2D bounding-box} is smaller than the slice extents,
+only voxels inside this region are retained, giving \code{lim} a filtering effect.}
+
+\item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits \strong{after}
+the interpretation and potential filtering of \code{lim}. This enlarges the slice-wise bounding box by adding a
+margin around its current range.}
+
+\item{offset_dist}{If not 0, shifts the slices in the 2D layout.
+Interpreted as:
+\itemize{
+\item \strong{absolute} when supplied as an integer (e.g. \code{2L}) or marked via \code{as_abs()}.
+\item \strong{relative} when supplied as a double (e.g. \code{0.1}) or marked via \code{as_rel()},
+in which case the shift is computed as a proportion of the full axis range.
+}}
+
+\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist} is not 0.
+Valid options are \emph{c('left', 'right', 'top', 'bottom')}.}
+
+\item{.cond}{Optional. An expression evaluated with \link[rlang:args_data_masking]{data-masking}
 to filter voxels. If \code{NULL}, all voxels are retained.}
+
+\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}.}
 }
 \value{
 A \code{tibble} with class \code{vbl2D} containing columns \code{col}, \code{row}, \code{slice},
@@ -43,35 +67,13 @@ Convert a 3D \code{vbl} object into a 2D representation for a given anatomical p
 }
 \details{
 The function derives the required axes using \link{req_axes_2d}() and
-\link{switch_axis_label}(). It then selects the corresponding coordinate columns,
-renames them to \code{col}, \code{row}, and \code{slice}, and optionally filters by \code{slices} and \code{cond}.
-
-If \code{offset_dist > 0}, voxels are shifted along the specified \code{offset_dir},
-and offset-related attributes are attached.
-
-Internally, summary statistics for \code{col}, \code{row}, and \code{slice} are updated via \link{update_var_smr}().
+renames the corresponding coordinate columns to \code{col}, \code{row}, and \code{slice},
+and optionally filters by \code{slices}, \code{lim} and \code{.cond}.
 
 \itemize{
 \item \code{col} and \code{row} store the 2D coordinates in voxel space.
 \item \code{slice} stores the position along the third axis in the selected \code{plane}.
-\item Attributes \code{"offset"}, \code{"offset_dist"}, \code{"offset_dir"}, and \code{"plane"}
+\item Attributes \code{"offset_dist"}, \code{"offset_dir"}, and \code{"plane"}
 describe the applied spatial offset and the original plane.
 }
-}
-\examples{
-vbl <- example_vbl()
-
-vbl2D <- vibble2D(
-  vbl = vbl,
-  plane = "axi",
-  slices = 90:100,
-  offset_dist = 0.1,
-  offset_dir = "left"
-)
-
-dplyr::glimpse(vbl2D)
-
-}
-\seealso{
-\link{ggplane}(), \link{vbl_layer}(), \link{offset_attr}()
 }

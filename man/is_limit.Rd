@@ -13,17 +13,14 @@ is_limit(x)
 A logical scalar.
 }
 \description{
-Validate whether an object represents a proper numeric limit
-consisting of two distinct, non-negative values.
+Validate whether an object represents a proper numeric limit.
 }
 \details{
 A valid limit
 \itemize{
 \item is numeric,
-\item can be unambiguously interpreted as an integer
 \item has length two,
 \item contains two distinct values,
-\item contains only values greater than or equal to 1.
 }
 }
 \examples{
@@ -33,8 +30,6 @@ is_limit(c(10, 20))
 # Example 2: Invalid limit (duplicate values)
 is_limit(c(10, 10))
 
-# Example 3: Invalid limit (not integer)
-is_limit(c(10, 15.4))
 
 }
 \seealso{

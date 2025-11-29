@@ -24,6 +24,91 @@ identify_nearest_voxel <- function(vbl_query, vbl_data){
 }
 
 
+#' @title Absolute and relative numeric specifications
+#' @description
+#' Provide a unified mechanism to distinguish absolute and relative numeric specifications
+#' for spatial parameters like `offset_dist`, `buffer` or `expand`.
+#'
+#' @param x A numeric vector to be classified or marked as absolute or relative.
+#'
+#' @return
+#' * `is_abs()`: Logical scalar, `TRUE` if `x` is interpreted as an absolute specification.
+#' * `is_rel()`: Logical scalar, `TRUE` if `x` is interpreted as a relative specification.
+#' * `as_abs()`: Numeric vector equal to `x` but marked with an `"abs"` attribute set to `TRUE`.
+#' * `as_rel()`: Numeric vector equal to `x` but marked with a `"rel"` attribute set to `TRUE`.
+#'
+#' @details
+#' These helpers define a consistent convention for interpreting numeric magnitudes.
+#' They are intended for arguments that describe spatial shifts or expansions such as `offset_dist`, `buffer`, or `expand`.
+#'
+#' Default classification rules are.
+#' \itemize{
+#'   \item `is_abs(x)` is `TRUE` if `x` is an integer vector or has an `"abs"` attribute set to `TRUE`.
+#'   \item `is_rel(x)` is `TRUE` if `x` is a double vector and not absolute, or has a `"rel"` attribute set to `TRUE`.
+#' }
+#'
+#' The constructor helpers explicitly mark intent.
+#' \itemize{
+#'   \item `as_abs(x)` coerces `x` to numeric and sets the `"abs"` attribute.
+#'   \item `as_rel(x)` coerces `x` to numeric and sets the `"rel"` attribute.
+#' }
+#'
+#' Attribute-based markings take precedence over the default type-based interpretation.
+#'
+#' @note
+#' Use these helpers in functions that accept both absolute and relative magnitudes to keep the API predictable.
+#' For example, a `buffer` argument may treat `2L` or `as_abs(2)` as an absolute shift in voxel units and `0.1` or `as_rel(0.1)` as a 10 % relative expansion.
+#'
+#' @examples
+#' # Default behaviour: integers absolute, doubles relative
+#' is_abs(2L)
+#' is_rel(0.2)
+#'
+#' # Attribute-based overrides
+#' x_abs <- as_abs(2)
+#' x_rel <- as_rel(2)
+#' is_abs(x_abs)
+#' is_rel(x_rel)
+#'
+#' # Example usage in a buffer argument (conceptual)
+#' buf_abs <- as_abs(3)   # expand by 3 units
+#' buf_rel <- 0.1        # expand by 10 % of the range
+#'
+#' @name vbl_doc_abs_rel
+NULL
+
+
+#' @rdname vbl_doc_abs_rel
+is_abs <- function(x){
+  (is.integer(x)) ||
+    isTRUE(attr(x, "abs", exact = TRUE))
+}
+
+#' @rdname vbl_doc_abs_rel
+is_rel <- function(x){
+  (is.double(x) && !is_abs(x)) ||
+    isTRUE(attr(x, "rel", exact = TRUE))
+}
+
+#' @rdname vbl_doc_abs_rel
+as_abs <- function(x){
+
+  x <- as.numeric(x)
+  attr(x, which = "abs") <- TRUE
+  return(x)
+
+}
+
+#' @rdname vbl_doc_abs_rel
+as_rel <- function(x){
+
+  x <- as.numeric(x)
+  attr(x, which = "rel") <- TRUE
+  return(x)
+
+}
+
+
 #' @title Check whether values lie within numeric limits
 #' @description Test whether numeric values fall strictly between a lower and
 #' upper bound. Returns a logical vector with one entry per element of `x`.
@@ -39,7 +124,7 @@ identify_nearest_voxel <- function(vbl_query, vbl_data){
 #'
 #' @details
 #' If limits are provided, they must be valid according to \link{is_limit}().
-#' The function performs strict comparisons (`>=` and `=<`).
+#' The function performs comparisons with `>=` and `=<`.
 #'
 #' @seealso \link{is_limit}()
 #'

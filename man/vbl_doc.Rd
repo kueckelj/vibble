@@ -5,26 +5,51 @@
 \title{Dummy documentation for recurring parameters}
 \arguments{
 \item{alpha}{Controls the fill transparency. May be a single value in \verb{[0,1]},
-a numeric vector of length two, or an expression evaluated with
-\link[rlang:args_data_masking]{tidyverse's data-masking} semantics.
+a numeric vector of length two, or an expression evaluated via
+\link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble
+underlying this layer.
+
 See \link[=ggvible_doc_alpha]{Details} for more information.}
 
-\item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with numeric vectors for \code{x}, \code{y}, and/or \code{z}.}
+\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}.}
+
+\item{bb2D}{A named list that defines a \link[=is_bb2D]{2D bounding box} with \link[=is_limit]{limits} for col and row.}
+
+\item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.}
+
+\item{clrp}{Character scalar specifying the categorical palette.
+Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
+
+\item{clrp_adjust}{Optional named vector of named hex colors used to override
+colors of specific labels (see \link{color_vector}()).}
+
+\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}()`.}
+
+\item{interpolate}{Logical scalar indicating whether to interpolate raster tiles.}
 
 \item{lut}{Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 and character labels.}
 
-\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist > 0}.
-Valid options are \emph{c('left', 'right', 'top', 'bottom')}. A \emph{'-flip'} suffix as
-in \emph{'left-flip'} is also valid and flips the slice ordering.}
+\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist} is not 0.
+Valid options are \emph{c('left', 'right', 'top', 'bottom')}.}
 
-\item{offset_dist}{Distance by which voxels are shifted along \code{offset_dir} in the 2D plane.
-Values \verb{< 1} are interpreted as a proportion of the maximal coordinate,
-values \verb{>= 1} as an absolute distance in coordinate units.}
+\item{offset_dist}{If not 0, shifts the slices in the 2D layout.
+Interpreted as:
+\itemize{
+\item \strong{absolute} when supplied as an integer (e.g. \code{2L}) or marked via \code{as_abs()}.
+\item \strong{relative} when supplied as a double (e.g. \code{0.1}) or marked via \code{as_rel()},
+in which case the shift is computed as a proportion of the full axis range.
+}}
+
+\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
+data-masked expressions. See section \emph{Opacity options} for details.}
 
 \item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
-\item{slices}{Numeric vector. The slice indices of interest.}
+\item{slice}{Integer value. The slice of interest.}
+
+\item{slices}{Integer vector. The slices of interest.}
 
 \item{vbl}{A \link{vibble}.}
 
@@ -33,4 +58,36 @@ values \verb{>= 1} as an absolute distance in coordinate units.}
 \description{
 Dummy documentation for recurring parameters
 }
+\section{Opacity options}{
+
+The \code{opacity} parameter supports constant, ranged, and voxel-wise inputs.
+In all cases, the used values are guaranteed to lie within \verb{[0,1]},
+where \code{0} corresponds to full opacity (completely invisible) and \code{1}
+corresponds to full opacity (no shine-through).
+
+It is interpreted as follows:
+
+\itemize{
+
+\item \strong{Single numeric value: }
+A constant opacity in \verb{[0,1]} applied to all voxels.
+No scaling is performed. Example A.
+
+\item \strong{Numeric vector of length 2: }
+Interpreted as a lower and upper opacity bound. The numeric variable being plotted
+is rescaled into this interval, with the input range given by \link{var_limits}\verb{(vbl2D, var)}.
+Restricted to \link{layer_numeric_var()}. Example B.
+
+\item \strong{Data-masked expressions: }
+Any expression using column names of \code{vbl2D} are evaluated with
+\link{eval_tidy}(), meaning variable names refer to columns rather than
+R objects. See \link[rlang:args_data_masking]{data-masking}. Example C.
+
+\item \strong{Invalid input: }
+Non-numeric inputs or numeric vectors of unsupported length cause an error.
+Example D.
+
+}
+}
+
 \keyword{internal}

@@ -1,20 +1,25 @@
 # Core data structure and constructors.
 
+#' @keywords internal
+#' @export
+vbl_attr <- c("ccs_mapping", "ccs_limits", "nifti", "var_smr")
 
+#' @keywords internal
+#' @export
+vbl_attr2D <- c(vbl_attr, c("lim", "offset_dir", "offset_dist", "plane"))
 
 # core constructors and tests ---------------------------------------------
 
 #' @keywords internal
 new_vbl <- function(data,
                     ccs_limits,
-                    ccs_mapping,
                     var_smr = NULL){
 
   stopifnot(is.data.frame(data))
 
   # attach attributes
   attr(data, "ccs_limits")  <- ccs_limits
-  attr(data, "ccs_mapping") <- ccs_mapping
+  attr(data, "ccs_mapping") <- ccs_orientation_mapping_fix
   attr(data, "var_smr")     <- var_smr
 
   # set class: vbl on top of existing classes (e.g. tbl_df, data.frame)
@@ -170,16 +175,16 @@ print.vbl2D <- function(x, ...){
     offset_string <- "none"
     if(is_offset(x)){
 
-      offset_string <- paste0("+", offset_dist(x), "; ", offset_dir(x))
+      offset_string <- paste0(offset_dist(x), " (", offset_dir(x), ")")
 
     }
 
     limits_string <-
       purrr::map_chr(
-        .x = lim(vbl2D),
+        .x = lim(x),
         .f = function(l, a){
 
-          ifelse(is.null(l), "none", paste0(l[[1]], ":", l[[2]]))
+          ifelse(is.null(l), "none", paste0(round(l[[1]], 2), ":", round(l[[2]], 2)))
 
         } )
 
@@ -187,7 +192,7 @@ print.vbl2D <- function(x, ...){
 
     info <-
       paste0(
-        "<vibbl2D> vbl2D object\n",
+        "<vibble2D> vbl2D object\n",
         "  plane : ",  vbl_planes_pretty[plane(x)], " (", plane(x), ")\n",
         "  slices: ", n_slice, "\n",
         "  offset: ", offset_string, "\n",
@@ -303,7 +308,11 @@ print.vbl2D <- function(x, ...){
 .vbl_reconstruct <- function(old, new){
 
   # keep vibble-specific attributes
-  keep_attrs <- c("ccs_limits", "ccs_mapping", "var_smr")
+  keep_attrs <-
+    setdiff(
+      x = setdiff(names(attributes(old)), "groups"),
+      y = names(attributes(new))
+    )
 
   for(a in keep_attrs){
 
@@ -325,39 +334,6 @@ print.vbl2D <- function(x, ...){
   } else {
 
     class(new) <- unique(c("vbl", class(new)))
-
-  }
-
-  return(new)
-
-}
-
-#' @keywords internal
-.vbl2D_reconstruct <- function(old, new){
-
-  # keep vibble-specific attributes
-  keep_attrs <- c("ccs_limits", "ccs_mapping", "var_smr")
-
-  for(a in keep_attrs){
-
-    val <- attr(old, a, exact = TRUE)
-
-    if(!is.null(val)){
-
-      attr(new, a) <- val
-
-    }
-
-  }
-
-  # prepend vibble classes to existing ones
-  if(inherits(old, "grouped_vbl2D")){
-
-    class(new) <- unique(c("grouped_vbl2D", "vbl2D", class(new)))
-
-  } else {
-
-    class(new) <- unique(c("vbl2D", class(new)))
 
   }
 
@@ -465,6 +441,8 @@ ungroup.grouped_vbl <- function(x, ...){
   # drop grouped_vbl, keep vbl and underlying classes
   new <- .vbl_reconstruct(x, new)
 
+  class(new) <- class(new)[!class(new) == "grouped_vbl"]
+
   return(new)
 
 }
@@ -527,6 +505,43 @@ transmute.grouped_vbl <- function(.data, ...){
 # essentially the same concept as for vbl, but protection of spatial variables x,y,z
 # is not required and not desired (cause vbl2D does not have them)
 
+#' @keywords internal
+.vbl2D_reconstruct <- function(old, new){
+
+  # keep vibble-specific attributes
+  keep_attrs <-
+    setdiff(
+      x = setdiff(names(attributes(old)), "groups"), # allow removal of groups
+      y = names(attributes(new))
+    )
+
+  for(a in keep_attrs){
+
+    val <- attr(old, a, exact = TRUE)
+
+    if(!is.null(val)){
+
+      attr(new, a) <- val
+
+    }
+
+  }
+
+  # prepend vibble classes to existing ones
+  if(inherits(old, "grouped_vbl2D")){
+
+    class(new) <- unique(c("grouped_vbl2D", "vbl2D", class(new)))
+
+  } else {
+
+    class(new) <- unique(c("vbl2D", class(new)))
+
+  }
+
+  return(new)
+
+}
+
 #' @export
 group_by.vbl2D <- function(.data, ..., .add = FALSE, .drop = dplyr::group_by_drop_default(.data)){
 
@@ -575,10 +590,6 @@ mutate.grouped_vbl2D <- function(.data, ...){
   # restore class stack
   class(new) <- cls
 
-  # check spatial coords unchanged
-  old_ung <- dplyr::ungroup(tibble::as_tibble(old))
-  new_ung <- dplyr::ungroup(tibble::as_tibble(new))
-
   # reattach attributes
   new <- .vbl2D_reconstruct(old, new)
 
@@ -595,6 +606,8 @@ ungroup.grouped_vbl2D <- function(x, ...){
 
   new <- .vbl2D_reconstruct(x, new)
 
+  class(new) <- class(new)[!class(new) == "grouped_vbl2D"]
+
   return(new)
 
 }
@@ -608,28 +621,6 @@ ungroup.grouped_vbl2D <- function(x, ...){
 
 
 # core functions and utilities --------------------------------------------
-
-
-#' @keywords internal
-#' @export
-ccs_labels <- c("x", "y", "z")
-
-#' @keywords internal
-#' @export
-ccs_orientation_mapping <- list(x = c("R", "L"), y = c("S", "I"), z = c("A", "P"))
-
-#' @keywords internal
-#' @export
-ccs_to_plane <- function(axis){
-
-  axis <- match.arg(axis, choices = vbl_ccs_axes)
-
-  out <- c("x" = "sag", "y" = "axi", "z" = "cor")[axis]
-
-  unname(out)
-
-}
-
 
 #' @title Add or reconstruct voxel IDs based on spatial coordinates
 #' @description Create a unique integer voxel identifier from zero-padded
@@ -784,17 +775,7 @@ id_split <- function(vbl){
 }
 
 
-#' @keywords internal
-#' @export
-plane_to_ccs <- function(plane){
 
-  plane <- match.arg(plane, choices = vbl_planes)
-
-  out <- c("sag" = "x", "axi" = "y", "cor" = "z")[plane]
-
-  unname(out)
-
-}
 
 read_vbl <- function(path){
 
@@ -809,64 +790,6 @@ read_vbl <- function(path){
   }
 
   return(vbl)
-
-}
-
-#' @keywords internal
-#' @export
-req_axes_2d <- function(plane, mri = FALSE, ccs_val = TRUE){
-
-  plane <- match.arg(plane, choices = vbl_planes)
-
-  if(plane == "sag"){
-
-    out <- c("col" = "z", "row" = "y")
-
-  } else if(plane == "axi"){
-
-    out <- c("col" = "x", "row" = "z")
-
-  } else if(plane == "cor"){
-
-    out <- c("col" = "x", "row" = "y")
-
-  }
-
-  if(isTRUE(mri)){
-
-    out <- switch_axis_label(out)
-
-  }
-
-  if(!ccs_val){
-
-    out <- purrr::set_names(x = names(out), nm = unname(out))
-
-  }
-
-  return(out)
-
-}
-
-#' @export
-switch_axis_label <- function(label){
-
-  purrr::map_chr(
-    .x = label,
-    .f = function(l){
-
-      if(l %in% vbl_planes){
-
-        plane_to_ccs(l)
-
-      } else if(l %in% vbl_ccs_axes) {
-
-        ccs_to_plane(l)
-
-      }
-
-    }
-  )
 
 }
 

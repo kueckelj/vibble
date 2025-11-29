@@ -25,7 +25,7 @@ upper bound. Returns a logical vector with one entry per element of \code{x}.
 }
 \details{
 If limits are provided, they must be valid according to \link{is_limit}().
-The function performs strict comparisons (\code{>=} and \verb{=<}).
+The function performs comparisons with \code{>=} and \verb{=<}.
 }
 \examples{
 # Example 1: Basic usage

@@ -95,7 +95,7 @@ vbl_opts_default <-
     vibble.ask = TRUE,
     vibble.clrp = "default",
     vibble.clrsp = c("black", "white"),
-    vibble.expand = TRUE,
+    vibble.expand.fraction = 0.05,
     vibble.interpolate = TRUE,
     vibble.verbose = TRUE
   )

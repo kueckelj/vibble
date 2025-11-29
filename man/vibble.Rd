@@ -13,7 +13,11 @@ one or more 3D volumes registered to the same space.
 \item{Columns}{ store voxel-wise values (e.g. intensities, masks, labels, scores).}
 }
 
-Every column is referred to as variable in tidy-data terms. A vibble knows four types of variables:
+Every column is referred to as variable in tidy-data terms.
+}
+\section{Variables}{
+
+A vibble knows four types of variables:
 
 \itemize{
 \item{Spatial:}{ Variables with \emph{fixed naming} x, y and z give the unique position of each voxel in the 3D space.
@@ -28,6 +32,7 @@ x, y, and z are referred to as \link[=vars_spatial]{spatial variables}.
 
 For a vibble to be valid, the following requirements must hold.
 }
+
 \section{Required class}{
 
 Vibbles extent the \link[tibble:tibble]{tbl} class with \code{c("vbl", <underlying class>)}.

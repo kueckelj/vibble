@@ -1,10 +1,27 @@
 #' @title Create a 2D vibble from 3D voxel data
 #' @description Convert a 3D `vbl` object into a 2D representation for a given anatomical plane and selected slices. Optionally apply filtering conditions and spatial offsets for visualization.
 #'
-#' @param slices Optional numeric vector of slice positions in the selected `plane`
+#' @param slices Optional. Integer vector of slice positions in the selected `plane`
 #' to keep. If `NULL`, all slices are retained.
-#' @param cond An expression evaluated with \link[rlang:args_data_masking]{tidyverse's data-masking}
+#' @param lim Defines the 2D spatial limits of the resulting `vbl2D`. By default, the
+#' \link[=ccs_limits]{coordinate-space} limits of the input vibble are and mapped to
+#' col, row and slice depending on `plane`. User can adjust that by supplying:
+#'
+#'   \itemize{
+#'     \item  a valid \link[=is_limit]{limit}: a numeric vector of length two which is recycled for col and row.
+#'     \item a list with `col` and `row` elements, each being a \link[=is_limit]{limit} for the respective axis.
+#'   }
+#'
+#' When the supplied \link[=is_bb2D]{2D bounding-box} is smaller than the slice extents,
+#' only voxels inside this region are retained, giving `lim` a filtering effect.
+#'
+#' @param expand An \link[=is_expand]{expand} specification applied to the col/row limits **after**
+#' the interpretation and potential filtering of `lim`. This enlarges the slice-wise bounding box by adding a
+#' margin around its current range.
+#' @param .cond Optional. An expression evaluated with \link[rlang:args_data_masking]{data-masking}
 #' to filter voxels. If `NULL`, all voxels are retained.
+#' @param .by Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+#' group by before applying the filtering logic of `.cond`.
 #'
 #' @inherit vbl_doc params
 #'
@@ -13,37 +30,15 @@
 #' applied offsets.
 #'
 #' @details The function derives the required axes using \link{req_axes_2d}() and
-#' \link{switch_axis_label}(). It then selects the corresponding coordinate columns,
-#' renames them to `col`, `row`, and `slice`, and optionally filters by `slices` and `cond`.
-#'
-#' If `offset_dist > 0`, voxels are shifted along the specified `offset_dir`,
-#' and offset-related attributes are attached.
-#'
-#' Internally, summary statistics for `col`, `row`, and `slice` are updated via \link{update_var_smr}().
+#' renames the corresponding coordinate columns to `col`, `row`, and `slice`,
+#' and optionally filters by `slices`, `lim` and `.cond`.
 #'
 #' \itemize{
 #'   \item `col` and `row` store the 2D coordinates in voxel space.
 #'   \item `slice` stores the position along the third axis in the selected `plane`.
-#'   \item Attributes `"offset"`, `"offset_dist"`, `"offset_dir"`, and `"plane"`
+#'   \item Attributes `"offset_dist"`, `"offset_dir"`, and `"plane"`
 #'   describe the applied spatial offset and the original plane.
 #' }
-#'
-#' @seealso \link{ggplane}(), \link{vbl_layer}(), \link{offset_attr}()
-#'
-#' @importFrom rlang enquo
-#'
-#' @examples
-#' vbl <- example_vbl()
-#'
-#' vbl2D <- vibble2D(
-#'   vbl = vbl,
-#'   plane = "axi",
-#'   slices = 90:100,
-#'   offset_dist = 0.1,
-#'   offset_dir = "left"
-#' )
-#'
-#' dplyr::glimpse(vbl2D)
 #'
 #' @export
 
@@ -51,94 +46,77 @@ vibble2D <- function(vbl,
                      plane,
                      slices = NULL,
                      lim = NULL,
+                     expand = FALSE,
                      offset_dist = 0,
                      offset_dir = "left",
-                     cond = enquo()){
+                     .cond = NULL,
+                     .by = NULL){
+
+  # sanity checks and prep
+  plane <- match.arg(plane, choices = vbl_planes)
 
   req_axes <- req_axes_2d(plane = plane)
+  slice_axis <- unname(switch_axis_label(plane))
 
-  col_axis <- unname(req_axes["col"])
-  row_axis <- unname(req_axes["row"])
-  slice_axis <- switch_axis_label(plane)
+  if(!is.numeric(slices)){ slices <- unique(vbl[[slice_axis]]) }
 
+  # change class name HERE to allow x,y,z manipulation/renaming
   class(vbl) <- stringr::str_replace(class(vbl), "vbl", "vbl2D")
 
   # 3D to 2D
-  vbl2D_all <-
-    dplyr:::select(
-      .data = vbl,
-      !!!req_axes,
-      slice := {{slice_axis}},
-      dplyr::everything()
-      )
+  vbl2D <-
+    dplyr::rename(vbl, !!!req_axes, slice := {{slice_axis}}) %>%
+    dplyr::filter(slice %in% {{slices}}) %>%
+    dplyr::select(col, row, slice, dplyr::everything())
 
-  if(is.numeric(slices)){
-
-    vbl2D <- dplyr::filter(vbl2D_all, slice %in% {{slices}})
-
-  } else {
-
-    vbl2D <- vbl2D_all
-
-  }
-
-  # apply limits
-  lim_col <- NULL
-  lim_row <- NULL
+  # apply lim
   if(is.numeric(lim)){
 
     stopifnot(is.numeric(lim) & length(lim) == 2)
 
-    lim_col <- lim
-    lim_row <- lim
+    lim <- list(col = lim, row = lim)
 
   } else if(is.list(lim)){
 
-    lim_col <- if(is.numeric(lim[["col"]]) && length(lim[["col"]]) > 1){ range(lim[["col"]])}
-    lim_row <- if(is.numeric(lim[["row"]]) && length(lim[["row"]]) > 1){ range(lim[["row"]])}
+    stopifnot(is_bb2D(lim))
+
+  } else {
+
+    lim <- list()
+    lim[c("col", "row")] <- ccs_limits(vbl)[req_axes]
 
   }
 
   vbl2D <-
     dplyr::filter(
       .data = vbl2D,
-      within_limits(col, lim_col, null_ok = TRUE) &
-      within_limits(row, lim_row, null_ok = TRUE)
+      within_limits(col, l = lim$col) &
+      within_limits(row, l = lim$row)
       )
 
-  # apply condition
-  if(!rlang::quo_is_missing(cond) && !rlang::quo_is_null(cond)){
+  lim(vbl2D) <- lim
 
-    vbl2D <- dplyr::filter(vbl2D, !!cond)
+  # apply expand
+  vbl2D <- expand_lim2D(vbl2D, expand = expand)
+
+  # apply condition
+  .by_quo <- rlang::enquo(.by)
+  .cond_quo <- rlang::enquo(.cond)
+  if(!rlang::quo_is_null(.cond_quo)){
+
+    vbl2D <- dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by_quo }})
 
   }
 
-  # offset voxels
+  # apply offset
   if(offset_dist > 0){
-
-    offset_dir <- match.arg(offset_dir, choices = offset_dir_choices)
-
-    offset_axis <- ifelse(stringr::str_detect(offset_dir, "left|right"), "col", "row")
-
-    if(offset_dist < 1){
-
-      mx <- max(ccs_limits(vbl)[[req_axes[[offset_axis]]]])
-      offset_dist <- mx*offset_dist
-
-    }
-
-    # integer positions required for geom_raster
-    offset_dist <- as.integer(offset_dist)
 
     vbl2D <- .apply_offset(vbl2D, offset_dist = offset_dist, offset_dir = offset_dir)
 
   }
 
   # set vbl2D attributes
-  lim(vbl2D) <- list(col = lim_col, row = lim_row)
   plane(vbl2D) <- plane
-  offset_dist(vbl2D) <- offset_dist #
-  offset_dir(vbl2D) <- if(offset_dist > 0) offset_dir # else NULL
 
   vbl2D <- update_var_smr(vbl2D, vars = c("col", "row", "slice"))
 

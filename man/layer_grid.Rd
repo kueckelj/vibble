@@ -7,11 +7,10 @@
 layer_grid(
   col = 0.1,
   row = 0.1,
-  alpha = 0.2,
+  alpha = 0.25,
   color = "lightgrey",
   linewidth = 0.5,
-  linetype = "solid",
-  slices = NULL
+  linetype = "solid"
 )
 }
 \arguments{
@@ -27,7 +26,7 @@ the center.
 \item \code{NULL} or length 0: no vertical grid lines are drawn.
 }}
 
-\item{alpha, color, linewidth, linetype}{Aesthetic settings for grid appearance.
+\item{alpha, line_color, linewidth, linetype}{Aesthetic settings for grid appearance.
 Each can be supplied either as a single value or as a vector of length 2:
 \itemize{
 \item \strong{Length 1}: The value is applied to both axes (vertical and
@@ -45,13 +44,6 @@ Input specifics:
 \item \strong{linewidth}: Positive numeric line width.
 \item \strong{linetype}: Any valid line type (e.g., \code{"solid"}, \code{"dashed"}).
 }}
-
-\item{slices}{Optional numeric vector of slice indices on which this layer
-should be drawn. This restricts the layer at the slice level, in contrast to
-\code{cond}, which restricts the layer at the voxel level.
-
-If \code{NULL}, the layer is applied to all slices included in the corresponding
-\link{ggplane}() call.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When
@@ -71,20 +63,4 @@ derived from \code{alpha}, \code{color}, \code{linewidth}, and \code{linetype}.
 
 This layer is primarily intended for visual guidance and debugging and can
 be combined with numeric, mask, or label layers in the \code{ggplane()} framework.
-}
-\examples{
-vbl <- example_vbl()
-
-# Regular grid at 10-voxel spacing on both axes
-ggplane(vbl, "axi", 90, var = "raw_t1") +
-  layer_grid(col = 10, row = 10)
-
-# Relative spacing: grid every 10\% of the maximum extent
-ggplane(vbl, "axi", 90, var = "raw_t1") +
-  layer_grid(col = 0.1, row = 0.1)
-
-# Only horizontal grid lines
-ggplane(vbl, "axi", 90, var = "raw_t1") +
-  layer_grid(col = NULL, row = 20)
-
 }

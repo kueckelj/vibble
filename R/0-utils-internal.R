@@ -6,7 +6,7 @@ magrittr::`%>%`
 
 #' @importFrom glue glue
 #' @importFrom rlang caller_env
-glue_message <- function(..., defer = FALSE, verbose = TRUE){
+.glue_message <- function(..., defer = FALSE, verbose = TRUE){
 
   if(verbose){
 
@@ -30,7 +30,7 @@ glue_message <- function(..., defer = FALSE, verbose = TRUE){
 
 #' @importFrom glue glue
 #' @importFrom rlang caller_env
-glue_warning <- function(..., .envir = caller_env(), verbose = TRUE){
+.glue_warning <- function(..., .envir = caller_env(), verbose = TRUE){
 
   if(!verbose){
 
@@ -45,11 +45,31 @@ glue_warning <- function(..., .envir = caller_env(), verbose = TRUE){
 
 #' @importFrom glue glue
 #' @importFrom rlang caller_env
-glue_stop <- function(..., envir = caller_env()){
+.glue_stop <- function(..., envir = caller_env()){
 
   stop(glue(..., envir = .envir), call. = FALSE)
 
 }
+
+
+#' @keywords internal
+.is_named <- function(x){
+
+  names <- base::names(x)
+
+  shiny::isTruthy(names)
+
+}
+
+#' @keywords internal
+.keep_named <- function(x){
+
+  x[purrr::map_lgl(.x = base::names(x), .f = ~ shiny::isTruthy(.x))]
+
+
+}
+
+
 
 #' @keywords internal
 .vbl_attr <- function(x, which){
@@ -91,7 +111,7 @@ glue_stop <- function(..., envir = caller_env()){
 }
 
 
-
+#' @keywords internal
 .set_up_progress_bar <- function(total,
                                  format = "Progress: [:bar] :percent eta: :eta",
                                  clear = FALSE,
@@ -108,6 +128,7 @@ glue_stop <- function(..., envir = caller_env()){
 }
 
 
+#' @keywords internal
 stopif <- function(cond) {
   if (isTRUE(cond)) {
     msg <- paste0(deparse(substitute(cond)), " is TRUE.")

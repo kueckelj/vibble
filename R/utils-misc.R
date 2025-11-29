@@ -3,7 +3,7 @@
 #' @description Produces a sequence of slice indices for use in \link{ggplane}()
 #' and the `seq_*` family of helper functions.
 #'
-#' @param cond Logical expression evaluated \link[rlang:args_data_masking]{tidyverse's data-masking}
+#' @param .cond Logical expression evaluated \link[rlang:args_data_masking]{tidyverse's data-masking}
 #' semantics on the \link{vibble2D}() representation (e.g., `expr = tumor`,
 #' `expr = raw_t1 > 0.5`). Determines which slices are selected.
 #' @param buffer Numeric. If `buffer > 0`, the slice range is expanded before
@@ -45,15 +45,20 @@
 #'
 #' @export
 
-seq_slices <- function(vbl, plane, cond, buffer = 0, ...){
+seq_slices <- function(vbl, plane, .cond = NULL, .by = NULL, buffer = 0, ...){
 
   vbl2D <- vibble2D(vbl, plane = plane)
 
-  seq_out <-
-    dplyr::filter(vbl2D, !!rlang::enquo(cond)) %>%
-    dplyr::pull(var = "slice") %>%
-    unique() %>%
-    sort()
+  .by_quo <- rlang::enquo(.by)
+  .cond_quo <- rlang::enquo(.cond)
+
+  if(!rlang::quo_is_null(.cond_quo)){
+
+    vbl2D <- dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by }})
+
+  }
+
+  seq_out <- slices(vbl2D)
 
   if(buffer > 0){
 

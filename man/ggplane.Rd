@@ -2,109 +2,95 @@
 % Please edit documentation in R/ggvibble.R
 \name{ggplane}
 \alias{ggplane}
-\title{Create a 2D ggplot representation of voxel data}
+\title{Build a 2D ggplot representation of voxel data}
 \usage{
 ggplane(
   vbl,
+  var,
   plane,
   slices,
-  var,
+  lim = NULL,
+  expand = 0.1,
   offset_dist = 0,
-  offset_dir = "left",
-  offset_num = TRUE,
+  offset_dir = "right",
+  flip = FALSE,
   clrp = vbl_opts("clrp"),
   clrsp = vbl_opts("clrsp"),
   interpolate = vbl_opts("interpolate"),
-  expand = vbl_opts("expand"),
-  lim = NULL,
-  ncol = NULL,
-  nrow = NULL,
-  animate = FALSE,
-  cond = NULL,
+  layout = NULL,
+  .cond = NULL,
   ...
 )
 }
 \arguments{
 \item{vbl}{A \link{vibble}.}
 
+\item{var}{Character scalar naming the variable to plot.}
+
 \item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
-\item{slices}{Numeric vector of slice positions in the selected \code{plane}.}
+\item{slices}{Optional. Integer vector of slice positions in the selected \code{plane}
+to keep. If \code{NULL}, all slices are retained.}
 
-\item{var}{Name of the numeric variable to visualize.}
+\item{lim}{Defines the 2D spatial limits of the resulting \code{vbl2D}. By default, the
+\link[=ccs_limits]{coordinate-space} limits of the input vibble are and mapped to
+col, row and slice depending on \code{plane}. User can adjust that by supplying:
 
-\item{offset_dist}{Distance by which voxels are shifted along \code{offset_dir} in the 2D plane.
-Values \verb{< 1} are interpreted as a proportion of the maximal coordinate,
-values \verb{>= 1} as an absolute distance in coordinate units.}
+\itemize{
+\item  a valid \link[=is_limit]{limit}: a numeric vector of length two which is recycled for col and row.
+\item a list with \code{col} and \code{row} elements, each being a \link[=is_limit]{limit} for the respective axis.
+}
 
-\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist > 0}.
-Valid options are \emph{c('left', 'right', 'top', 'bottom')}. A \emph{'-flip'} suffix as
-in \emph{'left-flip'} is also valid and flips the slice ordering.}
+When the supplied \link[=is_bb2D]{2D bounding-box} is smaller than the slice extents,
+only voxels inside this region are retained, giving \code{lim} a filtering effect.}
 
-\item{offset_num}{Should slice index numbers be displayed if \code{offset_dist > 0}.
+\item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits \strong{after}
+the interpretation and potential filtering of \code{lim}. This enlarges the slice-wise bounding box by adding a
+margin around its current range.}
 
-If \code{TRUE}, the slice numbers are visualized with default settings of \link{layer_slice_num}().
-Alternatively, a named list can be provided to specicy how \code{layer_slice_num()} should
-be called.}
+\item{offset_dist}{If not 0, shifts the slices in the 2D layout.
+Interpreted as:
+\itemize{
+\item \strong{absolute} when supplied as an integer (e.g. \code{2L}) or marked via \code{as_abs()}.
+\item \strong{relative} when supplied as a double (e.g. \code{0.1}) or marked via \code{as_rel()},
+in which case the shift is computed as a proportion of the full axis range.
+}}
 
-\item{clrsp}{Color spectrum for numeric fill. May be two colors, a palette
-name, or a viridis option.}
+\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist} is not 0.
+Valid options are \emph{c('left', 'right', 'top', 'bottom')}.}
 
-\item{lim}{Flexible input for the axis limits of the plot. \code{NULL}, named list of length 2
-or numeric vector length 2 to constrain both axes. See section \emph{Col and row limits}.}
+\item{flip}{Logical. If \code{TRUE}, the z-order of the slices is flipped. Only relevent for offset-layouts.}
 
-\item{ncol, nrow}{Numeric or NULL. If \code{offset = 0}, both arguments are passed to
-\link{facet_wrap()}.}
+\item{clrp}{Character scalar specifying the categorical palette.
+Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
 
-\item{animate}{Logical. If \code{TRUE}, construct a plot structure suitable for
-animation (no facetting across slices).}
+\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}()`.}
 
-\item{cond}{Optional logical filter expression that determines the specific
-voxels to be included in the plot - including all layers added to it. The expression
-is evaluated with \link[rlang:args_data_masking]{tidyverse's data-masking}
-semantics on the \link{vibble2D}() created. See \link[=ggvibble_doc_cond]{Details} for
-more information and examples.}
+\item{interpolate}{Logical scalar indicating whether to interpolate raster tiles.}
 
-\item{...}{Additional arguments forwarded to \link{scale_fill_numeric}().}
+\item{layout}{Optional numeric vector of length two specifying \code{c(ncol, nrow)} for \code{facet_wrap()}
+when multiple slices are shown and \code{offset_dist} ist 0.}
 
-\item{lim_col, lim_row}{Optional numeric vector length 2 for limits of the respective
-plotting axis. Overwrite \code{lim}.}
+\item{.cond}{Optional. An additional logical filter expression that determines the specific
+voxels plotted with \code{ggplane()} and passed to added \link[vbl_doc_vbl_layer]{layers}. \if{html}{\out{<br>}}
+
+The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.}
+
+\item{...}{Additional arguments forwarded to the scale functions controlling the fill aesthetic.}
 }
 \value{
-A \code{ggvibble} object, which prints as a ggplot and can accept
-additional layers via \code{+}.
+A \link{ggvibble} object.
 }
 \description{
-Build a 2D visualization of a 3D vibble by selecting slices in a
+Build a 2D visualization of vocel data by selecting slices in a
 specified anatomical plane and plotting a numeric variable as a raster image.
 }
 \details{
-See \link{ggvibble}.
-}
-\section{Col and row limits}{
+\code{ggplane()} converts \code{vbl} to a \code{vbl2D} object via \link{vibble2D}().
+It then stores plotting arguments and returns a \code{ggvibble} container. If multiple slices are present
+and the object is not offset, slices are arranged using \link{facet_wrap}() with the requested \code{layout}.
 
-Col and row limits are resolved in the following order. If \code{lim} is a numeric
-vector of length 2, the same limits are applied to both axes. If \code{lim}
-is a list, it must contain numeric elements \code{col} and \code{row}, which are
-used separately for col and row. If \code{lim} is \code{NULL}, any numeric \code{lim_col}
-and \code{lim_row} are used. Otherwise, limits default to the full range of
-\code{col} and \code{row}. The y-axis is internally reversed to match
-image-style coordinates.
-
-If \code{offset_dist > 0}, limits are computed automatically.
-}
-
-\examples{
-vbl <- example_vbl()
-
-ggplane(
-  vbl = vbl,
-  plane = "axi",
-  slices = 90,
-  var = "raw_t1"
-)
-
-}
-\seealso{
-\code{\link[=vibble2D]{vibble2D()}}
+Numeric variables are plotted with \link{scale_fill_numeric}() using \code{clrsp}. Non-numeric variables are
+plotted with \link{scale_fill_label}() using \code{clrp}. Note, that in \code{ggplane()}, logical mask variables
+are coerced to factors with levels \code{c("TRUE", "FALSE")} before plotting, for binary mask overlays see \link{layer_mask()}.
 }

@@ -97,93 +97,58 @@ vbl_layer <- function(fun){
 # ggplane constructor -----------------------------------------------------
 
 
-#' @title Create a 2D ggplot representation of voxel data
-#' @description Build a 2D visualization of a 3D vibble by selecting slices in a
+#' @title Build a 2D ggplot representation of voxel data
+#' @description Build a 2D visualization of vocel data by selecting slices in a
 #' specified anatomical plane and plotting a numeric variable as a raster image.
 #'
-#' @param slices Numeric vector of slice positions in the selected `plane`.
-#' @param var Name of the numeric variable to visualize.
-#' @param offset_num Should slice index numbers be displayed if `offset_dist > 0`.
+#' @param var Character scalar naming the variable to plot.
+#' @param layout Optional numeric vector of length two specifying `c(ncol, nrow)` for `facet_wrap()`
+#' when multiple slices are shown and `offset_dist` ist 0.
+#' @param flip Logical. If `TRUE`, the z-order of the slices is flipped. Only relevent for offset-layouts.
+#' @param .cond Optional. An additional logical filter expression that determines the specific
+#' voxels plotted with `ggplane()` and passed to added \link[vbl_doc_vbl_layer]{layers}. <br>
 #'
-#' If `TRUE`, the slice numbers are visualized with default settings of \link{layer_slice_num}().
-#' Alternatively, a named list can be provided to specicy how `layer_slice_num()` should
-#' be called.
+#' The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.
 #'
-#' @param clrsp Color spectrum for numeric fill. May be two colors, a palette
-#' name, or a viridis option.
-#' @param lim Flexible input for the axis limits of the plot. `NULL`, named list of length 2
-#' or numeric vector length 2 to constrain both axes. See section *Col and row limits*.
-#' @param lim_col,lim_row Optional numeric vector length 2 for limits of the respective
-#' plotting axis. Overwrite `lim`.
-#' @param animate Logical. If `TRUE`, construct a plot structure suitable for
-#' animation (no facetting across slices).
-#' @param ncol,nrow Numeric or NULL. If `offset = 0`, both arguments are passed to
-#' \link{facet_wrap()}.
-#' @param cond Optional logical filter expression that determines the specific
-#' voxels to be included in the plot - including all layers added to it. The expression
-#' is evaluated with \link[rlang:args_data_masking]{tidyverse's data-masking}
-#' semantics on the \link{vibble2D}() created. See \link[=ggvibble_doc_cond]{Details} for
-#' more information and examples.
-#'
-#' @param ... Additional arguments forwarded to \link{scale_fill_numeric}().
-#'
-#' @inheritParams vbl_doc_var_numeric
+#' @param ... Additional arguments forwarded to the scale functions controlling the fill aesthetic.
+#' @inheritParams vibble2D
 #' @inheritParams vbl_doc
 #'
-#' @return A `ggvibble` object, which prints as a ggplot and can accept
-#' additional layers via `+`.
+#' @return A \link{ggvibble} object.
 #'
-#' @details See \link{ggvibble}.
+#' @details
+#' `ggplane()` converts `vbl` to a `vbl2D` object via \link{vibble2D}().
+#' It then stores plotting arguments and returns a `ggvibble` container. If multiple slices are present
+#' and the object is not offset, slices are arranged using \link{facet_wrap}() with the requested `layout`.
 #'
-#' @section Col and row limits:
-#' Col and row limits are resolved in the following order. If `lim` is a numeric
-#' vector of length 2, the same limits are applied to both axes. If `lim`
-#' is a list, it must contain numeric elements `col` and `row`, which are
-#' used separately for col and row. If `lim` is `NULL`, any numeric `lim_col`
-#' and `lim_row` are used. Otherwise, limits default to the full range of
-#' `col` and `row`. The y-axis is internally reversed to match
-#' image-style coordinates.
-#'
-#' If `offset_dist > 0`, limits are computed automatically.
-#'
-#' @seealso [vibble2D()]
-#'
-#' @examples
-#' vbl <- example_vbl()
-#'
-#' ggplane(
-#'   vbl = vbl,
-#'   plane = "axi",
-#'   slices = 90,
-#'   var = "raw_t1"
-#' )
-#'
-#' @export
+#' Numeric variables are plotted with \link{scale_fill_numeric}() using `clrsp`. Non-numeric variables are
+#' plotted with \link{scale_fill_label}() using `clrp`. Note, that in `ggplane()`, logical mask variables
+#' are coerced to factors with levels `c("TRUE", "FALSE")` before plotting, for binary mask overlays see \link{layer_mask()}.
+
 ggplane <- function(vbl,
+                    var,
                     plane,
                     slices,
-                    var,
+                    lim = NULL,
+                    expand = 0.1,
                     offset_dist = 0,
-                    offset_dir = "left",
-                    offset_num = TRUE,
+                    offset_dir = "right",
+                    flip = FALSE,
                     clrp = vbl_opts("clrp"),
                     clrsp = vbl_opts("clrsp"),
                     interpolate = vbl_opts("interpolate"),
-                    expand = vbl_opts("expand"),
-                    lim = NULL,
-                    ncol = NULL,
-                    nrow = NULL,
-                    animate = FALSE,
-                    cond = NULL,
+                    layout = NULL,
+                    .cond = NULL,
                     ...){
+
+  stopifnot(is_vbl(vbl))
 
   .vbl_confirm(
     expr = length(slices) > 50,
     msg = "You are trying to plot >50 slices at once."
     )
 
-  cond_quo <- rlang::enquo(cond)
-
+  # construct vbl2D
   vbl2D <- vibble2D(
     vbl = vbl,
     plane = plane,
@@ -191,8 +156,23 @@ ggplane <- function(vbl,
     lim = lim,
     offset_dist = offset_dist,
     offset_dir = offset_dir,
-    cond = cond_quo
+    expand = expand
   )
+
+  .cond_quo <- rlang::enquo(.cond)
+
+  vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, layer = "ggplane()")
+
+  # manage z-stack
+  if(is_offset(vbl2D) && isTRUE(flip)){
+
+    vbl2D <- dplyr::arrange(vbl2D, dplyr::desc(slice))
+
+  } else {
+
+    vbl2D <- dplyr::arrange(vbl2D, slice)
+
+  }
 
   structure(
     list(
@@ -201,14 +181,10 @@ ggplane <- function(vbl,
       slices = slices,
       base_args = list(
         var = var,
+        clrp = clrp,
         clrsp = clrsp,
-        offset_num = offset_num,
         interpolate = interpolate,
-        expand = expand,
-        lim = lim,
-        ncol = ncol,
-        nrow = nrow,
-        animate = animate,
+        layout = layout,
         ...
       ),
       layers = list()
@@ -218,52 +194,27 @@ ggplane <- function(vbl,
 
 }
 
-#' @importFrom purrr map_lgl
 #' @export
 .ggplane_impl <- function(vbl2D,
                           var,
                           clrp = vbl_opts("clrp"),
                           clrsp = vbl_opts("clrsp"),
                           interpolate = vbl_opts("interpolate"),
-                          expand = vbl_opts("expand"),
-                          offset_num = TRUE,
-                          lim = NULL,
-                          ncol = NULL,
-                          nrow = NULL,
-                          animate = FALSE,
+                          layout = NULL,
                           ...){
 
   stopifnot(is.numeric(vbl2D[[var]]))
 
   # handle multiple slices
-  if(dplyr::n_distinct(vbl2D$slice) > 1 & !is_offset(vbl2D) & !isTRUE(animate)){
+  if(dplyr::n_distinct(vbl2D$slice) > 1 & !is_offset(vbl2D)){
 
-    layer_facet <- ggplot2::facet_wrap(facets = . ~ slice, ncol = ncol, nrow = nrow)
+    layer_facet <- ggplot2::facet_wrap(facets = . ~ slice, ncol = layout[1], nrow = layout[2])
 
   } else {
 
     layer_facet <- NULL
 
   }
-
-  # layer slice numbers
-  if(is_offset(vbl2D) && isTRUE(offset_num)){
-
-    layer_slice_numbers <- .layer_slice_number_impl(vbl2D)
-
-  } else if(is_offset(vbl2D) && is.list(offset_num)){
-
-    # offset_num is a list of arguments for .layer_slice_number_impl()
-    # e.g. offset_num = list(vbl2D = vbl2D, fontsize = 12, col = "red")
-    offset_num[["vbl2D"]] <- vbl2D
-    layer_slice_numbers <- do.call(.layer_slice_number_impl, offset_num)
-
-  } else {
-
-    layer_slice_numbers <- list()
-
-  }
-
 
   # layer colors
   if(is_numeric_var(vbl2D[[var]])){
@@ -286,9 +237,14 @@ ggplane <- function(vbl,
   ggplot2::ggplot(data = vbl2D) +
     ggplot2::geom_raster(mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]), interpolate = interpolate) +
     layer_colors +
-    layer_slice_numbers +
+    layer_facet +
     ggplot2::scale_y_reverse() +
-    ggplot2::coord_equal(ratio = ratio2D(vbl2D), xlim = NULL, ylim = NULL, expand = expand) +
+    ggplot2::coord_equal(
+      ratio = .ratio2D(vbl2D),
+      xlim = lim_plot(vbl2D)$col,
+      ylim = rev(lim_plot(vbl2D)$row),
+      expand = FALSE
+      ) +
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.background = ggplot2::element_rect(fill = "black"),
@@ -302,8 +258,8 @@ ggplane <- function(vbl,
       plot.title = ggplot2::element_text(color = "white"),
       strip.background = ggplot2::element_rect(fill = "black", color = "black"),
       strip.text = ggplot2::element_text(color = "white")
-    ) +
-    layer_facet
+    )
+
 
 }
 
