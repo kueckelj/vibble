@@ -208,7 +208,14 @@ req_axes_3D <- function(plane){
 #' @export
 req_axes_2d <- function(...){
 
-  warning("req_axes_2d is deprecated in favor of req_axes_3D()")
+  caller_call <- rlang::caller_call()
+  caller_name <- rlang::call_name(caller_call)
+
+  warning(
+    "req_axes_2d() is deprecated in favor of req_axes_2D(). ",
+    "Called from `", caller_name, "()`.",
+    call. = FALSE
+  )
 
   req_axes_2D(...)
 

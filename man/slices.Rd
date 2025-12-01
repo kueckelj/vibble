@@ -2,15 +2,21 @@
 % Please edit documentation in R/utils-vibble2D.R
 \name{slices}
 \alias{slices}
-\alias{slice_bb}
+\alias{slice_limits}
+\alias{slice_range}
+\alias{slice_offset_indices}
 \alias{slice_offset_index}
-\title{Slices utilities for 2D vibbles}
+\title{Slice utilities for 2D vibbles}
 \usage{
 slices(vbl2D)
 
-slice_bb(vbl2D, slice)
+slice_limits(vbl2D, slice)
 
-slice_offset_index(vbl2D)
+slice_range(vbl2D)
+
+slice_offset_indices(vbl2D)
+
+slice_offset_index(vbl2D, slice)
 }
 \arguments{
 \item{vbl2D}{A \link{vibble2D}.}
@@ -19,25 +25,14 @@ slice_offset_index(vbl2D)
 }
 \value{
 \itemize{
-\item \code{slices()}: An integer vector of slice values in the order they
-appear in the \code{vbl2D} object.
-\item \code{slice_bb()}: The \link[=is_bb2D]{2D bounding-box} of the slice.
-\item \code{slice_offset_index()}: An integer vector of the same length as
-\code{slices(vbl2D)} starting at 0, where the first slice gets index 0 and
-subsequent slices get increasing indices used as offset multipliers.
+\item \code{slices()}: Unique slice values.
+\item \code{slice_limits()}: 2D bounding box (col/row ranges) of one slice.
+\item \code{slice_range()}: Minimum and maximum slice values.
+\item \code{slice_offset_indices()}: Zero-based offset index for each slice.
+\item \code{slice_offset_index()}: Zero-based offset index of a specific slice.
 }
 }
 \description{
-Provides helpers to access slice values of a \code{vbl2D} object and to derive
-zero-based offset indices used for staggered slice visualizations.
-}
-\details{
-\code{slices()} returns the distinct slice values stored in a \code{vbl2D} object.
-These values correspond to the original slice axis extracted in
-\code{vibble2D()} and identify which slices are present in 2D space.
-
-\code{slice_offset_index()} does not represent slice numbers.
-Instead, it provides zero-based indices that encode the relative position
-of each slice for offset computation when \code{offset_dist} and \code{offset_dir}
-are applied during visualization.
+Helpers to query slice values and derive slice-wise spatial or layout
+indices in a \code{vbl2D} object.
 }

@@ -5,13 +5,14 @@
 \title{Add slice-number labels}
 \usage{
 layer_slice_number(
-  anchor = NULL,
+  anchor,
+  to = "avg",
+  align = NULL,
   wrap = NULL,
   angle = 0,
   alpha = 0.8,
   color = "white",
   size = 3.5,
-  align = TRUE,
   ...
 )
 }
@@ -28,14 +29,14 @@ Defaults are \code{"top"} for left–right offsets and \code{"left"} for top–b
 Supports named anchors (e.g. \code{"top-left"}) and numeric anchors.}
 }}
 
+\item{align}{Logical. If \code{TRUE}, ensures slice numbers align across slices when offsets are applied.}
+
 \item{wrap}{Optional. Character template for constructing labels. Uses glue syntax, e.g. \code{"{slice}"}.}
 
 \item{angle}{Rotation angle of the text.}
 
 \item{alpha, color, size}{Passed to the respective standard parameters
 of \link{geom_text}() to control opacity, color and size of the drawn labels.}
-
-\item{align}{Logical. If \code{TRUE}, ensures slice numbers align across slices when offsets are applied.}
 
 \item{...}{Additional arguments passed to \code{ggplot2::geom_text()}.}
 }

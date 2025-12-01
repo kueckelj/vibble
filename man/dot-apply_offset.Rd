@@ -4,21 +4,10 @@
 \alias{.apply_offset}
 \title{Apply slice-wise offsets to a 2D vibble}
 \usage{
-.apply_offset(vbl2D, offset_dir, offset_dist)
+.apply_offset(vbl2D, offset_col, offset_row)
 }
 \arguments{
 \item{vbl2D}{A \link{vibble2D}.}
-
-\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist} is not 0.
-Valid options are \emph{c('left', 'right', 'top', 'bottom')}.}
-
-\item{offset_dist}{If not 0, shifts the slices in the 2D layout.
-Interpreted as:
-\itemize{
-\item \strong{absolute} when supplied as an integer (e.g. \code{2L}) or marked via \code{as_abs()}.
-\item \strong{relative} when supplied as a double (e.g. \code{0.1}) or marked via \code{as_rel()},
-in which case the shift is computed as a proportion of the full axis range.
-}}
 }
 \value{
 The input \code{vbl2D} tibble with updated \code{col} and \code{row} coordinates that include the slice-wise offsets.

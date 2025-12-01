@@ -6,7 +6,7 @@
 \alias{clrp_opts_vec}
 \alias{color_palettes}
 \alias{color_vector}
-\title{Utilities for mapping colors to label variables}
+\title{Utilities for mapping colors to categorical variables}
 \usage{
 clrp_opts()
 
@@ -38,7 +38,7 @@ supplied.}
 }
 }
 \description{
-Helpers for managing categorical color palettes used for label variables.
+Helpers for managing categorical color palettes used for categorical variables.
 They provide:
 \itemize{
 \item grouped access to predefined palettes (\code{color_palettes()}),

@@ -5,17 +5,18 @@
 \title{Read multiple NIfTI files into a merged vibble.}
 \usage{
 niftis_to_vbl(
-  input,
+  x,
   rgx_fp = ".*",
   rgx_var = ".*",
   recursive = FALSE,
   join = "full",
+  .rfn = NULL,
   rm0 = FALSE,
-  verbose = TRUE
+  verbose = vbl_opts("verbose")
 )
 }
 \arguments{
-\item{input}{Character. Either a directory containing NIfTI files or a character vector
+\item{x}{Character. Either a folder directory containing NIfTI files or a character vector
 of file paths.}
 
 \item{rgx_fp}{Character scalar. Regular expression applied to file paths to retain only
@@ -24,15 +25,7 @@ matching NIfTI files.}
 \item{rgx_var}{Character scalar. Regular expression used to extract variable names from
 the basename (without extension) of each NIfTI file.}
 
-\item{recursive}{Logical. If \code{TRUE} and \code{input} is a directory it is searched recursively for NIfTI files.}
-
-\item{join}{Join method passed to \link{join_vibbles()}. One of
-\code{"full"}, \code{"inner"}, \code{"left"}, or \code{"right"}.}
-
-\item{rm0}{Logical. Forwarded to \link{nifti_to_vbl()}. If \code{TRUE}, zero-valued
-voxels are removed from each individual vibble.}
-
-\item{verbose}{Logical. If \code{TRUE}, print messages about file discovery and reading.}
+\item{recursive}{Logical. If \code{TRUE} and \code{x} is a directory it is searched recursively for NIfTI files.}
 }
 \value{
 A merged \link{vibble} containing one voxel variable per input file.

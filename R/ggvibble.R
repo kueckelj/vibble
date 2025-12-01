@@ -131,8 +131,8 @@ ggplane <- function(vbl,
                     slices,
                     lim = NULL,
                     expand = 0.1,
-                    offset_dist = 0,
-                    offset_dir = "right",
+                    offset_col = 0,
+                    offset_row = 0,
                     flip = FALSE,
                     clrp = vbl_opts("clrp"),
                     clrsp = vbl_opts("clrsp"),
@@ -154,8 +154,8 @@ ggplane <- function(vbl,
     plane = plane,
     slices = slices,
     lim = lim,
-    offset_dist = offset_dist,
-    offset_dir = offset_dir,
+    offset_col = offset_col,
+    offset_row = offset_row,
     expand = expand
   )
 
@@ -173,7 +173,7 @@ ggplane <- function(vbl,
     vbl2D <- dplyr::arrange(vbl2D, slice)
 
   }
-
+assign("vbl2D", vbl2D, envir = .GlobalEnv)
   structure(
     list(
       vbl2D = vbl2D,
@@ -233,18 +233,16 @@ ggplane <- function(vbl,
 
   }
 
+  col_lim <- plot_limits(vbl2D)$col
+  row_lim <- plot_limits(vbl2D)$row
+
   # construct plot
   ggplot2::ggplot(data = vbl2D) +
     ggplot2::geom_raster(mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]), interpolate = interpolate) +
     layer_colors +
     layer_facet +
     ggplot2::scale_y_reverse() +
-    ggplot2::coord_equal(
-      ratio = .ratio2D(vbl2D),
-      xlim = lim_plot(vbl2D)$col,
-      ylim = rev(lim_plot(vbl2D)$row),
-      expand = FALSE
-      ) +
+    ggplot2::coord_equal(ratio = .ratio2D(vbl2D), xlim = col_lim, ylim = rev(row_lim), expand = vbl_opts("ggplot.expand")) +
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.background = ggplot2::element_rect(fill = "black"),

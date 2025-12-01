@@ -1,6 +1,6 @@
-#' @title Utilities for mapping colors to label variables
+#' @title Utilities for mapping colors to categorical variables
 #' @description
-#' Helpers for managing categorical color palettes used for label variables.
+#' Helpers for managing categorical color palettes used for categorical variables.
 #' They provide:
 #' \itemize{
 #'   \item grouped access to predefined palettes (`color_palettes()`),
@@ -102,7 +102,10 @@ clrp_opts <- function(){
 
   c(
     purrr::map(.x = color_palettes(), .f = names),
-    list("viridis" = color_opts_viridis())
+    list(
+      "viridis" = color_opts_viridis(),
+      RColorBrewer = c("Accent", "Dark2", "Greys", "Paired", "Pastel1", "Pastel2", "Set1", "Set2", "Set3")
+    )
   )
 
 }
@@ -158,7 +161,7 @@ color_palettes <- function(){
 #' @export
 color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
-  stopifnot(clrp %in% clrp_opts_vec())
+  stopifnot(clrp %in% c("default", clrp_opts_vec()))
 
   if(is.character(names)){
 
@@ -166,7 +169,7 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
   } else if(is.na(nc) | !is.numeric(nc)){
 
-    if(clrp %in% c("default", viridis_options)){
+    if(clrp %in% c("default", color_opts_viridis)){
 
       stop("If `clrp` among 'default' or viridis options, please specify either `names` or `nc`.")
 
@@ -182,17 +185,17 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
     clr_vector <- scales::hue_pal()(nc)
 
-  } else if(clrp %in% viridis_options){
+  } else if(clrp %in% clrp_opts()$viridis){
 
     clr_vector <- viridis::viridis(n = nc, option = clrp)
 
-  } else if(clrp %in% RColorBrewer_options){
+  } else if(clrp %in% clrp_opts()$RColorBrewer){
 
     clr_vector <- RColorBrewer::brewer.pal(n = nc, name = clrp)
 
-  } else {
+  } else { # either matplotlib or ggsci
 
-    clr_vector <- clrp_opts()[[clrp]]
+    clr_vector <- purrr::flatten(color_palettes())[[clrp]]
 
   }
 
@@ -373,7 +376,7 @@ color_opts_viridis <- function(){
 
 
 
-#' @title This is a title.
+#' @title Categorical fill scale for ggvibble plots
 #' @description This function centralizes categorical color handling in vibbles plotting
 #' \link[vbl_doc_ggvibble]{framework} and creates a discrete fill scale from a flexible
 #' \link[=vbl_doc_colors_categorical]{color specification}.
@@ -394,7 +397,7 @@ color_opts_viridis <- function(){
 scale_fill_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
 
   values <- color_vector(clrp = clrp, names = names, clrp_adjust = clrp_adjust)
-
+print(values)
   ggplot2::scale_fill_manual(values = values, ...)
 
 }

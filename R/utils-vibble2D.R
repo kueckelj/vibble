@@ -1,272 +1,216 @@
 
 
 
-#' @title Expand limits of a 2D vibble
-#' @description Expand the 2D spatial limits (`lim`) of a `vbl2D` object according to an absolute or relative
-#' expand specification. Supports logical, absolute, and relative \link[=vbl_doc_expand]{expand rules}.
+#' @title Expand limits of a 2D bounding box
+#' @description
+#' Expand a 2D bounding box (\code{bb2D}) according to an absolute, relative,
+#' or logical \link[=vbl_doc_expand]{expand rule}. This operation adjusts the
+#' lower and upper limits of both \code{col} and \code{row} while preserving the
+#' structure of the bounding box.
 #'
-#' @param expand An \link[=is_expand]{expand} value used to expand the limits of the output 2D vibble.
+#' @param expand An \link[=is_expand]{expand} specification that determines how
+#' the bounding box is expanded (absolute, relative, or logical).
 #' @inheritParams vbl_doc
 #'
 #' @return
-#' A modified `vbl2D` with updated `lim` values for `col` and `row`.
+#' A modified \code{bb2D} object with updated limits for \code{col} and \code{row}.
 #'
 #' @examples
 #' vbl2D <- vibble2D(example_vbl(), plane = "axi", slices = 60)
+#' bb <- slice_bbox(vbl2D, slice = 60)
 #'
-#' # Absolute expansion: add 2 units to each side
-#' expand_lim2D(vbl2D, 2L)
+#' # Absolute expansion: add 2 units on each side
+#' expand_bb2D(bb, 2L)
 #'
-#' # Relative expansion: add 10% of the range
-#' expand_lim2D(vbl2D, 0.1)
+#' # Relative expansion: expand by 10% of the current range
+#' expand_bb2D(bb, 0.1)
 #'
 #' @export
-expand_lim2D <- function(vbl2D, expand){
+expand_bb2D <- function(bb2D, expand){
 
   stopifnot(is_expand(expand))
-
-  lim2D <- lim(vbl2D)
+  stopifnot(is_bb2D(bb2D))
 
   if(is_expand_abs(expand)){
 
-    lim2D <- purrr::map2(.x = lim2D, .y = expand, .f = .apply_expand_abs)
+    bb2D <- purrr::map2(.x = bb2D, .y = expand, .f = .apply_expand_abs)
 
   } else if(is_expand_rel(expand)){
 
-    lim2D <- purrr::map2(.x = lim2D, .y = expand, .f = .apply_expand_rel)
+    bb2D <- purrr::map2(.x = bb2D, .y = expand, .f = .apply_expand_rel)
 
   } else if(is_expand_lgl(expand)){
 
-    lim2D <- purrr::map2(.x = lim2D, .y = expand, .f = .apply_expand_lgl)
+    bb2D <- purrr::map2(.x = bb2D, .y = expand, .f = .apply_expand_lgl)
 
   }
 
-  lim(vbl2D) <- lim2D
-
-  return(vbl2D)
-
+  return(bb2D)
 }
 
 
-#' @title Offset computation helpers
-#' @description
-#' Internal helpers that apply slice-wise positional offsets to 2D coordinates.
-#' Offsets are computed using the slice index `idx`, which encodes the relative order of slices
-#' (see \link{slice_offset_index}()).
-#'
-#' @param col,row Numeric vectors of `col` or `row` positions.
-#' @param idx Integer slice-offset index used to scale the shift for each slice.
-#' @param dir Direction string indicating which axis is offset.
-#' @param dist Absolute offset distance applied per index step.
-#'
-#' @return Updated coordinate vectors.
 #' @keywords internal
-#' @name vbl_doc_comp_offset
-NULL
+.comp_offset_col <- function(x, idx, offset){
 
-#' @rdname vbl_doc_comp_offset
-.comp_offset_col <- function(col, idx, dir, dist){
-
-  if(grepl("left|right", dir)){
-
-    fct <- ifelse(grepl("left", dir), -1, 1)
-    dist <- dist * fct * idx
-    col <- col + dist
-
-  }
-
-  return(col)
+  # offset positive -> move to right
+  x + idx * offset
 
 }
 
-#' @rdname vbl_doc_comp_offset
-.comp_offset_row <- function(row, idx, dir, dist){
+#' @keywords internal
+.comp_offset_row <- function(x, idx, offset){
 
-  if(grepl("top|bottom", dir)){
-
-    fct <- ifelse(grepl("top", dir), -1, 1)
-    dist <- dist * fct * idx
-    row <- row + dist
-
-  }
-
-  return(row)
+  # offset positive -> move to top (image inverted y axis)
+  x - idx * offset
 
 }
-
-
 
 #' @title Limits utilities for 2D vibbles
+#' @name vbl2D_limits
 #' @description
-#' Accesses and manipulates 2D limits for `vbl2D` objects. These limits define
-#' the bounding box of the space in `col`/`row` coordinates used for plotting.
-#'
-#' @param value For `lim<-()`, a 2D bounding box object as validated by
-#'   \code{is_bb2D()}. Typically a list with components `col` and `row`.
-#' @param slice Integer scalar. For \code{lim_slice()}, the slice index for
-#'   which the 2D limits should be returned.
+#' Helpers to get and set 2D screen limits of a \code{vbl2D} object and to derive
+#' overall plot limits across all slices.
 #'
 #' @inheritParams vbl_doc
+#' @param slice Integer slice value. If \code{NULL}, the first slice in
+#'   \code{slices(vbl2D)} is used.
+#' @param value A \link[=is_bb2D]{bb2D} object giving \code{col} and \code{row}
+#'   limits for the reference slice (slice 0).
 #'
 #' @return
 #' \itemize{
-#'   \item \code{lim()}: The stored 2D limits of a `vbl2D` object.
-#'   \item \code{lim<-()}: The modified `vbl2D` object with updated limits.
-#'   \item \code{lim_plot()}: A 2D limits object adapted for plotting, taking
-#'     offsets into account across all slices.
-#'   \item \code{lim_slice()}: A 2D limits object for a single slice, adapted
-#'     for the slice-specific offset position.
-#' }
+#'   \item \code{screen_limits()}: A \link[=is_bb2D]{bb2D} object (list with
+#'   elements \code{col} and \code{row}) giving the screen-space limits for the
+#'   requested slice, after applying slice offsets.
 #'
-#' @details
-#' The \code{lim()} accessor and its replacement form operate on the 2D limits
-#' stored in the `lim` attribute of a `vbl2D` object. These limits describe the
-#' visible extent in `col`/`row` coordinates and may be changed to crop or
-#' expand the displayed region in 2D.
+#'   \item \code{screen_limits<-}: The modified \code{vbl2D} with updated
+#'   \code{screen_limits} attribute.
 #'
-#' The 3D coordinate system limits (`ccs_limits`) of the original 3D vibble are not
-#' affected by these functions and remain the primary identifiers of space and voxels for
-#' merging and alignment purposes!
-#'
-#' \subsection{Offset handling}{
-#' \itemize{
-#'   \item \code{lim_plot()} returns limits adjusted for the cumulative offset
-#'   applied when slices are staggered using `offset_dist` and `offset_dir`.
-#'   This is typically used internally when computing plotting ranges.
-#'   \item \code{lim_slice()} returns limits for a single slice. If the
-#'   `vbl2D` object is offset, the limits are shifted according to the slice
-#'   index so that they match the displayed position of that slice.
-#' }
+#'   \item \code{plot_limits()}: A named list with elements \code{col} and
+#'   \code{row} giving the global screen-space limits required to display all
+#'   slices in the current offset layout.
 #' }
 #'
 #' @export
-lim <- function(vbl2D){
+screen_limits <- function(vbl2D, slice = NULL){
 
   stopifnot(is_vbl2D(vbl2D))
 
-  lim2D <- .vbl_attr(vbl2D, which = "lim")
+  slim <- .vbl_attr(vbl2D, which = "screen_limits")
 
-  return(lim2D)
+  if(is_offset(vbl2D)){
+
+    if(is.null(slice)){ slice <- slices(vbl2D)[1] }
+
+    sidx <- slice_offset_index(vbl2D, slice = slice)
+
+    slim <-
+      purrr::imap(
+        .x = slim,
+        .f = function(lim, axis){
+
+          if(axis == "col"){
+
+            lim + offset_both(vbl2D)[[axis]] * sidx
+
+          } else if(axis == "row"){
+
+            lim - offset_both(vbl2D)[[axis]] * sidx
+
+          }
+
+        }
+      )
+
+  }
+
+  return(slim)
 
 }
 
-#' @rdname lim
+#' @rdname vbl2D_limits
 #' @export
-`lim<-` <- function(vbl2D, value){
+`screen_limits<-` <- function(vbl2D, value){
 
   stopifnot(is_vbl2D(vbl2D))
   stopifnot(is_bb2D(value))
 
-  attr(vbl2D, which = "lim") <- value
+  attr(vbl2D, which = "screen_limits") <- value
 
   return(vbl2D)
 
 }
 
-#' @rdname lim
+#' @rdname vbl2D_limits
 #' @export
-lim_plot <- function(vbl2D){
+plot_limits <- function(vbl2D){
 
   stopifnot(is_vbl2D(vbl2D))
 
-  lim2D <- lim(vbl2D)
+  lims <-
+    purrr::map(
+      .x = slice_range(vbl2D),
+      .f = ~ screen_limits(vbl2D, .x)
+    )
 
-  if(is_offset(vbl2D)){
-
-    axis <- .offset_axis(vbl2D)
-    dir <- offset_dir(vbl2D)
-    dist <- offset_dist(vbl2D)
-    n <- max(slice_offset_index(vbl2D))
-
-    idx <- ifelse(grepl("right|bottom", dir), 2, 1)
-
-    lim2D[[axis]][idx] <- .offset_comp_fn(dir)(lim2D[[axis]], value = dist*n)[idx]
-
-  }
-
-  return(lim2D)
+  list(
+    col = range(purrr::list_c(purrr::map(lims, "col"))),
+    row = range(purrr::list_c(purrr::map(lims, "row")))
+  )
 
 }
 
-#' @rdname lim
-#' @export
-lim_slice <- function(vbl2D, slice){
 
-  stopifnot(is_vbl2D(vbl2D))
-  stopifnot(slice %in% slices(vbl2D))
 
-  lim2D <- lim(vbl2D)
-  idx <- which(slices(vbl2D) == slice)-1
-
-  if(is_offset(vbl2D) && idx != 0){
-
-    axis <- .offset_axis(vbl2D)
-    dir <- offset_dir(vbl2D)
-    dist <- offset_dist(vbl2D)
-
-    lim2D[[axis]] <- .offset_comp_fn(dir)(lim2D[[axis]], value = dist*idx)
-
-  }
-
-  return(lim2D)
-
-}
-
-#' @title Slices utilities for 2D vibbles
+#' @title Slice utilities for 2D vibbles
 #' @description
-#' Provides helpers to access slice values of a `vbl2D` object and to derive
-#' zero-based offset indices used for staggered slice visualizations.
+#' Helpers to query slice values and derive slice-wise spatial or layout
+#' indices in a \code{vbl2D} object.
 #'
 #' @inheritParams vbl_doc
 #'
 #' @return
 #' \itemize{
-#'   \item `slices()`: An integer vector of slice values in the order they
-#'   appear in the `vbl2D` object.
-#'   \item `slice_bb()`: The \link[=is_bb2D]{2D bounding-box} of the slice.
-#'   \item `slice_offset_index()`: An integer vector of the same length as
-#'   `slices(vbl2D)` starting at 0, where the first slice gets index 0 and
-#'   subsequent slices get increasing indices used as offset multipliers.
+#'   \item \code{slices()}: Unique slice values.
+#'   \item \code{slice_limits()}: 2D bounding box (col/row ranges) of one slice.
+#'   \item \code{slice_range()}: Minimum and maximum slice values.
+#'   \item \code{slice_offset_indices()}: Zero-based offset index for each slice.
+#'   \item \code{slice_offset_index()}: Zero-based offset index of a specific slice.
 #' }
-#'
-#' @details
-#' `slices()` returns the distinct slice values stored in a `vbl2D` object.
-#' These values correspond to the original slice axis extracted in
-#' `vibble2D()` and identify which slices are present in 2D space.
-#'
-#' `slice_offset_index()` does not represent slice numbers.
-#' Instead, it provides zero-based indices that encode the relative position
-#' of each slice for offset computation when `offset_dist` and `offset_dir`
-#' are applied during visualization.
 #'
 #' @export
 slices <- function(vbl2D){
-
   unique(vbl2D$slice)
-
 }
 
 #' @rdname slices
 #' @export
-slice_bb <- function(vbl2D, slice){
-
+slice_limits <- function(vbl2D, slice){
   stopifnot(is_vbl2D(vbl2D))
   stopifnot(slice %in% slices(vbl2D))
-
-  purrr::map(
-    .x = vbl2D[vbl2D$slice == slice, c("col", "row")],
-    .f = range
-  )
-
+  purrr::map(vbl2D[vbl2D$slice == slice, c("col", "row")], range)
 }
 
 #' @rdname slices
 #' @export
-slice_offset_index <- function(vbl2D){
-
-  seq_along(slices(vbl2D)) - 1
-
+slice_range <- function(vbl2D){
+  range(slices(vbl2D))
 }
+
+#' @rdname slices
+#' @export
+slice_offset_indices <- function(vbl2D){
+  seq_along(slices(vbl2D)) - 1
+}
+
+#' @rdname slices
+#' @export
+slice_offset_index <- function(vbl2D, slice){
+  stopifnot(slice %in% slices(vbl2D))
+  which(slice == slices(vbl2D)) - 1
+}
+
+
 
 
 #' @title vbl2D attributes
@@ -320,61 +264,57 @@ NULL
 
 #' @rdname vbl2D_attr
 #' @export
-offset_attr <- function(vbl2D, which){
+offset_both <- function(vbl2D){
 
-  which <- match.arg(which, choices = c("dir", "dist"))
+  stopifnot(is_vbl2D(vbl2D))
 
-  .vbl_attr(vbl2D, which = paste0("offset_", which))
-
-}
-
-#' @rdname vbl2D_attr
-#' @export
-offset_dir <- function(vbl2D){
-
-  if(!is_offset(vbl2D)){
-
-    warning("Input vbl2D is not offset.")
-
-  }
-
-  offset_attr(vbl2D, which = "dir")
+  list(
+    col = offset_col(vbl2D),
+    row = offset_row(vbl2D)
+  )
 
 }
 
 #' @rdname vbl2D_attr
 #' @export
-`offset_dir<-` <- function(vbl2D, value){
+offset_col <- function(vbl2D){
 
-  attr(vbl2D, which = "offset_dir") <- value
-
-  vbl2D
+  .vbl_attr(vbl2D, which = "offset_col")
 
 }
 
 #' @rdname vbl2D_attr
 #' @export
-offset_dist <- function(vbl2D){
+`offset_col<-` <- function(vbl2D, value){
 
-  if(!is_offset(vbl2D)){
+  stopifnot(is.integer(value))
 
-    warning("Input vbl2D is not offset.")
+  attr(vbl2D, which = "offset_col") <- value
 
-  }
-
-  offset_attr(vbl2D, which = "dist")
+  return(vbl2D)
 
 }
 
 #' @rdname vbl2D_attr
 #' @export
-`offset_dist<-` <- function(vbl2D, value){
+offset_row <- function(vbl2D){
 
-  attr(vbl2D, which = "offset_dist") <- value
-
-  vbl2D
+  .vbl_attr(vbl2D, which = "offset_row")
 
 }
+
+#' @rdname vbl2D_attr
+#' @export
+`offset_row<-` <- function(vbl2D, value){
+
+  stopifnot(is.integer(value))
+
+  attr(vbl2D, which = "offset_row") <- value
+
+  return(vbl2D)
+
+}
+
 
 #' @rdname vbl2D_attr
 #' @export

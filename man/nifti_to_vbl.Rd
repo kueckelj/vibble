@@ -5,28 +5,27 @@
 \title{Convert a NIfTI image into a vibble.}
 \usage{
 nifti_to_vbl(
-  nifti,
+  x,
   var = "value",
   lut = NULL,
   ordered = FALSE,
   add_id = FALSE,
   rm0 = TRUE,
-  verbose = TRUE,
+  verbose = vbl_opts("verbose"),
   ...
 )
 }
 \arguments{
-\item{nifti}{A NIfTI object or a character path to a \code{.nii} or \code{.nii.gz} file.}
+\item{x}{A NIfTI object or a character path to a \code{.nii} or \code{.nii.gz} file.}
 
-\item{var}{Character. Name of the voxel-wise variable to extract and store as the main
-variable in the vibble.}
+\item{var}{Character. The column name with which the data extracted from the nifti is stored
+in vibble data.frame.}
 
 \item{lut}{Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 and character labels.}
 
-\item{ordered}{Logical or \code{NULL}. If a lookup table is provided, controls whether the
-resulting labeled factor is ordered. If \code{NULL}, ordering defaults to
-\code{FALSE}.}
+\item{ordered}{Logical. If a lookup table is provided, controls whether the
+resulting labeled factor is ordered. Defaults to \code{FALSE}.}
 
 \item{add_id}{Logical. If \code{TRUE}, add a unique voxel ID column.}
 
@@ -37,15 +36,11 @@ vibble. Replaces the deprecated argument \code{black_rm}.}
 \code{black_rm}.}
 }
 \value{
-A \link{vibble} containing voxel coordinates, the extracted voxel variable,
-and metadata attributes describing orientation, coordinate limits, lookup
-table usage, and per-variable summaries.
+A \link{vibble}.
 }
 \description{
 Create a \link{vibble} from a NIfTI object or file path by melting the voxel
-data into long format, assigning coordinate axes, applying orientation
-corrections, converting variable types, and optionally applying a lookup
-table (LUT), removing zero-valued voxels, and adding voxel IDs.
+data into long format.
 }
 \details{
 The function accepts either a NIfTI object or a character file path. When a
@@ -55,33 +50,20 @@ voxel orientation may be unreliable.
 
 Coordinate directions are extracted from the NIfTI header via
 \code{RNifti::orientation()}. Axes are renamed to \code{x}, \code{y},
-\code{z} according to the package's canonical coordinate mapping
-(\code{ccs_orientation_mapping}). Axes that point in opposite anatomical
-directions relative to the desired LIP convention are flipped.
+\code{z} according to the package's canonical coordinate mapping and - if required -
+flipped.
 
-The voxel values of \code{var} are inspected and converted:
+The voxel values of the array in \verb{@.Data} are inspected and interpreted:
+
 \itemize{
-\item binary 0/1 values → logical
-\item any other non-numeric values → factor (if not already), then numeric
-(unless processed by a LUT)
+\item if binary 0/1 values → mask
+\item if all integers & LUT provided → label
+\item else -> numeric
 }
 
 If \code{lut} is supplied and the variable appears to represent labeled
-classes, the lookup table is applied via \code{map_lut()}. Otherwise the
+classes, the lookup table is applied via \link{map_lut}(). Otherwise the
 variable is left numeric with a message (depending on \code{verbose}).
-
-The vibble is stored with class \code{"vbl"} and the following attributes:
-\itemize{
-\item \code{orientation_orig}: orientation string extracted from the NIfTI object.
-\item \code{ccs_mapping}: canonical voxel-to-axis mapping (currently fixed as LIP).
-\item \code{ccs_limits}: coordinate limits for \code{x}, \code{y}, \code{z}.
-\item \code{nifti}: the NIfTI object with its data array emptied, retained
-for metadata compatibility.
-\item \code{var_smr}: variable summary list created by \code{summarize_var()}.
-}
-
-If \code{rm0 = TRUE}, voxels with value 0 are removed. If \code{add_id = TRUE},
-a unique voxel ID column is added via \code{id_add()}.
 }
 \examples{
 \dontrun{

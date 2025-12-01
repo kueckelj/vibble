@@ -224,11 +224,9 @@ is_limit <- function(x){
 #' @export
 is_offset <- function(x){
 
-  if(!is_vbl2D(x)){ warning("Input is not a vbl2D.")}
+  stopifnot(is_vbl2D(x))
 
-  offset <- .vbl_attr(x, which = "offset_dist")
-
-  is.numeric(offset) && offset > 0
+  isTRUE(offset_col(x) != 0 | offset_row(x) != 0)
 
 }
 

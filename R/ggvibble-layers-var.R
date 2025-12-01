@@ -1,9 +1,10 @@
-#' @title Add a color layer for label variables
+#' @title Add a color layer for categorical variables
 #' @description Overlay a categorical label variable on a `ggplane()` plot by
-#' filling voxels with discrete colors. The layer is designed for variables of
-#' vartype `"label"` and can be restricted to selected labels, slices, or
-#' conditions.
+#' filling voxels with discrete colors.
 #'
+#' @param var Character. The name of a factor-variable with categorical labels.
+#' If a logical (mask) variable is specified, it is treated as a categorical one
+#' with labels = c('TRUE', 'FALSE').
 #' @param labels Optional character vector of label values to keep. If supplied,
 #' only voxels whose label is in `labels` are rendered.
 #' @param labels_rm Optional character vector of label values to remove. If
@@ -15,16 +16,15 @@
 #' @inheritParams vbl_doc_var_label
 #' @inheritParams vbl_doc
 #' @export
-
-layer_label_var <- function(var,
-                            labels = NULL,
-                            labels_rm = NULL,
-                            clrp = "default",
-                            clrp_adjust = NULL,
-                            opacity = 0.45,
-                            .cond = NULL,
-                            .by = NULL,
-                            ...){
+layer_categorical <- function(var,
+                              labels = NULL,
+                              labels_rm = NULL,
+                              clrp = "default",
+                              clrp_adjust = NULL,
+                              opacity = 0.45,
+                              .cond = NULL,
+                              .by = NULL,
+                              ...){
 
   opacity_quo <- rlang::enquo(opacity)
   .cond_quo <- rlang::enquo(.cond)
@@ -32,10 +32,10 @@ layer_label_var <- function(var,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_label_var(var = '{var}', ...")
+      layer <- glue::glue("layer_categorical(var = '{var}', ...")
       vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
 
-      .layer_label_var_impl(
+      .layer_categorical_impl(
         vbl2D = vbl2D,
         var = var,
         labels = labels,
@@ -53,14 +53,20 @@ layer_label_var <- function(var,
 
 
 #' @keywords internal
-.layer_label_var_impl <- function(vbl2D,
-                                  var,
-                                  labels = NULL,
-                                  labels_rm = NULL,
-                                  clrp = "default",
-                                  clrp_adjust = NULL,
-                                  opacity = 0.45,
-                                  ...){
+.layer_categorical_impl <- function(vbl2D,
+                                    var,
+                                    labels = NULL,
+                                    labels_rm = NULL,
+                                    clrp = "default",
+                                    clrp_adjust = NULL,
+                                    opacity = 0.45,
+                                    ...){
+
+  if(is_mask_var(vbl2D[[var]])){
+
+    vbl2D[[var]] <- factor(as.character(vbl2D[[var]]), levels = c("TRUE", "FALSE"))
+
+  }
 
   is_vartype(vbl2D, var = var, type = "label")
 
@@ -72,30 +78,27 @@ layer_label_var <- function(var,
 
   if(is.character(vbl2D[[var]])){ vbl2D[[var]] <- as.factor(vbl2D[[var]]) }
 
-  color_mapping <-
-    confuns::color_vector(
-      clrp = clrp,
-      names = levels(vbl2D[[var]]),
-      clrp.adjust = clrp_adjust
-    )
-
   list(
     ggnewscale::new_scale_fill(),
     ggplot2::geom_raster(
       data = vbl2D,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      opacity = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
+      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
     ),
-    ggplot2::scale_fill_manual(values = color_mapping, ...)
+    scale_fill_categorical(
+      clrp = clrp,
+      clrp_adjust = clrp_adjust,
+      names = levels(vbl2D[[var]])
+    )
   )
 
 }
 
 
 
-#' @title Add a color layer for mask variables
-#' @description Overlay a logical mask variable on a `ggplane()` plot by filling
-#' voxels and/or drawing polygon outlines around mask regions.
+#' @title Add a color layer for mask
+#' @description Overlay a logical mask on a \link{ggplane}() plot by filling
+#' voxels and/or drawing polygon outlines.
 #'
 #' @param color Color used for the mask fill and outline.
 #' @param fill Logical. If `TRUE`, draw a filled raster layer over mask voxels.
@@ -105,7 +108,13 @@ layer_label_var <- function(var,
 #' of the concave hull used for outlines.
 #' @param nv Integer. Number of vertices used by `densify_poly()` to densify each
 #' polygon outline.
+#' @param var Character or `NULL`. If character, specifies a logical variables
+#' in the vibble based on which the masks are created.
 #' @param ... Additional arguments passed to \link{geom_polygon}() for the outline.
+#'
+#' @note
+#' If neither `var` nor `.cond` is specified, the masks mask every voxel in every slice
+#' of the 2D vibble passed to this layer by `ggplane()`.
 #'
 #' @inherit vbl_doc_layer params return
 #' @inheritParams vbl_doc_var_mask
@@ -113,16 +122,16 @@ layer_label_var <- function(var,
 #' @inheritSection vbl_doc Opacity options
 #'
 #' @export
-layer_mask_var <- function(var,
-                           color,
-                           opacity = 0.25,
-                           fill = TRUE,
-                           outline = FALSE,
-                           concavity = 2.5,
-                           nv = 50,
-                           .cond = NULL,
-                           .by = NULL,
-                           ...){
+layer_mask <- function(color,
+                       opacity = 0.25,
+                       fill = TRUE,
+                       outline = FALSE,
+                       concavity = 2.5,
+                       nv = 50,
+                       var = NULL,
+                       .cond = NULL,
+                       .by = NULL,
+                       ...){
 
   opacity_quo <- rlang::enquo(opacity)
   .cond_quo <- rlang::enquo(.cond)
@@ -130,10 +139,10 @@ layer_mask_var <- function(var,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_mask_var(var = '{var}', ...")
+      layer <- glue::glue("layer_mask(var = '{var}', ...")
       vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
 
-      .layer_mask_var_impl(
+      .layer_mask_impl(
         vbl2D = vbl2D,
         var = var,
         color = color,
@@ -151,15 +160,17 @@ layer_mask_var <- function(var,
 }
 
 #' @keywords internal
-.layer_mask_var_impl <- function(vbl2D,
-                                 var,
-                                 color,
-                                 opacity = 0.45,
-                                 fill = TRUE,
-                                 outline = TRUE,
-                                 concavity = 2.5,
-                                 nv = 50,
-                                 ...){
+.layer_mask_impl <- function(vbl2D,
+                             var,
+                             color,
+                             opacity = 0.45,
+                             fill = TRUE,
+                             outline = TRUE,
+                             concavity = 2.5,
+                             nv = 50,
+                             ...){
+
+  if(is.null(var)){ vbl2D$pseudo <- TRUE; var <- "pseudo" }
 
   is_vartype(vbl2D, var = var, type = "mask")
 
@@ -173,7 +184,7 @@ layer_mask_var <- function(var,
       ggplot2::geom_raster(
         mapping = ggplot2::aes(x = col, y = row),
         data = data,
-        opacity = .eval_tidy_opacity(data, opacity = opacity, var = var),
+        alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
         fill = color
       )
 
@@ -228,13 +239,13 @@ layer_mask_var <- function(var,
 #' @inheritParams vbl_doc
 #' @inheritSection vbl_doc Opacity options
 #' @export
-layer_numeric_var <- function(var,
-                              clrsp,
-                              opacity = c(0.2, 0.45),
-                              interpolate = vbl_opts("interpolate"),
-                              .cond = NULL,
-                              .by = NULL,
-                              ...){
+layer_numeric <- function(var,
+                          clrsp,
+                          opacity = c(0.2, 0.45),
+                          interpolate = vbl_opts("interpolate"),
+                          .cond = NULL,
+                          .by = NULL,
+                          ...){
 
   .cond_quo <- rlang::enquo(.cond)
   opacity_quo <- rlang::enquo(opacity)
@@ -242,10 +253,10 @@ layer_numeric_var <- function(var,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_numeric_var(var = '{var}', ...)")
+      layer <- glue::glue("layer_numeric(var = '{var}', ...)")
       vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
 
-      .layer_numeric_var_impl(
+      .layer_numeric_impl(
         vbl2D = vbl2D,
         var = var,
         clrsp = clrsp,
@@ -260,12 +271,12 @@ layer_numeric_var <- function(var,
 }
 
 #' @keywords internal
-.layer_numeric_var_impl <- function(vbl2D,
-                                    var,
-                                    clrsp,
-                                    opacity = c(0.2, 0.45),
-                                    interpolate = vbl_opts("interpolate"),
-                                    ...){
+.layer_numeric_impl <- function(vbl2D,
+                                var,
+                                clrsp,
+                                opacity = c(0.2, 0.45),
+                                interpolate = vbl_opts("interpolate"),
+                                ...){
 
   is_vartype(vbl2D, var = var, type = "numeric")
 
@@ -274,7 +285,7 @@ layer_numeric_var <- function(var,
     ggplot2::geom_raster(
       data = vbl2D,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      opacity = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
       interpolate = interpolate
     ),
     scale_fill_numeric(

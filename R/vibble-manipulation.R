@@ -8,7 +8,7 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, verbose = 
 
   # ID for subsetting later on
   id_exists <- "id" %in% colnames(vbl)
-  if(!id_exists){ vbl <- id_add(vbl, arrange = FALSE) }
+  if(!id_exists){ vbl <- id_add(vbl) }
 
   # kmeans cluster to separate based on intensity
   set.seed(seed)
@@ -343,8 +343,6 @@ join_vibbles <- function(a, b, .rfn = NULL, join = "full", ...){
   require(dplyr)
 
   join <- match.arg(join, choices = c("full", "inner", "left", "right"))
-
-  space_a <- space(a)
 
   test_ccs_limits(
     lim_a = ccs_limits(a),

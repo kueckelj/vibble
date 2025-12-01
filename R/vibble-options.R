@@ -96,6 +96,7 @@ vbl_opts_default <-
     vibble.clrp = "default",
     vibble.clrsp = c("black", "white"),
     vibble.expand.fraction = 0.05,
+    vibble.ggplot.expand = TRUE,
     vibble.interpolate = TRUE,
     vibble.verbose = TRUE
   )

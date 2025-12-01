@@ -1,7 +1,6 @@
 # Spatial reference and coordinate-system utilities.
 
 
-
 #' Apply slice-wise offsets to a 2D vibble
 #'
 #' Shift `col` and `row` coordinates of a `vbl2D` object by slice-specific offsets.
@@ -21,24 +20,28 @@
 #' \link{vibble2D}(), \link{comp_offset_col}(), \link{comp_offset_row}()
 #'
 #' @export
-.apply_offset <- function(vbl2D, offset_dir, offset_dist){
+.apply_offset <- function(vbl2D, offset_col, offset_row){
 
   stopif(is_offset(vbl2D))
-  stopifnot(offset_dist > 0)
 
-  offset_dir <- match.arg(offset_dir, choices = offset_directions)
-  offset_axis <- ifelse(grepl("left|right", offset_dir), "col", "row")
+  slim <- screen_limits(vbl2D)
 
-  if(is_rel(offset_dist)){
+  # convert relative offsets
+  if(is_rel(offset_col)){
 
-    lim2D <- lim(vbl2D)
-
-    offset_dist <- diff(lim2D[[offset_axis]])*offset_dist
+    offset_col <- diff(slim$col) * offset_col
 
   }
 
-  # integer positions required for geom_raster
-  offset_dist <- as.integer(floor(offset_dist))
+  if(is_rel(offset_row)){
+
+    offset_row <- diff(slim$row) * offset_row
+
+  }
+
+  # truncate to integer
+  offset_col <- as.integer(offset_col)
+  offset_row <- as.integer(offset_row)
 
   # save idx in case the var exists
   vbl_names <- names(vbl2D)
@@ -53,20 +56,16 @@
       .data = vbl2D,
       idx = as.numeric(factor(paste0("slice", slice), levels = idx_levels))-1
     ) %>%
-    dplyr::group_by(
-      dplyr::across(
-        .cols = dplyr::any_of(c("plane", "sequence", "slice", "mask"))
-      )
-    ) %>%
+    dplyr::group_by(slice) %>%
     dplyr::mutate(
-      col = .comp_offset_col(col, idx = unique(idx), dir = {{offset_dir}}, dist = {{offset_dist}}),
-      row = .comp_offset_row(row, idx = unique(idx), dir = {{offset_dir}}, dist = {{offset_dist}}),
+      col = .comp_offset_col(x = col, idx = unique(idx), offset = {{offset_col}}),
+      row = .comp_offset_row(x = row, idx = unique(idx), offset = {{offset_row}}),
       idx = NULL
     ) %>%
     dplyr::ungroup()
 
-  offset_dist(vbl2D) <- offset_dist
-  offset_dir(vbl2D) <- offset_dir
+  offset_col(vbl2D) <- offset_col
+  offset_row(vbl2D) <- offset_row
 
   # restore idx in case the var exists  - and col ordering
   if("idx" %in% vbl_names){
@@ -77,6 +76,58 @@
   }
 
   return(vbl2D)
+
+}
+
+
+#' @title Convert bb2D to data frame
+#' @description Convert a 2D bounding box (`bb2D`) into a one-row tibble with
+#' column and row minima and maxima.
+#'
+#' @param bb2D A 2D bounding box as validated by \link{is_bb2D}().
+#'
+#' @return A tibble with columns `cmin`, `cmax`, `rmin`, and `rmax`.
+#'
+#' @export
+as_bb2D_df <- function(bb2D){
+
+  tibble::tibble(
+    cmin = min(bb2D$col),
+    cmax = max(bb2D$col),
+    rmin = min(bb2D$row),
+    rmax = max(bb2D$row)
+  )
+
+}
+
+#' @title Average 2D bounding boxes
+#' @description
+#' Compute the element-wise mean of two 2D bounding boxes (`bb2D`).
+#'
+#' @param a,b Two `bb2D` objects as validated by \link{is_bb2D}().
+#'
+#' @return
+#' A `bb2D` object (list with elements `col` and `row`) where each limit is the
+#' arithmetic mean of the corresponding limits in `bb1` and `bb2`.
+#'
+#' @details
+#' Both inputs must have the same named axes (typically `col` and `row`). The
+#' lower and upper bounds of each axis are averaged separately.
+#'
+#' @examples
+#' vbl <- example_vbl()
+#' vbl2D <- vibble2D(vbl, plane = "axi", slices = 60)
+#' bb_slice <- slice_bb(vbl2D, slice = 60)
+#' bb_screen <- screen_limits(vbl2D, slice = 60)
+#' avg_bb <- avg_bb2D(bb_slice, bb_screen)
+#'
+#' @export
+avg_bb2D <- function(a, b){
+
+  stopifnot(is_bb2D(a))
+  stopifnot(is_bb2D(b))
+
+  purrr::map2(.x = a, .y = b, .f = ~ (.x + .y) / 2)
 
 }
 
@@ -140,7 +191,6 @@
 #'
 #' @name vbl_doc_bb2D
 NULL
-
 
 #' @rdname vbl_doc_bb2D
 #' @export

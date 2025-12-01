@@ -2,7 +2,7 @@
 % Please edit documentation in R/ggvibble-colors.R
 \name{scale_fill_categorical}
 \alias{scale_fill_categorical}
-\title{This is a title.}
+\title{Categorical fill scale for ggvibble plots}
 \usage{
 scale_fill_categorical(clrp, names, clrp_adjust = NULL, ...)
 }

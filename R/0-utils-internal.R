@@ -30,24 +30,29 @@ magrittr::`%>%`
 
 #' @importFrom glue glue
 #' @importFrom rlang caller_env
-.glue_warning <- function(..., .envir = caller_env(), verbose = TRUE){
+.glue_warning <- function(..., .envir = caller_env(n=2), verbose = TRUE){
 
-  if(!verbose){
+  if(verbose){
 
-    return(invisible(NULL))
+    .envir <- rlang::caller_env()
+    msg <- glue::glue(..., .envir = .envir)
+
+    warning(msg, call. = FALSE)
 
   }
 
-  warning(glue(..., .envir = .envir), call. = FALSE)
 
 }
 
 
 #' @importFrom glue glue
 #' @importFrom rlang caller_env
-.glue_stop <- function(..., envir = caller_env()){
+.glue_stop <- function(...){
 
-  stop(glue(..., envir = .envir), call. = FALSE)
+  .envir <- rlang::caller_env()
+  msg <- glue::glue(..., .envir = .envir)
+
+  stop(msg, call. = FALSE)
 
 }
 

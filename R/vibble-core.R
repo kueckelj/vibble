@@ -172,31 +172,26 @@ print.vbl2D <- function(x, ...){
   # optional vibble meta information in tibble-style grey
   if(isTRUE(vbl_opts("verbose"))){
 
-    offset_string <- "none"
-    if(is_offset(x)){
-
-      offset_string <- paste0(offset_dist(x), " (", offset_dir(x), ")")
-
-    }
+    offset_string <- paste0("(", offset_col(x), "|", offset_row(x), ")")
 
     limits_string <-
       purrr::map_chr(
-        .x = lim(x),
+        .x = screen_limits(x),
         .f = function(l, a){
 
-          ifelse(is.null(l), "none", paste0(round(l[[1]], 2), ":", round(l[[2]], 2)))
+          ifelse(is.null(l), "none", paste0(as.integer(l[[1]]), ":", as.integer(l[[2]])))
 
         } )
 
-    limits_string <- paste0("(",limits_string[1], "|", limits_string[2], ")")
+    limits_string <- paste0("(",limits_string[1], "|", limits_string[2], ") <integer.truncated>")
 
     info <-
       paste0(
         "<vibble2D> vbl2D object\n",
         "  plane : ",  vbl_planes_pretty[plane(x)], " (", plane(x), ")\n",
-        "  slices: ", n_slice, "\n",
-        "  offset: ", offset_string, "\n",
-        "  limits (col|row): ", limits_string, "\n",
+        "  slices:           ", n_slice, "\n",
+        "  screen (col|row): ", limits_string, "\n",
+        "  offset (col|row): ", offset_string, "\n",
         "  data variables: ", length(dvars), " (",
         n_lab,  " label, ",
         n_mask, " mask, ",

@@ -3,7 +3,7 @@
 
 # non-data ----------------------------------------------------------------
 
-#' @title Add a 2D bounding-box
+#' @title Add a data-driven 2D bounding-box
 #' @description Draw a rectangular bounding box around the extent of voxels
 #' that match a certain condition.
 #'
@@ -203,36 +203,47 @@ layer_grid <- function(col = 0.1,
 }
 
 
-#' @title Add the plotting limits
+#' @title Layers for visualizing 2D limit regions
+#' @name vbl_doc_plotting_regions
 #' @description
-#' Add a layer that draws rectangles for the current 2D limits (`lim`) of each slice in a `vbl2D`.
+#' Add rectangular overlays showing different 2D limit regions of a \code{vbl2D}
+#' object. These layers visualize:
 #'
-#' @param color Color of the rectangle outline.
-#' @param fill Fill color for the rectangles. Defaults to `NA`.
-#' @param slices Optional numeric vector of slice indices to include.
-#' If `NULL`, all slices in the underlying `vbl2D` are used.
-#' @param ... Additional arguments passed to `ggplot2::geom_rect()`.
+#' \itemize{
+#'   \item \code{layer_plot_limits()}: The global plot limits spanning all slices
+#'     after applying screen-space offsets.
 #'
-#' @inherit vbl_doc_layer params return
-#' @inheritParams vbl_doc
+#'   \item \code{layer_screen_limits()}: The screen-space limits of each slice,
+#'     optionally restricted to selected slices.
 #'
-#' @details
-#' For each slice, `lim_slice()` returns a list with `col` and `row` limits.
-#' These are converted into `cmin`, `cmax`, `rmin`, and `rmax` and passed to `ggplot2::geom_rect()`.
-#' This is useful for visualising the effective plotting region and checking limit or offset settings.
+#'   \item \code{layer_slice_limits()}: The raw per-slice bounding boxes
+#'     (voxel extents) without offsets or screen-space adjustments.
+#' }
 #'
-#' @export
-layer_lim <- function(color,
-                      fill = NA,
-                      slices = NULL,
-                      ...){
+#' Each function draws one or more \code{geom_rect()} layers representing the
+#' corresponding limit region in the 2D layout.
+#'
+#' @param color Line color of the drawn rectangles.
+#' @param fill Fill color for the rectangles. Defaults to \code{NA}.
+#' @param slices Optional integer vector of slice values to visualize
+#'   (for \code{layer_screen_limits()} and \code{layer_slice_limits()}).
+#' @param ... Additional arguments passed to \code{geom_rect()}.
+#'
+#' @return A list of ggplot2 layers.
+#'
+#' @seealso \code{\link{plot_limits}()}, \code{\link{screen_limits}()},
+#'   \code{\link{slice_limits}()}
+#'
+NULL
 
-  if(is.numeric(slices)){ vbl2D <- dplyr::filter(vbl2D, slice %in% slices) }
+#' @rdname vbl_doc_plotting_regions
+#' @export
+layer_plot_limits <- function(color = alpha("yellow", 0.7), fill = NA, ...){
 
   vbl_layer(
     fun = function(vbl2D){
 
-      .layer_lim_impl(
+      .layer_plot_limits_impl(
         vbl2D = vbl2D,
         color = color,
         fill = fill,
@@ -244,20 +255,64 @@ layer_lim <- function(color,
 
 }
 
+#' @keywords internal
+.layer_plot_limits_impl <- function(vbl2D, color, fill, ...){
+
+  data <- as_bb2D_df(plot_limits(vbl2D))
+
+  list(
+    ggplot2::geom_rect(
+      data = data,
+      mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
+      color = color,
+      fill = fill,
+      ...
+    )
+  )
+
+}
+
+#' @rdname vbl_doc_plotting_regions
+#' @export
+layer_screen_limits <- function(color = alpha("blue", 0.7),
+                                fill = NA,
+                                slices = NULL,
+                                ...){
+
+  if(is.numeric(slices)){
+
+    vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
+
+    }
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      .layer_screen_limits_impl(
+        vbl2D = vbl2D,
+        color = color,
+        fill = fill,
+        ...
+      )
+
+    }
+  )
+
+}
 
 #' @keywords internal
-#' @rdname layer_lim
-.layer_lim_impl <- function(vbl2D,
-                            color,
-                            fill,
-                            ...){
+#' @rdname layer_screen_limits
+.layer_screen_limits_impl <- function(vbl2D,
+                                      color,
+                                      fill,
+                                      ...){
 
   data <-
     purrr::map_df(
       .x = slices(vbl2D),
       .f = function(slice){
 
-        ls <- lim_slice(vbl2D, slice = slice)
+        ls <- screen_limits(vbl2D, slice = slice)
 
         tibble::tibble(
           slice = slice,
@@ -273,6 +328,53 @@ layer_lim <- function(color,
   list(
     ggplot2::geom_rect(
       data = data,
+      mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
+      color = color,
+      fill = fill,
+      ...
+    )
+  )
+
+}
+
+#' @rdname vbl_doc_plotting_regions
+#' @export
+layer_slice_limits <- function(color = alpha("red", 0.7),
+                               fill = NA,
+                               slices = NULL,
+                               ...){
+
+  if(is.numeric(slices)){
+
+    vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
+
+  }
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      .layer_bb_impl(
+        vbl2D = vbl2D,
+        color = color,
+        fill = fill,
+        ...
+      )
+
+    }
+  )
+
+}
+
+
+#' @keywords internal
+.layer_slice_limits_impl <- function(vbl2D,
+                                     color,
+                                     fill,
+                                     ...){
+
+  list(
+    ggplot2::geom_rect(
+      data = bb2D_df(vbl2D, expand = FALSE),
       mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
       color = color,
       fill = fill,
@@ -339,46 +441,31 @@ layer_lim <- function(color,
 #' **offset = anchor restricted to the offset geometry, with optional cross-slice alignment and nudging**.
 #'
 #' @export
-layer_slice_number <- function(anchor = NULL,
+layer_slice_number <- function(anchor,
+                               to = "avg",
+                               align = NULL,
                                wrap = NULL,
                                angle = 0,
                                alpha = 0.8,
                                color = "white",
                                size = 3.5,
-                               align = TRUE,
                                ...){
 
   vbl_layer(
     fun = function(vbl2D){
 
-      if(is_offset(vbl2D)){
-
-        .layer_slice_number_offset_impl(
-          vbl2D = vbl2D,
-          anchor = anchor,
-          wrap = wrap,
-          angle = angle,
-          alpha = alpha,
-          color = color,
-          size = size,
-          align = align,
-          ...
-        )
-
-      } else {
-
-        .layer_slice_number_impl(
-          vbl2D = vbl2D,
-          anchor = anchor,
-          wrap = wrap,
-          angle = angle,
-          alpha = alpha,
-          color = color,
-          size = size,
-          ...
-        )
-
-      }
+      .layer_slice_number_impl(
+        vbl2D = vbl2D,
+        anchor = anchor,
+        to = to,
+        align = align,
+        wrap = wrap,
+        angle = angle,
+        alpha = alpha,
+        color = color,
+        size = size,
+        ...
+      )
 
     }
   )
@@ -387,85 +474,30 @@ layer_slice_number <- function(anchor = NULL,
 
 #' @keywords internal
 .layer_slice_number_impl <- function(vbl2D,
-                                     anchor = NULL,
-                                     wrap = NULL,
-                                     angle = 0,
-                                     alpha = 0.8,
-                                     color = "white",
-                                     size = 3.5,
+                                     anchor,
+                                     to,
+                                     align,
+                                     wrap,
+                                     angle,
+                                     alpha,
+                                     color,
+                                     size,
                                      ...){
 
   stopifnot(within_limits(angle, c(0, 360)))
-  stopifnot(is_img_anchor_abs(anchor) | is_img_anchor_rel(anchor))
-
-  # construct data.frame
-  wrap <- ifelse(is.character(wrap), wrap[1], "{slice}")
-
-  df <-
-    purrr::map_df(
-      .x = slices(vbl2D),
-      .f = ~ as_img_anchor_abs(anchor, lim(vbl2D))
-    ) %>%
-    dplyr::mutate(
-      slice = slices(vbl2D),
-      label = as.character(glue::glue(wrap))
-    )
-
-  # plot
-  list(
-    ggplot2::geom_text(
-      data = df,
-      mapping = ggplot2::aes(x = col, y = row, label = label),
-      alpha = alpha,
-      angle = angle,
-      color = color,
-      size = size,
-      ...
-    ),
-    ggplot2::theme(
-      strip.background = ggplot2::element_blank(),
-      strip.text = ggplot2::element_blank(),
-    )
-  )
-
-}
-
-#' @keywords internal
-.layer_slice_number_offset_impl <- function(vbl2D,
-                                            anchor = NULL,
-                                            wrap = NULL,
-                                            angle = 0,
-                                            alpha = 0.8,
-                                            color = "white",
-                                            size = 3.5,
-                                            align = TRUE,
-                                            ...){
-
-  stopifnot(within_limits(angle, c(0, 360)))
+  stopifnot(is_img_anchor_chr(anchor) | is_img_anchor_rel(anchor))
 
   # anchor instructions
-  if(is.null(anchor)){ # apply defaults - anchor
+  if(is_img_anchor_chr(anchor)){
 
-    anchor <- ifelse(.offset_axis(vbl2D) == "col", "top", "left")
+    anchor_chr <- anchor
+    anchor_rel <- img_anchors[[anchor]]
 
   } else {
 
-    stopifnot(is_img_anchor_chr(anchor))
-
-    if(.offset_axis(vbl2D) == "col"){
-
-      anchor <- match.arg(anchor, c("top", "bottom"))
-
-    } else if(.offset_axis(vbl2D) == "row"){
-
-      anchor <- match.arg(anchor, c("left", "right"))
-
-    }
+    anchor_rel <- anchor
 
   }
-
-  anchor_chr <- anchor
-  anchor_rel <- img_anchors[[anchor]]
 
   # construct data.frame
   wrap <- ifelse(is.character(wrap), wrap[1], "{slice}")
@@ -473,65 +505,55 @@ layer_slice_number <- function(anchor = NULL,
   df <-
     purrr::map_df(
       .x = slices(vbl2D),
-      .f = ~ as_img_anchor_abs(anchor_rel, slice_bb(vbl2D, .x))
+      .f = function(slice){
+
+        if(to == "slice"){
+
+          bb2D <- slice_limits(vbl2D, slice)
+
+        } else if(to == "screen"){
+
+          bb2D <- screen_limits(vbl2D, slice)
+
+        } else if(to == "avg"){
+
+          bb2D <- avg_bb2D(
+            a = slice_limits(vbl2D, slice),
+            b = screen_limits(vbl2D, slice)
+          )
+
+        }
+
+        as_img_anchor_abs(anchor_rel, bb2D = bb2D)
+
+      }
     ) %>%
     dplyr::mutate(
       slice = slices(vbl2D),
       label = as.character(glue::glue(wrap))
     )
 
-
   # ensure alignment of slice num positions across slices, if desired
-  if(isTRUE(align)){
+  if(is.character(align)){
 
-    axis <- setdiff(x = c("col", "row"), y = .offset_axis(vbl2D))
+    align <- match.arg(align, choices = c("col", "row"))
 
-    idx <- which(c("col", "row") == axis)
+    idx <- which(align == c("col", "row"))
+    val <- anchor_rel[idx]
 
-    if(axis == "row"){
+    fn_use <-
+      ifelse(
+        test = val == 0.5,
+        yes = mean,
+        no = ifelse(test = val < 0.5,
+                    yes = ifelse(idx == 1, min, max),
+                    no = ifelse(idx == 2, max, min)
+        )
+      )
 
-      fn <- ifelse(anchor_rel[idx] > 0.5, min, max)
-
-    } else {
-
-      fn <- ifelse(anchor_rel[idx] > 0.5, max, min)
-
-    }
-
-    df[[axis]] <- fn(range(vbl2D[[axis]]))
+    df[[align]] <- fn_use(df[[align]])
 
   }
-
-  # nudge the positions in the middle between lim_plot() and slice_bb()
-  lp <- lim_plot(vbl2D)
-  lp_df <- tibble::tibble(
-    cmin = rep(min(lp$col), nrow(df)),
-    cmax = rep(max(lp$col), nrow(df)),
-    rmin = rep(min(lp$row), nrow(df)),
-    rmax = rep(max(lp$row), nrow(df))
-  )
-
-  df <- cbind(df, lp_df)
-
-  cvar <-
-    ifelse(
-      test = grepl("left", anchor_chr),
-      yes = "cmin",
-      no = ifelse(grepl("right", anchor_chr), "cmax", "col")
-    )
-
-  df$nudge_x <- purrr::map2_dbl(.x = df$col, .y = df[[cvar]], .f = ~ diff(c(.x, .y))/2)
-  df$col <- df$col + df$nudge_x
-
-  rvar <-
-    ifelse(
-      test = grepl("top", anchor_chr),
-      yes = "rmin",
-      no = ifelse(grepl("bottom", anchor_chr), "rmax", "row")
-    )
-
-  df$nudge_y <- purrr::map2_dbl(.x = df$row, .y = df[[rvar]], .f = ~ diff(c(.x, .y))/2)
-  df$row <- df$row + df$nudge_y
 
   # plot
   list(
@@ -547,6 +569,8 @@ layer_slice_number <- function(anchor = NULL,
   )
 
 }
+
+
 
 
 

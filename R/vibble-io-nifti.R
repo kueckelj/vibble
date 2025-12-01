@@ -102,7 +102,7 @@ make_nifti <- function(vbl,
                        path_fs = "/Applications/freesurfer/7.4.0",
                        interp = NULL,
                        missing = 0,
-                       verbose = TRUE,
+                       verbose = vbl_opts("verbose"),
                        ...){
 
   type <- var_type(vbl[[var]])
@@ -151,7 +151,7 @@ make_nifti <- function(vbl,
 
       stopifnot(stringr::str_detect(path_lut, "_lut.csv$"))
 
-      glue_message("Writing LUT to '{path_lut}'.", verbose)
+      .glue_message("Writing LUT to '{path_lut}'.", verbose)
 
     }
 
@@ -188,7 +188,7 @@ make_nifti <- function(vbl,
         collapse = ""
       )
 
-      glue_message("Writing NIFTI to '{path_out}' with:\n {stringr::str_replace_all(cmd,';', ';\n')}")
+      .glue_message("Writing NIFTI to '{path_out}' with:\n {stringr::str_replace_all(cmd,';', ';\n')}")
       out <- system(cmd, show.output.on.console = verbose)
 
       unlink(path_nii_mov)
@@ -215,9 +215,7 @@ make_nifti <- function(vbl,
 #' @title Convert a NIfTI image into a vibble.
 #' @description
 #' Create a \link{vibble} from a NIfTI object or file path by melting the voxel
-#' data into long format, assigning coordinate axes, applying orientation
-#' corrections, converting variable types, and optionally applying a lookup
-#' table (LUT), removing zero-valued voxels, and adding voxel IDs.
+#' data into long format.
 #'
 #' @details
 #' The function accepts either a NIfTI object or a character file path. When a
@@ -227,45 +225,31 @@ make_nifti <- function(vbl,
 #'
 #' Coordinate directions are extracted from the NIfTI header via
 #' \code{RNifti::orientation()}. Axes are renamed to \code{x}, \code{y},
-#' \code{z} according to the package's canonical coordinate mapping
-#' (\code{ccs_orientation_mapping}). Axes that point in opposite anatomical
-#' directions relative to the desired LIP convention are flipped.
+#' \code{z} according to the package's canonical coordinate mapping and - if required -
+#' flipped.
 #'
-#' The voxel values of \code{var} are inspected and converted:
+#' The voxel values of the array in `@.Data` are inspected and interpreted:
+#'
 #' \itemize{
-#'   \item binary 0/1 values → logical
-#'   \item any other non-numeric values → factor (if not already), then numeric
-#'   (unless processed by a LUT)
+#'   \item if binary 0/1 values → mask
+#'   \item if all integers & LUT provided → label
+#'   \item else -> numeric
 #' }
 #'
 #' If \code{lut} is supplied and the variable appears to represent labeled
-#' classes, the lookup table is applied via \code{map_lut()}. Otherwise the
+#' classes, the lookup table is applied via \link{map_lut}(). Otherwise the
 #' variable is left numeric with a message (depending on \code{verbose}).
 #'
-#' The vibble is stored with class \code{"vbl"} and the following attributes:
-#' \itemize{
-#'   \item \code{orientation_orig}: orientation string extracted from the NIfTI object.
-#'   \item \code{ccs_mapping}: canonical voxel-to-axis mapping (currently fixed as LIP).
-#'   \item \code{ccs_limits}: coordinate limits for \code{x}, \code{y}, \code{z}.
-#'   \item \code{nifti}: the NIfTI object with its data array emptied, retained
-#'                     for metadata compatibility.
-#'   \item \code{var_smr}: variable summary list created by \code{summarize_var()}.
-#' }
-#'
-#' If \code{rm0 = TRUE}, voxels with value 0 are removed. If \code{add_id = TRUE},
-#' a unique voxel ID column is added via \code{id_add()}.
-#'
-#' @param nifti
+#' @param x
 #' A NIfTI object or a character path to a \code{.nii} or \code{.nii.gz} file.
 #'
 #' @param var
-#' Character. Name of the voxel-wise variable to extract and store as the main
-#' variable in the vibble.
+#' Character. The column name with which the data extracted from the nifti is stored
+#' in vibble data.frame.
 #'
 #' @param ordered
-#' Logical or \code{NULL}. If a lookup table is provided, controls whether the
-#' resulting labeled factor is ordered. If \code{NULL}, ordering defaults to
-#' \code{FALSE}.
+#' Logical. If a lookup table is provided, controls whether the
+#' resulting labeled factor is ordered. Defaults to `FALSE`.
 #'
 #' @param add_id
 #' Logical. If \code{TRUE}, add a unique voxel ID column.
@@ -280,10 +264,7 @@ make_nifti <- function(vbl,
 #' Additional arguments; currently supports the deprecated argument
 #' \code{black_rm}.
 #'
-#' @return
-#' A \link{vibble} containing voxel coordinates, the extracted voxel variable,
-#' and metadata attributes describing orientation, coordinate limits, lookup
-#' table usage, and per-variable summaries.
+#' @return A \link{vibble}.
 #'
 #' @examples
 #' \dontrun{
@@ -299,29 +280,22 @@ make_nifti <- function(vbl,
 #' }
 #'
 #' @export
-nifti_to_vbl <- function(nifti,
+nifti_to_vbl <- function(x,
                          var = "value",
                          lut = NULL,
                          ordered = FALSE,
                          add_id = FALSE,
                          rm0 = TRUE,
-                         verbose = TRUE,
+                         verbose = vbl_opts("verbose"),
                          ...){
 
-  if("black_rm" %in% names(list(...))){
+  if(is.character(x)){
 
-    rm0 <- list(...)[["black_rm"]]
-    warning("`black_rm` is deprecated in favor of `rm0`.")
-
-  }
-
-  if(is.character(nifti)){
-
-    nifti <- oro.nifti::readNIfTI(fname = nifti, reorient = FALSE)
+    x <- oro.nifti::readNIfTI(fname = x, reorient = FALSE)
 
   }
 
-  if(isTRUE(nifti@reoriented)){
+  if(isTRUE(x@reoriented)){
 
     warning("Input object has @reoriented == TRUE. Output orientation is not reliable.")
 
@@ -333,7 +307,7 @@ nifti_to_vbl <- function(nifti,
   flip_check <- list(x = "R", y = "S", z = "A")
 
   pointers <-
-    RNifti::orientation(nifti, useQuaternionFirst = TRUE) %>%
+    RNifti::orientation(x, useQuaternionFirst = TRUE) %>%
     stringr::str_split_1(pattern = "")
 
   names(pointers) <-
@@ -353,7 +327,7 @@ nifti_to_vbl <- function(nifti,
 
   # create vbl
   vbl <-
-    reshape2::melt(nifti@.Data, varnames = unname(pointers), value.name = var) %>%
+    reshape2::melt(x@.Data, varnames = unname(pointers), value.name = var) %>%
     tibble::as_tibble() %>%
     dplyr::select(!!!pointers[c(ccs_labels)], !!rlang::sym(var))
 
@@ -366,12 +340,12 @@ nifti_to_vbl <- function(nifti,
 
   # set attributes
   class(vbl) <- c("vbl", class(vbl))
-  attr(vbl, which = "orientation_orig") <- RNifti::orientation(nifti, useQuaternionFirst = TRUE)
-  attr(vbl, which = "ccs_mapping") <- list(x = "L", y = "I", z = "P")  # currently fixed XYZ = LIP
+  attr(vbl, which = "orientation_orig") <- RNifti::orientation(x, useQuaternionFirst = TRUE)
+  attr(vbl, which = "ccs_mapping") <- ccs_orientation_mapping_fix # currently fixed XYZ = LIP
   attr(vbl, which = "ccs_limits") <- purrr::map(vbl[,c(ccs_labels)], .f = range)
 
-  nifti@.Data <- array()
-  attr(vbl, which = "nifti") <- nifti # required meta data for backwards compatibility
+  x@.Data <- array()
+  attr(vbl, which = "nifti") <- x # useful meta data for backwards compatibility
 
   # post process
   for(fa in flip_axes){
@@ -401,7 +375,7 @@ nifti_to_vbl <- function(nifti,
 
   }
 
-  glue_message(msg, verbose = verbose)
+  .glue_message(msg, verbose = verbose)
 
   var_smr <- list()
   var_smr[[var]] <- summarize_var(vbl[[var]])
@@ -420,6 +394,8 @@ nifti_to_vbl <- function(nifti,
 
 }
 
+#' @export
+#' @keywords internal
 nifti_to_voxel_df <- nifti_to_vbl
 
 
@@ -454,8 +430,8 @@ nifti_to_voxel_df <- nifti_to_vbl
 #'   \item extracted variable names are duplicated.
 #' }
 #'
-#' @param input
-#' Character. Either a directory containing NIfTI files or a character vector
+#' @param x
+#' Character. Either a folder directory containing NIfTI files or a character vector
 #' of file paths.
 #'
 #' @param rgx_fp
@@ -467,18 +443,9 @@ nifti_to_voxel_df <- nifti_to_vbl
 #' the basename (without extension) of each NIfTI file.
 #'
 #' @param recursive
-#' Logical. If \code{TRUE} and `input` is a directory it is searched recursively for NIfTI files.
+#' Logical. If \code{TRUE} and `x` is a directory it is searched recursively for NIfTI files.
 #'
-#' @param rm0
-#' Logical. Forwarded to \link{nifti_to_vbl()}. If \code{TRUE}, zero-valued
-#' voxels are removed from each individual vibble.
-#'
-#' @param join
-#' Join method passed to \link{join_vibbles()}. One of
-#' \code{"full"}, \code{"inner"}, \code{"left"}, or \code{"right"}.
-#'
-#' @param verbose
-#' Logical. If \code{TRUE}, print messages about file discovery and reading.
+#' @inheritParams join_vibbles
 #'
 #' @return
 #' A merged \link{vibble} containing one voxel variable per input file.
@@ -498,13 +465,16 @@ nifti_to_voxel_df <- nifti_to_vbl
 #' }
 #'
 #' @export
-niftis_to_vbl <- function(input,
+niftis_to_vbl <- function(x,
                           rgx_fp = ".*",
                           rgx_var = ".*",
                           recursive = FALSE,
                           join = "full",
+                          .rfn = NULL,
                           rm0 = FALSE,
-                          verbose = TRUE){
+                          verbose = vbl_opts("verbose")){
+
+  input <- x
 
   stopifnot(is.character(input))
 
@@ -554,15 +524,15 @@ niftis_to_vbl <- function(input,
   }
 
   # read and join files
-  glue_message("Reading files. n = {length(nii_files)}", verbose = verbose)
+  .glue_message("Reading files. n = {length(nii_files)}", verbose = verbose)
 
   vbl <-
     purrr::map2(
       .x = nii_paths,
       .y = var_names,
-      .f = ~ nifti_to_vbl(nifti = .x, var = .y, rm0 = rm0, add_id = FALSE, verbose = verbose)
+      .f = ~ nifti_to_vbl(x = .x, var = .y, rm0 = rm0, add_id = FALSE, verbose = verbose)
     ) %>%
-    purrr::reduce(.x = ., .f = join_vibbles, join = join)
+    purrr::reduce(.x = ., .f = join_vibbles, join = join, .rfn = .rfn)
 
   return(vbl)
 

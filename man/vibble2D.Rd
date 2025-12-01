@@ -10,8 +10,8 @@ vibble2D(
   slices = NULL,
   lim = NULL,
   expand = FALSE,
-  offset_dist = 0,
-  offset_dir = "left",
+  offset_col = 0,
+  offset_row = 0,
   .cond = NULL,
   .by = NULL
 )
@@ -26,7 +26,7 @@ to keep. If \code{NULL}, all slices are retained.}
 
 \item{lim}{Defines the 2D spatial limits of the resulting \code{vbl2D}. By default, the
 \link[=ccs_limits]{coordinate-space} limits of the input vibble are and mapped to
-col, row and slice depending on \code{plane}. User can adjust that by supplying:
+col and rowdepending on \code{plane}. User can adjust that by supplying:
 
 \itemize{
 \item  a valid \link[=is_limit]{limit}: a numeric vector of length two which is recycled for col and row.
@@ -37,19 +37,7 @@ When the supplied \link[=is_bb2D]{2D bounding-box} is smaller than the slice ext
 only voxels inside this region are retained, giving \code{lim} a filtering effect.}
 
 \item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits \strong{after}
-the interpretation and potential filtering of \code{lim}. This enlarges the slice-wise bounding box by adding a
-margin around its current range.}
-
-\item{offset_dist}{If not 0, shifts the slices in the 2D layout.
-Interpreted as:
-\itemize{
-\item \strong{absolute} when supplied as an integer (e.g. \code{2L}) or marked via \code{as_abs()}.
-\item \strong{relative} when supplied as a double (e.g. \code{0.1}) or marked via \code{as_rel()},
-in which case the shift is computed as a proportion of the full axis range.
-}}
-
-\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist} is not 0.
-Valid options are \emph{c('left', 'right', 'top', 'bottom')}.}
+the interpretation and potential filtering of \code{lim}.}
 
 \item{.cond}{Optional. An expression evaluated with \link[rlang:args_data_masking]{data-masking}
 to filter voxels. If \code{NULL}, all voxels are retained.}
@@ -66,7 +54,7 @@ applied offsets.
 Convert a 3D \code{vbl} object into a 2D representation for a given anatomical plane and selected slices. Optionally apply filtering conditions and spatial offsets for visualization.
 }
 \details{
-The function derives the required axes using \link{req_axes_2d}() and
+The function derives the required axes using \link{req_axes_2D}() and
 renames the corresponding coordinate columns to \code{col}, \code{row}, and \code{slice},
 and optionally filters by \code{slices}, \code{lim} and \code{.cond}.
 

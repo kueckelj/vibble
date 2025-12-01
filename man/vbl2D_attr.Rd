@@ -2,25 +2,25 @@
 % Please edit documentation in R/utils-vibble2D.R, R/vibble-tests.R
 \name{vbl2D_attr}
 \alias{vbl2D_attr}
-\alias{offset_attr}
-\alias{offset_dir}
-\alias{offset_dir<-}
-\alias{offset_dist}
-\alias{offset_dist<-}
+\alias{offset_both}
+\alias{offset_col}
+\alias{offset_col<-}
+\alias{offset_row}
+\alias{offset_row<-}
 \alias{plane}
 \alias{plane<-}
 \alias{is_offset}
 \title{vbl2D attributes}
 \usage{
-offset_attr(vbl2D, which)
+offset_both(vbl2D)
 
-offset_dir(vbl2D)
+offset_col(vbl2D)
 
-offset_dir(vbl2D) <- value
+offset_col(vbl2D) <- value
 
-offset_dist(vbl2D)
+offset_row(vbl2D)
 
-offset_dist(vbl2D) <- value
+offset_row(vbl2D) <- value
 
 plane(vbl2D)
 
@@ -29,10 +29,10 @@ plane(vbl2D) <- value
 is_offset(x)
 }
 \arguments{
+\item{value}{New value assigned in the corresponding replacement functions.}
+
 \item{which}{Character scalar for \code{offset_attr()} selecting the offset attribute.
 Valid values are \code{c("dir", "dist")}.}
-
-\item{value}{New value assigned in the corresponding replacement functions.}
 }
 \value{
 For accessor functions, the requested attribute value.

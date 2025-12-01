@@ -22,12 +22,12 @@
 #' \itemize{
 #'  \item{Spatial:}{ Variables with *fixed naming* x, y and z give the unique position of each voxel in the 3D space.
 #'  They serve as both, for spatial localization and as a unique identifier.}
-#'  \item{Label:}{ Variables of class \link{factor} storing categorical classifications or ordinal scores.}
+#'  \item{Labels:}{ Variables of class \link{factor} storing categorical classifications or ordinal scores.}
 #'  \item{Mask:}{ Variables of class \link{logical} storing binary information.}
 #'  \item{Numeric:}{ Variables of class \link{numeric} storing information that can be interpreted on a continuous numeric scale.}
 #'  }
 #'
-#' Label, mask and numeric variables are referred to as \link[=vars_data]{data variables}. Spatial variables
+#' Labels, mask and numeric variables are referred to as \link[=vars_data]{data variables}. Spatial variables
 #' x, y, and z are referred to as \link[=vars_spatial]{spatial variables}.
 #'
 #' For a vibble to be valid, the following requirements must hold.
@@ -40,7 +40,7 @@
 #' \itemize{
 #'   \item{ \code{x}, \code{y}, \code{z}: integer voxel coordinates in a
 #'   Cartesian grid. This coordinate triplet must uniquely identify each row.}
-#'   \item{ One additional column with voxel values (label, mask or numeric) }.
+#'   \item{ One additional column with voxel values (labels, mask or numeric) }.
 #' }
 #'
 #' @section Required spatial mapping:
@@ -60,43 +60,327 @@
 #'
 #' @section Required attributes:
 #' A vibble must contain the following attributes:
-#' \itemize{
-#'   \item \code{ccs_mapping}: named list mapping \code{x}, \code{y}, \code{z}
-#'   to anatomical axes (x = L, y = I, z = P). This is fixed and cannot be changed.
-#'   \item \code{ccs_limits}: list of length three containing the coordinate
-#'   ranges for \code{x}, \code{y}, \code{z} as valid \link[=is_limit]{limits}. They define
-#'   the space in which the volume-data lives. Vibbles can only be \link[=join_vibbles]{joined} if their space is equal.
-#'   \item \code{var_smr}: named list with per-variable summaries; each entry
-#'   is created by \link{summarize_var}() upon initial creation of the variable
-#'   and is used for comprehensive mapping of color schemes and statistical
-#'   analysis in the absence of the whole data set.
-#' }
 #'
-#' @section Optional attributes:
-#' A vibble usually contains the following attributes:
 #' \itemize{
-#'   \item \code{orientation_orig}: character string describing the original
-#'   image orientation (e.g. from \code{RNifti::orientation()}).
-#'   \item \code{nifti}: the NIfTI object used to create the vibble without
-#'   slot @.Data for facilitated backwards compatibility.
+#'   \item \code{ccs_limits}: A list of length three containing the valid
+#'   \link[=is_limit]{limits} for \code{x}, \code{y}, and \code{z}. These define the spatial
+#'   extent of the Cartesian coordinate system (the “space”) in which the
+#'   volume data resides. Vibbles can only be \link[=join_vibbles]{joined} when their
+#'   spatial limits are identical.
+#'
+#'   \item \code{ccs_steps}: A list of length three containing the physical step
+#'   size (in millimeters) corresponding to an increase of 1 unit along each of
+#'   the three axes.
 #' }
 #'
 #' @section Behaviour:
-#' A vibble behaves in almost all regards like a tibble. There are only two aspects
-#' that are hardcoded:
-#' \enumerate{
-#'  \item{Spatial variables x, y and z can not be renamed, removed or manipulated.}
-#'  \item{Vibble attributes remain unchanged / are restored after grouped dplyr operations.}
-#'  }
+#' A vibble behaves like a tibble, except for one thing - Spatial variables x, y and z can not be renamed, removed or manipulated.
+NULL
+
+#' @title 2D Vibble objects
+#' @name vbl_doc_vbl2D
+#' @docType class
+#' @description
+#' A 2D vibble is a voxel-level tidy-data structure (tibble/data.frame) that
+#' represents a \link{vibble} prepared for visualization in 2D space. It is
+#' oriented along one anatomical plane: Sagittal (*"sag"*), Axial (*"axi"*),
+#' or Coronal (*"cor"*).
+#'
+#' Analogous to 3D vibbles:
+#'
+#' \itemize{
+#'   \item{Rows (observations):}{ correspond to voxels, identified by integer coordinates.}
+#'   \item{Columns (variables):}{ store voxel-wise values (e.g. intensities, masks, labels, scores).}
+#' }
+#'
+#' @section Variables:
+#' A 2D vibble defines five types of variables:
+#'
+#' \itemize{
+#'   \item{Spatial:}{ Variables with *fixed naming* \code{col} and \code{row}
+#'   specify the voxel position in the 2D layout according to a
+#'   \link[vbl_doc_plot_layouts]{plotting layout}.}
+#'
+#'   \item{Slice:}{ A variable with *fixed naming* \code{slice} defines the slice
+#'   index along the anatomical axis to which the 2D vibble corresponds.}
+#'
+#'   \item{Labels:}{ Variables of class \link{factor} storing categorical or ordinal information.}
+#'
+#'   \item{Mask:}{ Variables of class \link{logical} storing binary voxel-wise information.}
+#'
+#'   \item{Numeric:}{ Variables of class \link{numeric} storing continuous-valued information.}
+#' }
+#'
+#' @section Required class:
+#' 2D vibbles extend the \link[tibble:tibble]{tbl} class with
+#' \code{c("vbl2D", <underlying class>)}.
+#'
+#' @section Required columns:
+#' A 2D vibble must contain at least the following columns:
+#'
+#' \itemize{
+#'   \item{\code{col}, \code{row}:}{ Integer coordinates in a 2D grid.}
+#'   \item{\code{slice}:}{ An integer identifying the anatomical slice.}
+#'   \item{One additional column storing voxel values (label, mask, or numeric).}
+#' }
+#'
+#' @section Required attributes:
+#' A 2D vibble must contain the following attributes:
+#'
+#' \itemize{
+#'   \item \code{screen_limits}: A list of length two containing the valid
+#'   \link[=is_limit]{limits} for \code{col} and \code{row} in the proxy 2D slice
+#'   layout. Slice 0 defines the reference (non-offset) slice.
+#'
+#'   \item \code{offset_col, offset_row}: Integer offsets applied to a slice based
+#'   on its \link[=slice_offset_index]{offset index} `[0,n]`. For a voxel in slice \code{n}, the 2D
+#'   position is \code{col + offset_col * n} and \code{row + offset_row * n}.
+#'
+#'   \item \code{plane}: A character value indicating the anatomical plane
+#'   represented by the 2D vibble.
+#' }
+#'
+#' @section Behaviour:  2D vibble behaves like a tibble.
+NULL
+
+
+# variable classes ----------------------------------------------------------
+
+#' @title Variables in the vibble package
+#' @name vbl_doc_vars
+#' @keywords internal
+#' @description
+#' Vibble variables are organised into three major groups based on their role
+#' within a voxel-level tidy-data structure: Spatial 3D variables, Spatial 2D
+#' variables, and Data variables. Each group corresponds to a distinct semantic
+#' layer in the vibble framework and is implemented through dedicated vctrs
+#' classes. The sections below outline the conceptual purpose of each group and
+#' link to the respective detailed documentation.
+#'
+#' @section Spatial 3D:
+#' Spatial 3D variables represent immutable voxel coordinates in the original
+#' 3D Cartesian index space of the volume. They define voxel identity and ensure
+#' spatial alignment across all operations.
+#' See \link{vbl_doc_var_spatial3D} for detailed specification of the
+#' \code{vbl_spat3D} class.
+#'
+#' @section Spatial 2D:
+#' Spatial 2D variables represent slice-level or layout-level coordinates used
+#' when projecting 3D data onto 2D planes. They include screen-space positions
+#' for visualisation as well as slice indices that reference anatomical planes.
+#' See \link{vbl_doc_var_spatial2D} for details on \code{vbl_screen} and
+#' \code{vbl_slice}.
+#'
+#' @section Data variables:
+#' Data variables encode voxel-wise measurements such as categorical labels,
+#' binary masks, and continuous numeric values. They use specialised vctrs
+#' classes to retain plotting metadata (colour palettes, limits) while
+#' preserving natural R behaviour for factors, logicals, and numerics.
+#' See \link{vbl_doc_var_data} for detailed information on
+#' \code{vbl_labels}, \code{vbl_mask}, and \code{vbl_num}.
+#'
+NULL
+
+#' @title Variables for 3D spatial representation
+#' @name vbl_doc_var_spatial3D
+#' @keywords internal
+#' @description
+#' Spatial 3D variables represent immutable voxel coordinates in a 3D Cartesian
+#' grid and form the structural backbone of every vibble. They uniquely identify
+#' each voxel and ensure that all operations preserve anatomical alignment and
+#' positional consistency across volumes.
+#'
+#' @section Concept:
+#' Spatial 3D variables encode the fixed index-space coordinates of the volume.
+#' They correspond to the mandatory vibble columns \code{x}, \code{y}, and
+#' \code{z} and are implemented through the \code{vbl_spat3D} vctrs class.
+#' Their values must remain unchanged throughout all data transformations.
+#'
+#' @section Backing type:
+#' \itemize{
+#'   \item Integer vector.
+#' }
+#'
+#' @section Behaviour:
+#' \itemize{
+#'   \item Immutable: arithmetic operations are disallowed.
+#'   \item Only subsetting and comparisons are permitted.
+#'   \item In vibbles, the \code{x}, \code{y}, and \code{z} columns cannot be
+#'   renamed, removed, or overwritten.
+#' }
+#'
+#' @section Required attributes:
+#' \itemize{
+#'   \item \code{axis}: One of \code{"x"}, \code{"y"}, or \code{"z"} identifying
+#'   the axis represented by the variable.
+#'   \item \code{limits}: Integer vector \code{c(1L, dim_axis)} specifying the
+#'   full coordinate range for this axis.
+#'   \item \code{pointer}: Anatomical direction towards which the index increases,
+#'   such as \code{"L"} (left), \code{"I"} (inferior), or \code{"P"} (posterior).
+#'   \item \code{step_si}: Physical spacing (in millimetres) per index step,
+#'   derived from NIfTI header information.
+#' }
+#'
+#' @section Derived coordinate space:
+#' The physical (“world-space”) coordinate for a Spatial 3D variable can be
+#' obtained via \link{in_mm}(), which returns values in millimetres as a
+#' standard double vector. These derived vectors may be used freely for
+#' arithmetic and visualisation without affecting the immutable index-space
+#' coordinates.
 #'
 #' @seealso
-#' \link{nifti_to_vbl}() for creating a vibble from a NIfTI image,
-#' \link{update_var_smr}() for refreshing \code{var_smr}.
+#' \link{vbl_doc_vars} for an overview of all vibble variable types.
+#'
 NULL
+
+#' @title Variables for 2D spatial representation
+#' @name vbl_doc_var_spatial2D
+#' @keywords internal
+#' @description
+#' Spatial 2D variables represent slice-level and layout-level coordinates used
+#' when projecting 3D voxel data onto 2D planes. They provide the positional
+#' framework for arranging voxels in panel displays and for identifying the
+#' anatomical slice and plane from which a 2D vibble is derived.
+#'
+#' @section Concept:
+#' Spatial 2D variables come in two forms:
+#'
+#' \itemize{
+#'   \item \strong{\code{vbl_screen}}: 2D screen or panel coordinates used to
+#'   arrange voxels within a single slice image (e.g. \code{col} and \code{row}).
+#'
+#'   \item \strong{\code{vbl_slice}}: Discrete slice indices specifying the
+#'   anatomical plane from which the 2D representation originates (e.g.
+#'   sagittal, axial, coronal).
+#' }
+#'
+#' Both types carry a \code{plane} attribute that encodes the anatomical plane
+#' (\code{"sag"}, \code{"axi"}, or \code{"cor"}) of the 2D representation.
+#'
+#' @section vbl_screen:
+#'
+#' \subsection{Concept}{
+#' 2D screen or panel coordinates used to arrange voxels within a slice-level
+#' visualisation. They provide an integer grid layout (e.g. \code{col} and
+#' \code{row}) for rasterised 2D representations.
+#' }
+#'
+#' \subsection{Backing type}{
+#' Integer vector.
+#' }
+#'
+#' \subsection{Behaviour}{
+#' \itemize{
+#'   \item Supports arithmetic operations (\code{+}, \code{-}, \code{*}, \code{/})
+#'   intended for layout construction (offsets, simple scaling, flipping).
+#'
+#'   \item Results of any arithmetic operation are automatically truncated
+#'   to integer values to ensure that screen coordinates always remain valid
+#'   grid indices for raster display.
+#'
+#'   \item Operations that produce non-finite values (\code{NA}, \code{Inf},
+#'   \code{NaN}) are not allowed.
+#'
+#'   \item Represents 2D arrangement only; anatomical meaning is derived via
+#'   the \code{plane} and \code{pointer} attributes inherited from the
+#'   underlying Spatial 3D axes.
+#'
+#'   \item Supports subsetting and comparisons.
+#' }
+#' }
+#'
+#' \subsection{Required attributes}{
+#' \itemize{
+#'   \item \code{axis2D}: \code{"col"} or \code{"row"}.
+#'
+#'   \item \code{plane}: Anatomical plane labels, one of \code{"sag"},
+#'   \code{"axi"}, or \code{"cor"}, indicating which 3D plane this 2D view
+#'   represents.
+#'
+#'   \item \code{limits}: Integer vector giving the nominal grid range for the
+#'   2D layout; may change when layout recalculations occur.
+#'
+#'   \item \code{pointer}: Anatomical direction towards which the index
+#'   increases within the 2D plane (inherited from the corresponding
+#'   \code{vbl_spat3D} axis).
+#'
+#'   \item \code{step_si}: Physical spacing in millimetres per index step
+#'   along this 2D axis, inherited from the relevant \code{vbl_spat3D} variable.
+#' }
+#' }
+#'
+#' @section vbl_slice:
+#'
+#' \subsection{Concept}{
+#' Discrete slice indices identifying the anatomical slice from which a 2D
+#' representation is derived. A \code{vbl_slice} variable specifies the position
+#' of each voxel within an ordered stack of slices orthogonal to a 3D axis.
+#' }
+#'
+#' \subsection{Backing type}{
+#' Integer vector.
+#' }
+#'
+#' \subsection{Behaviour}{
+#' \itemize{
+#'   \item Arithmetic operations are not supported; slice indices define fixed
+#'   anatomical positions and must not be shifted or rescaled.
+#'
+#'   \item Valid operations include filtering, grouping, and comparisons.
+#'
+#'   \item Slice indices express ordinal progression along the axis orthogonal
+#'   to the 2D plane and thus retain anatomical meaning (e.g. left→right for
+#'   sagittal slices, superior→inferior for axial slices).
+#'
+#'   \item \code{vbl_slice} does not encode physical spacing; spacing in
+#'   millimetres is defined by the corresponding \code{vbl_spat3D} axis and is
+#'   not stored here.
+#' }
+#' }
+#'
+#' \subsection{Required attributes}{
+#' \itemize{
+#'   \item \code{plane}: Anatomical plane labels, one of \code{"sag"},
+#'   \code{"axi"}, or \code{"cor"}, indicating the orientation of the slice
+#'   stack.
+#'
+#'   \item \code{limits}: Integer vector \code{c(min_slice, max_slice)}
+#'   representing the full slice index range along the axis orthogonal to the
+#'   displayed plane.
+#'
+#'   \item \code{pointer}: Anatomical direction towards which the slice index
+#'   increases (e.g. moving posteriorly in an axial stack).
+#' }
+#' }
+NULL
+
+#' @title Variables for voxel-wise measurements
+#' @name vbl_doc_var_data
+#' @keywords internal
+#' @description
+#' Data variables encode voxel-wise measurements in a vibble. They include
+#' categorical labels, binary masks, and continuous numeric values.
+#'
+#' @section Concept:
+#' Data variables fall into three semantic groups:
+#'
+#' \itemize{
+#'   \item Categorical voxel annotations backed by factors.
+#'   \item Binary logical variables indicating voxel membership in a region or set.
+#'   \item Continuous numeric measurements defined per voxel, such as intensities or statistical values.
+#' }
+#'
+NULL
+
+
+
+# concepts ----------------------------------------------------------------
+
+
 
 # params ------------------------------------------------------------------
 
-#' @title Dummy documentation for recurring parameters
+#' @title Dummy documentation for recurring parameters & sections
 #' @name vbl_doc
 #' @param alpha Controls the fill transparency. May be a single value in `[0,1]`,
 #' a numeric vector of length two, or an expression evaluated via
@@ -167,10 +451,10 @@ NULL
 NULL
 
 #' @title Dummy documentation for labeled voxel variables
-#' @name vbl_doc_var_label
+#' @name vbl_doc_var_categorical
 #'
 #' @param var
-#' Character. The name of a label (factor) column.
+#' Character. The name of a labels (factor) column.
 #'
 #' @keywords internal
 NULL

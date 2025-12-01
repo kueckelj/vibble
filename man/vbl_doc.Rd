@@ -2,7 +2,7 @@
 % Please edit documentation in R/vibble-doc.R
 \name{vbl_doc}
 \alias{vbl_doc}
-\title{Dummy documentation for recurring parameters}
+\title{Dummy documentation for recurring parameters & sections}
 \arguments{
 \item{alpha}{Controls the fill transparency. May be a single value in \verb{[0,1]},
 a numeric vector of length two, or an expression evaluated via
@@ -56,7 +56,7 @@ data-masked expressions. See section \emph{Opacity options} for details.}
 \item{vbl2D}{A \link{vibble2D}.}
 }
 \description{
-Dummy documentation for recurring parameters
+Dummy documentation for recurring parameters & sections
 }
 \section{Opacity options}{
 

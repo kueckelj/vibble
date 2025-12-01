@@ -14,7 +14,7 @@ make_nifti(
   path_fs = "/Applications/freesurfer/7.4.0",
   interp = NULL,
   missing = 0,
-  verbose = TRUE,
+  verbose = vbl_opts("verbose"),
   ...
 )
 }

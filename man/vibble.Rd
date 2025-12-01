@@ -22,12 +22,12 @@ A vibble knows four types of variables:
 \itemize{
 \item{Spatial:}{ Variables with \emph{fixed naming} x, y and z give the unique position of each voxel in the 3D space.
 They serve as both, for spatial localization and as a unique identifier.}
-\item{Label:}{ Variables of class \link{factor} storing categorical classifications or ordinal scores.}
+\item{Labels:}{ Variables of class \link{factor} storing categorical classifications or ordinal scores.}
 \item{Mask:}{ Variables of class \link{logical} storing binary information.}
 \item{Numeric:}{ Variables of class \link{numeric} storing information that can be interpreted on a continuous numeric scale.}
 }
 
-Label, mask and numeric variables are referred to as \link[=vars_data]{data variables}. Spatial variables
+Labels, mask and numeric variables are referred to as \link[=vars_data]{data variables}. Spatial variables
 x, y, and z are referred to as \link[=vars_spatial]{spatial variables}.
 
 For a vibble to be valid, the following requirements must hold.
@@ -44,7 +44,7 @@ A vibble must contain at least the following columns:
 \itemize{
 \item{ \code{x}, \code{y}, \code{z}: integer voxel coordinates in a
 Cartesian grid. This coordinate triplet must uniquely identify each row.}
-\item{ One additional column with voxel values (label, mask or numeric) }.
+\item{ One additional column with voxel values (labels, mask or numeric) }.
 }
 }
 
@@ -68,41 +68,22 @@ Accordingly, XYZ in a Cartesian coordinate system map to LIP in voxel orientatio
 \section{Required attributes}{
 
 A vibble must contain the following attributes:
-\itemize{
-\item \code{ccs_mapping}: named list mapping \code{x}, \code{y}, \code{z}
-to anatomical axes (x = L, y = I, z = P). This is fixed and cannot be changed.
-\item \code{ccs_limits}: list of length three containing the coordinate
-ranges for \code{x}, \code{y}, \code{z} as valid \link[=is_limit]{limits}. They define
-the space in which the volume-data lives. Vibbles can only be \link[=join_vibbles]{joined} if their space is equal.
-\item \code{var_smr}: named list with per-variable summaries; each entry
-is created by \link{summarize_var}() upon initial creation of the variable
-and is used for comprehensive mapping of color schemes and statistical
-analysis in the absence of the whole data set.
-}
-}
 
-\section{Optional attributes}{
-
-A vibble usually contains the following attributes:
 \itemize{
-\item \code{orientation_orig}: character string describing the original
-image orientation (e.g. from \code{RNifti::orientation()}).
-\item \code{nifti}: the NIfTI object used to create the vibble without
-slot @.Data for facilitated backwards compatibility.
+\item \code{ccs_limits}: A list of length three containing the valid
+\link[=is_limit]{limits} for \code{x}, \code{y}, and \code{z}. These define the spatial
+extent of the Cartesian coordinate system (the “space”) in which the
+volume data resides. Vibbles can only be \link[=join_vibbles]{joined} when their
+spatial limits are identical.
+
+\item \code{ccs_steps}: A list of length three containing the physical step
+size (in millimeters) corresponding to an increase of 1 unit along each of
+the three axes.
 }
 }
 
 \section{Behaviour}{
 
-A vibble behaves in almost all regards like a tibble. There are only two aspects
-that are hardcoded:
-\enumerate{
-\item{Spatial variables x, y and z can not be renamed, removed or manipulated.}
-\item{Vibble attributes remain unchanged / are restored after grouped dplyr operations.}
-}
+A vibble behaves like a tibble, except for one thing - Spatial variables x, y and z can not be renamed, removed or manipulated.
 }
 
-\seealso{
-\link{nifti_to_vbl}() for creating a vibble from a NIfTI image,
-\link{update_var_smr}() for refreshing \code{var_smr}.
-}

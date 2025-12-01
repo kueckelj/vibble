@@ -5,7 +5,7 @@
 #' to keep. If `NULL`, all slices are retained.
 #' @param lim Defines the 2D spatial limits of the resulting `vbl2D`. By default, the
 #' \link[=ccs_limits]{coordinate-space} limits of the input vibble are and mapped to
-#' col, row and slice depending on `plane`. User can adjust that by supplying:
+#' col and rowdepending on `plane`. User can adjust that by supplying:
 #'
 #'   \itemize{
 #'     \item  a valid \link[=is_limit]{limit}: a numeric vector of length two which is recycled for col and row.
@@ -16,8 +16,7 @@
 #' only voxels inside this region are retained, giving `lim` a filtering effect.
 #'
 #' @param expand An \link[=is_expand]{expand} specification applied to the col/row limits **after**
-#' the interpretation and potential filtering of `lim`. This enlarges the slice-wise bounding box by adding a
-#' margin around its current range.
+#' the interpretation and potential filtering of `lim`.
 #' @param .cond Optional. An expression evaluated with \link[rlang:args_data_masking]{data-masking}
 #' to filter voxels. If `NULL`, all voxels are retained.
 #' @param .by Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
@@ -29,7 +28,7 @@
 #' and all remaining variables from `vbl`. Attributes store the used plane and any
 #' applied offsets.
 #'
-#' @details The function derives the required axes using \link{req_axes_2d}() and
+#' @details The function derives the required axes using \link{req_axes_2D}() and
 #' renames the corresponding coordinate columns to `col`, `row`, and `slice`,
 #' and optionally filters by `slices`, `lim` and `.cond`.
 #'
@@ -47,16 +46,16 @@ vibble2D <- function(vbl,
                      slices = NULL,
                      lim = NULL,
                      expand = FALSE,
-                     offset_dist = 0,
-                     offset_dir = "left",
+                     offset_col = 0,
+                     offset_row = 0,
                      .cond = NULL,
                      .by = NULL){
 
   # sanity checks and prep
   plane <- match.arg(plane, choices = vbl_planes)
 
-  req_axes <- req_axes_2d(plane = plane)
-  slice_axis <- unname(switch_axis_label(plane))
+  req_axes <- req_axes_2D(plane = plane)
+  slice_axis <- req_axes["slice"]
 
   if(!is.numeric(slices)){ slices <- unique(vbl[[slice_axis]]) }
 
@@ -65,7 +64,7 @@ vibble2D <- function(vbl,
 
   # 3D to 2D
   vbl2D <-
-    dplyr::rename(vbl, !!!req_axes, slice := {{slice_axis}}) %>%
+    dplyr::rename(vbl, !!!req_axes) %>%
     dplyr::filter(slice %in% {{slices}}) %>%
     dplyr::select(col, row, slice, dplyr::everything())
 
@@ -83,7 +82,7 @@ vibble2D <- function(vbl,
   } else {
 
     lim <- list()
-    lim[c("col", "row")] <- ccs_limits(vbl)[req_axes]
+    lim[c("col", "row")] <- ccs_limits(vbl)[req_axes[c("col", "row")]]
 
   }
 
@@ -94,10 +93,7 @@ vibble2D <- function(vbl,
       within_limits(row, l = lim$row)
       )
 
-  lim(vbl2D) <- lim
-
-  # apply expand
-  vbl2D <- expand_lim2D(vbl2D, expand = expand)
+  screen_limits(vbl2D) <- expand_bb2D(bb2D = lim, expand = expand)
 
   # apply condition
   .by_quo <- rlang::enquo(.by)
@@ -109,16 +105,10 @@ vibble2D <- function(vbl,
   }
 
   # apply offset
-  if(offset_dist > 0){
-
-    vbl2D <- .apply_offset(vbl2D, offset_dist = offset_dist, offset_dir = offset_dir)
-
-  }
+  vbl2D <- .apply_offset(vbl2D, offset_col = offset_col, offset_row = offset_row)
 
   # set vbl2D attributes
   plane(vbl2D) <- plane
-
-  vbl2D <- update_var_smr(vbl2D, vars = c("col", "row", "slice"))
 
   return(vbl2D)
 

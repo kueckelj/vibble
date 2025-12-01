@@ -2,7 +2,7 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_bb}
 \alias{layer_bb}
-\title{Add a 2D bounding-box}
+\title{Add a data-driven 2D bounding-box}
 \usage{
 layer_bb(color, fill = NA, expand = FALSE, .cond = NULL, .by = NULL, ...)
 }

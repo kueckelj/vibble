@@ -118,10 +118,10 @@ is_img_anchor_rel <- function(x){
 
 #' @rdname vbl_doc_img_anchors
 #' @export
-as_img_anchor_abs <- function(anchor, lim){
+as_img_anchor_abs <- function(anchor, bb2D){
 
   stopifnot(is_img_anchor(anchor))
-  stopifnot(is_bb2D(lim))
+  stopifnot(is_bb2D(bb2D))
 
   if(is_img_anchor_chr(anchor)){
 
@@ -134,8 +134,8 @@ as_img_anchor_abs <- function(anchor, lim){
 
   if(is_img_anchor_rel(anchor)){
 
-    out[[1]] <- min(lim$col) + (diff(lim$col) * anchor[[1]])
-    out[[2]] <- max(lim$row) - (diff(lim$row) * anchor[[2]])
+    out[[1]] <- min(bb2D$col) + (diff(bb2D$col) * anchor[[1]])
+    out[[2]] <- max(bb2D$row) - (diff(bb2D$row) * anchor[[2]])
 
   } else if(is_img_anchor_abs(anchor)){
 
@@ -381,7 +381,7 @@ NULL
 #' @keywords internal
 .ratio2D <- function(vbl2D){
 
-  axes <- req_axes_2d(plane(vbl2D))
+  axes <- req_axes_2D(plane(vbl2D))
 
   col <- max(ccs_limits(vbl2D)[[axes[["col"]]]])
 

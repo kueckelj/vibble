@@ -1,68 +1,38 @@
 # generic and methods for the vibble constructor
 
+#' @export
 vibble <- function(x, ...){
 
   UseMethod(generic = "vibble")
 
 }
 
-vibble.character <- function(x,
-                             # single file
+#' @export
+vibble.data.frame <- function(x, ccs_limits, ...){
+
+  stopifnot(is_bb3D(ccs_limits))
+
+  new_vbl(
+    data = x,
+    ccs_limits = ccs_limits
+  )
+
+}
+
+#' @export
+vibble.oro.nifti <- function(x,
                              var,
                              lut = NULL,
                              ordered = FALSE,
-                             # multiple files/folder,
-                             rgx_fp = ".*",
-                             rgx_var = ".*",
-                             recursive = FALSE,
-                             join = "full",
-                             # all
                              rm0 = TRUE,
                              verbose = vbl_opts("verbose"),
                              ...){
 
-  out <- NULL
-
-  # single file handling
-  if(length(x) == 1 && file.exists(x) && !dir.exists(x)){
-
-    out <- nifti_to_vbl(x, var = var, lut = lut, rm0 = rm0, verbose = verbose)
-
-  }
-
-  # multiple files / folder handling
-  folder_input <- length(x) == 1 && dir.exists(x)
-  multiple_files <- (length(x) > 1)
-
-  if(folder_input | multiple_files){ # -> multiple files
-
-
-    out <-
-      niftis_to_vbl(
-        input = x,
-        rgx_fp = rgx_fp,
-        rgx_var = rgx_var,
-        recursive = recursive,
-        join = join,
-        rm0 = rm0,
-        verbose = verbose
-        )
-
-  }
-
-  # check success
-  if(!is_vbl(out)){
-
-    stop("`x` failed to be interpreted as a single file, a single folder or multiple files.")
-
-  }
-
-  return(out)
-
+  nifti_to_vbl(x, var = var, lut = lut, rm0 = rm0, verbose = verbose)
 
 }
 
-
+#' @export
 vibble.vbl2D <- function(x, ...){
 
   if(is_offset(x)){
@@ -88,5 +58,7 @@ vibble.vbl2D <- function(x, ...){
   return(out)
 
 }
+
+
 
 
