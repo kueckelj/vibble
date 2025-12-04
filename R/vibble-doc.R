@@ -3,7 +3,7 @@
 # classes and concepts ----------------------------------------------------
 
 #' @title Vibble objects
-#' @name vibble
+#' @name vbl_doc_vbl
 #' @docType class
 #' @description
 #' A vibble is a voxel-level tidy-data structure (tibble/data.frame) that represents
@@ -82,7 +82,7 @@ NULL
 #' @docType class
 #' @description
 #' A 2D vibble is a voxel-level tidy-data structure (tibble/data.frame) that
-#' represents a \link{vibble} prepared for visualization in 2D space. It is
+#' represents a \link[=vbl_doc_vbl]{vibble} prepared for visualization in 2D space. It is
 #' oriented along one anatomical plane: Sagittal (*"sag"*), Axial (*"axi"*),
 #' or Coronal (*"cor"*).
 #'
@@ -402,20 +402,17 @@ NULL
 #' @param interpolate Logical scalar indicating whether to interpolate raster tiles.
 #' @param lut Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 #' and character labels.
-#' @param offset_dir Direction in which to shift voxels when `offset_dist` is not 0.
-#' Valid options are *c('left', 'right', 'top', 'bottom')*.
-#' @param offset_dist If not 0, shifts the slices in the 2D layout.
-#'   Interpreted as:
-#'   * **absolute** when supplied as an integer (e.g. `2L`) or marked via `as_abs()`.
-#'   * **relative** when supplied as a double (e.g. `0.1`) or marked via `as_rel()`,
-#'     in which case the shift is computed as a proportion of the full axis range.
 #' @param opacity Controls voxel transparency. Accepts constants, ranges, or
 #' data-masked expressions. See section *Opacity options* for details.
 #' @param plane The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
+#' @param rm0 Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
+#' vibble. Replaces the deprecated argument \code{black_rm}.
 #' @param slice Integer value. The slice of interest.
 #' @param slices Integer vector. The slices of interest.
-#' @param vbl A \link{vibble}.
+#' @param vbl A \link[=vbl_doc_vbl]{vibble}.
 #' @param vbl2D A \link{vibble2D}.
+#' @param verbose Logical. If `TRUE`, informative messages are printed in the
+#' console.
 #'
 #' @section Opacity options:
 #' The `opacity` parameter supports constant, ranged, and voxel-wise inputs.

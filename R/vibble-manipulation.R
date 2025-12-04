@@ -69,7 +69,6 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, verbose = 
   vbl_fg_ids <- purrr::flatten_chr(vbl_fg_ids)
 
   vbl[[var_out]] <- vbl[["id"]] %in% vbl_fg_ids
-  vbl <- update_var_smr(vbl, vars = var_out)
 
   if(!id_exists){ vbl$id <- NULL }
 
@@ -181,7 +180,7 @@ dbscan3D <- function(vbl,
   vox_apply <- vbl[[var]]
 
   dbscan_out <-
-    vbl[vox_apply, ccs_labels] %>%
+    vbl[vox_apply, vbl_ccs_axes] %>%
     dbscan::dbscan(x = ., eps = eps, minPts  = minPts)
 
   vbl[[var_out]] <- 0
@@ -265,12 +264,25 @@ filter_bb3D <- function(vbl, bb3D){
 
   dplyr::filter(
     .data = vbl,
-    within_limits(x, bb3D$x) &
+      within_limits(x, bb3D$x) &
       within_limits(y, bb3D$y) &
       within_limits(z, bb3D$z)
   )
 
 }
+
+#' @export
+filter_mask <- function(vbl, var){
+
+  stopifnot(is.logical(vbl[[var]]))
+
+  vbl <- vbl[vbl[[var]], ]
+  vbl[[var]] <- NULL
+
+  return(vbl)
+
+}
+
 
 impute_scores <- function(vbl, var_mask, var_score, mx_dst = Inf, verbose = TRUE){
 
@@ -350,18 +362,12 @@ join_vibbles <- function(a, b, .rfn = NULL, join = "full", ...){
     fdb = TRUE
   )
 
-  test_ccs_mapping(
-    map_a = ccs_mapping(a),
-    map_b = ccs_mapping(b),
-    fdb = TRUE
-  )
-
-  a <- dplyr::select(a, {{ccs_labels}}, dplyr::everything())
-  b <- dplyr::select(b, {{ccs_labels}}, dplyr::everything())
+  a <- dplyr::select(a, {{vbl_ccs_axes}}, dplyr::everything())
+  b <- dplyr::select(b, {{vbl_ccs_axes}}, dplyr::everything())
 
   if(is.function(.rfn) | purrr::is_formula(.rfn)){
 
-    b <- dplyr::rename_with(b, .cols = -dplyr::all_of(ccs_labels), .fn = .rfn)
+    b <- dplyr::rename_with(b, .cols = -dplyr::all_of(vbl_ccs_axes), .fn = .rfn)
 
   }
 
@@ -377,33 +383,21 @@ join_vibbles <- function(a, b, .rfn = NULL, join = "full", ...){
   # join columns
   if(join == "full"){
 
-    out <- dplyr::full_join(x = a, y = b, by = ccs_labels)
+    out <- dplyr::full_join(x = a, y = b, by = vbl_ccs_axes)
 
   } else if(join == "inner"){
 
-    out <- dplyr::inner_join(x = a, y = b, by = ccs_labels)
+    out <- dplyr::inner_join(x = a, y = b, by = vbl_ccs_axes)
 
   } else if(join == "left"){
 
-    out <- dplyr::left_join(x = a, y = b, by = ccs_labels)
+    out <- dplyr::left_join(x = a, y = b, by = vbl_ccs_axes)
 
   } else if(join == "right"){
 
-    out <- dplyr::right_join(x = a, y = b, by = ccs_labels)
+    out <- dplyr::right_join(x = a, y = b, by = vbl_ccs_axes)
 
   }
-
-  # no NAs in logical variables
-  out <-
-    dplyr::mutate(
-      .data = out,
-      dplyr::across(
-        .cols = dplyr::where(is.logical),
-        .fns = ~ tidyr::replace_na(.x, replace = FALSE))
-    )
-
-  # join meta data
-  attr(out, which = "var_smr") <- c(var_smr(a), var_smr(b))
 
   return(out)
 

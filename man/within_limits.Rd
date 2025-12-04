@@ -2,39 +2,49 @@
 % Please edit documentation in R/utils-spatial.R
 \name{within_limits}
 \alias{within_limits}
-\title{Check whether values lie within numeric limits}
+\alias{inside_limits}
+\title{Check whether values lie inside numeric limits}
 \usage{
 within_limits(x, l, null_ok = FALSE)
+
+inside_limits(x, l, null_ok = FALSE)
 }
 \arguments{
-\item{x}{A numeric vector to be tested.}
+\item{x}{A numeric vector to test.}
 
-\item{l}{A numeric vector of length two specifying lower and upper limits.
+\item{l}{A numeric vector of length two giving lower and upper limits.
 Must satisfy the conditions checked by \link{is_limit}().}
 
-\item{null_ok}{Logical. If \code{TRUE} and l is \code{NULL}, the function returns \code{TRUE}
-for all elements of \code{x}.}
+\item{null_ok}{Logical. If \code{TRUE} and \code{l} is \code{NULL}, all
+elements of \code{x} are considered valid.}
 }
 \value{
-A logical vector indicating whether each element of \code{x} lies within
-the specified limits.
+A logical vector indicating whether each element of \code{x} satisfies the
+interval condition defined by the function.
 }
 \description{
-Test whether numeric values fall strictly between a lower and
-upper bound. Returns a logical vector with one entry per element of \code{x}.
+Test whether numeric values fall inside a specified lower–upper interval.
 }
 \details{
-If limits are provided, they must be valid according to \link{is_limit}().
-The function performs comparisons with \code{>=} and \verb{=<}.
+If \code{l} is not \code{NULL}, it must be a valid limit according to
+\link{is_limit}().
+\itemize{
+\item \code{within_limits(x, l)} evaluates \code{min(l) <= x <= max(l)}.
+\item \code{inside_limits(x, l)} evaluates \code{min(l) <  x <  max(l)}.
+}
 }
 \examples{
-# Example 1: Basic usage
 x <- c(5, 10, 15, 20)
-within_limits(x, l = c(9, 18))
 
-# Example 2: Open limits when l = NULL
-within_limits(x, l = NULL, null_ok = FALSE)
+# Inclusive interval
+within_limits(x, l = c(10, 20))
+
+# Exclusive interval
+inside_limits(x, l = c(10, 20))
+
+# NULL limits: keep all or reject all
 within_limits(x, l = NULL, null_ok = TRUE)
+within_limits(x, l = NULL, null_ok = FALSE)
 
 }
 \seealso{

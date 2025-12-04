@@ -133,7 +133,7 @@ ggplane <- function(vbl,
                     expand = 0.1,
                     offset_col = 0,
                     offset_row = 0,
-                    flip = FALSE,
+                    order = "desc",
                     clrp = vbl_opts("clrp"),
                     clrsp = vbl_opts("clrsp"),
                     interpolate = vbl_opts("interpolate"),
@@ -164,7 +164,8 @@ ggplane <- function(vbl,
   vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, layer = "ggplane()")
 
   # manage z-stack
-  if(is_offset(vbl2D) && isTRUE(flip)){
+  order <- match.arg(order, choices = c("desc", "asc"))
+  if(is_offset(vbl2D) && order == "desc"){
 
     vbl2D <- dplyr::arrange(vbl2D, dplyr::desc(slice))
 
@@ -173,7 +174,7 @@ ggplane <- function(vbl,
     vbl2D <- dplyr::arrange(vbl2D, slice)
 
   }
-assign("vbl2D", vbl2D, envir = .GlobalEnv)
+
   structure(
     list(
       vbl2D = vbl2D,
@@ -219,7 +220,7 @@ assign("vbl2D", vbl2D, envir = .GlobalEnv)
   # layer colors
   if(is_numeric_var(vbl2D[[var]])){
 
-    layer_colors <- scale_fill_numeric(clrsp = clrsp, limits = var_smr(vbl2D, var)$limits, ...)
+    layer_colors <- scale_fill_numeric(clrsp = clrsp, limits = var_limits(vbl2D, var), ...)
 
   } else {
 

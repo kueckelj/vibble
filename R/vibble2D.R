@@ -105,6 +105,8 @@ vibble2D <- function(vbl,
   }
 
   # apply offset
+  offset_col(vbl2D) <- 0L
+  offset_row(vbl2D) <- 0L
   vbl2D <- .apply_offset(vbl2D, offset_col = offset_col, offset_row = offset_row)
 
   # set vbl2D attributes

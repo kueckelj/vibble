@@ -7,7 +7,7 @@
 make_lut(vbl, var)
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 }
 \value{
 A tibble with columns \code{index} and \code{label}.

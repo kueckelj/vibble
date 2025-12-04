@@ -22,8 +22,6 @@
 #' @export
 .apply_offset <- function(vbl2D, offset_col, offset_row){
 
-  stopif(is_offset(vbl2D))
-
   slim <- screen_limits(vbl2D)
 
   # convert relative offsets
@@ -64,8 +62,8 @@
     ) %>%
     dplyr::ungroup()
 
-  offset_col(vbl2D) <- offset_col
-  offset_row(vbl2D) <- offset_row
+  offset_col(vbl2D) <- offset_col(vbl2D) + offset_col
+  offset_row(vbl2D) <- offset_row(vbl2D) + offset_row
 
   # restore idx in case the var exists  - and col ordering
   if("idx" %in% vbl_names){
@@ -76,6 +74,14 @@
   }
 
   return(vbl2D)
+
+}
+
+#' @rdname .apply_offset
+#' @export
+.reverse_offset <- function(vbl2D){
+
+  .apply_offset(vbl2D, offset_col = -offset_col(vbl2D), offset_row = -offset_row(vbl2D))
 
 }
 
@@ -213,7 +219,7 @@ bb2D_df <- function(vbl2D,
   }
 
   stopifnot(is.null(slices) | is.numeric(slices))
-  slices <- if(!is.numeric(slices)){ slices(vbl2D) }
+  slices <- if(!is.numeric(slices)){ slices(vbl2D) } else { slices }
 
   purrr::map_df(
     .x = slices,
@@ -266,7 +272,7 @@ bb2D_lst <- function(vbl2D,
   }
 
   stopifnot(is.null(slices) | is.numeric(slices))
-  slices <- if(!is.numeric(slices)){ slices(vbl2D)}
+  slices <- if(!is.numeric(slices)){ slices(vbl2D) } else { slices }
   out <- vector(mode = "list", length = max(slices))
 
   out[slices] <-

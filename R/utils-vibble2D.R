@@ -96,35 +96,23 @@ screen_limits <- function(vbl2D, slice = NULL){
 
   stopifnot(is_vbl2D(vbl2D))
 
-  slim <- .vbl_attr(vbl2D, which = "screen_limits")
+  screen_lim <- .vbl_attr(vbl2D, which = "screen_limits")
 
-  if(is_offset(vbl2D)){
+  if(is.numeric(slice)){
 
-    if(is.null(slice)){ slice <- slices(vbl2D)[1] }
-
-    sidx <- slice_offset_index(vbl2D, slice = slice)
-
-    slim <-
-      purrr::imap(
-        .x = slim,
-        .f = function(lim, axis){
-
-          if(axis == "col"){
-
-            lim + offset_both(vbl2D)[[axis]] * sidx
-
-          } else if(axis == "row"){
-
-            lim - offset_both(vbl2D)[[axis]] * sidx
-
-          }
-
-        }
-      )
+    screen_lim <- .offset_lim0(vbl2D, slice = slice, lim0 = screen_lim)
 
   }
 
-  return(slim)
+  return(screen_lim)
+
+}
+
+#' @keywords internal
+.screen_limits0 <- function(vbl2D){
+
+  slice <- slices(vbl2D)[1]
+  screen_limits(vbl2D, slice = slice)
 
 }
 
@@ -180,7 +168,7 @@ plot_limits <- function(vbl2D){
 #'
 #' @export
 slices <- function(vbl2D){
-  unique(vbl2D$slice)
+  sort(unique(vbl2D$slice))
 }
 
 #' @rdname slices
@@ -189,6 +177,14 @@ slice_limits <- function(vbl2D, slice){
   stopifnot(is_vbl2D(vbl2D))
   stopifnot(slice %in% slices(vbl2D))
   purrr::map(vbl2D[vbl2D$slice == slice, c("col", "row")], range)
+}
+
+#' @keywords internal
+.slice_limits0 <- function(vbl2D){
+
+  slice <- slices(vbl2D)[1]
+  slice_limits(vbl2D, slice = slice)
+
 }
 
 #' @rdname slices
@@ -213,58 +209,10 @@ slice_offset_index <- function(vbl2D, slice){
 
 
 
-#' @title vbl2D attributes
-#' @description
-#' Access and modify core attributes of a `vbl2D` object.
-#' These helpers provide a stable interface to metadata used for 2D visualization and offset handling.
-#'
-#' @param which Character scalar for `offset_attr()` selecting the offset attribute.
-#'   Valid values are `c("dir", "dist")`.
-#' @param value New value assigned in the corresponding replacement functions.
-#'
-#' @return
-#' For accessor functions, the requested attribute value.
-#' For replacement functions, the modified `vbl2D` object.
-#'
-#' @details
-#' The following attributes are attached to `vbl2D` objects and can be accessed or modified via these helpers.
-#' They are used by plotting and slicing functions to control display, offsets, and orientation in 2D space.
-#'
-#' The `lim` attribute is a list with optional entries `col` and `row`.
-#' Each entry is either `NULL` or a valid limit vector tested via `is_limit()`.
-#' These limits can be used by higher level functions to restrict the visible extent in column and row directions.
-#'
-#' Offset attributes are created when `vibble2D()` is called with `offset_dist > 0`.
-#' The direction is stored in `offset_dir` and the distance in `offset_dist`.
-#' `is_offset()` tests whether a `vbl2D` object currently has a positive offset distance.
-#'
-#' The `plane` attribute stores the anatomical plane used to generate the `vbl2D` object.
-#' Valid options are `c("axi", "cor", "sag")` depending on the implementation of `vibble2D()`.
-#'
-#' @note
-#' The `lim` attribute affects 2D display or computational subsetting only and does not change the underlying 3D voxel space of the vibble.
-#' Offsets and plane metadata should be kept consistent with how `vibble2D()` generated the object to avoid misaligned visualizations.
-#'
-#' @section Functions:
-#' \itemize{
-#'   \item `lim()`, `lim<-()`: Get and set the `lim` attribute, a list with optional `col` and `row` limits.
-#'   \item `offset_attr()`: Low level accessor for offset attributes, selecting `offset_dir` or `offset_dist` via `which`.
-#'   \item `offset_dir()`, `offset_dir<-()`: Get and set the offset direction.
-#'   \item `offset_dist()`, `offset_dist<-()`: Get and set the offset distance.
-#'   \item `plane()`, `plane<-()`: Get and set the anatomical plane of a `vbl2D` object.
-#'   \item `is_offset()`: Logical test, evaluates to `TRUE` if `offset_dist()` is greater than zero.
-#' }
-#'
-#' @seealso
-#' \link{vibble2D}() for constructing `vbl2D` objects.
-#' \link{is_limit}() for validating limit vectors used in `lim`.
-#'
-#' @name vbl2D_attr
-NULL
 
-#' @rdname vbl2D_attr
+#' @rdname vbl_doc_offset_utilities
 #' @export
-offset_both <- function(vbl2D){
+offset_axes <- function(vbl2D){
 
   stopifnot(is_vbl2D(vbl2D))
 
@@ -275,7 +223,31 @@ offset_both <- function(vbl2D){
 
 }
 
-#' @rdname vbl2D_attr
+#' @keywords internal
+.offset_lim0 <- function(vbl2D, slice, lim0){
+
+  sidx <- slice_offset_index(vbl2D, slice = slice)
+
+  purrr::imap(
+    .x = lim0,
+    .f = function(lim, axis){
+
+      if(axis == "col"){
+
+        lim + offset_axes(vbl2D)[[axis]] * sidx
+
+      } else if(axis == "row"){
+
+        lim - offset_axes(vbl2D)[[axis]] * sidx
+
+      }
+
+    }
+  )
+
+}
+
+#' @rdname vbl_doc_offset_utilities
 #' @export
 offset_col <- function(vbl2D){
 
@@ -283,7 +255,7 @@ offset_col <- function(vbl2D){
 
 }
 
-#' @rdname vbl2D_attr
+#' @rdname vbl_doc_offset_utilities
 #' @export
 `offset_col<-` <- function(vbl2D, value){
 
@@ -295,7 +267,7 @@ offset_col <- function(vbl2D){
 
 }
 
-#' @rdname vbl2D_attr
+#' @rdname vbl_doc_offset_utilities
 #' @export
 offset_row <- function(vbl2D){
 
@@ -303,7 +275,7 @@ offset_row <- function(vbl2D){
 
 }
 
-#' @rdname vbl2D_attr
+#' @rdname vbl_doc_offset_utilities
 #' @export
 `offset_row<-` <- function(vbl2D, value){
 
@@ -316,7 +288,6 @@ offset_row <- function(vbl2D){
 }
 
 
-#' @rdname vbl2D_attr
 #' @export
 plane <- function(vbl2D){
 
@@ -324,7 +295,6 @@ plane <- function(vbl2D){
 
 }
 
-#' @rdname vbl2D_attr
 #' @export
 `plane<-` <- function(vbl2D, value){
 
@@ -334,48 +304,66 @@ plane <- function(vbl2D){
 
 }
 
-#' @keywords internal
-.offset_add <- function(limit, value){
 
-  limit[1] <- limit[1] + value
-  limit[2] <- limit[2] + value
 
-  sort(limit)
+#' @title Plane-wise spatial resolutions
+#' @description
+#' Compute the voxel resolution of a \code{vbl} object for a given anatomical
+#' plane, or for all supported planes. The resolution is defined as the product
+#' of the maximum index extents along the two in-plane axes.
+#'
+#' @param vbl A \code{vbl} object.
+#' @param plane Character scalar specifying the anatomical plane for which the
+#'   resolution is computed. Must match one of \code{vbl_planes}.
+#'
+#' @details
+#' For a given \code{plane}, the corresponding 2D axes are obtained via
+#' \code{req_axes_2D()}. The function retrieves the Cartesian-coordinate-system
+#' limits (\code{ccs_limits()}) of these axes and returns:
+#'
+#' \deqn{\max(\mathrm{col}) \times \max(\mathrm{row})}
+#'
+#' This value approximates the number of potential in-plane voxel positions
+#' before filtering or masking.
+#'
+#' \code{plane_resolutions()} applies \code{plane_resolution()} to all
+#' anatomical planes and returns a named numeric vector sorted in decreasing
+#' order.
+#'
+#' @return
+#' \itemize{
+#'   \item \code{plane_resolution()}: A numeric scalar.
+#'   \item \code{plane_resolutions()}: A named numeric vector of plane
+#'   resolutions.
+#' }
+#'
+#' @seealso \code{\link{ccs_limits}}, \code{\link{req_axes_2D}}
+#'
+#' @export
+plane_resolution <- function(vbl, plane){
+
+  req_axes <- req_axes_2D(plane)
+
+  ccs_lim <- ccs_limits(vbl)
+
+  max(ccs_lim[[req_axes["col"]]]) * max(ccs_lim[[req_axes["row"]]])
 
 }
 
-#' @keywords internal
-.offset_axis <- function(vbl2D){
+#' @rdname plane_resolution
+#' @export
+plane_resolutions <- function(vbl){
 
-  if(!is_offset(vbl2D)){
+  res <-
+    purrr::map_dbl(
+      .x = unname(vbl_planes),
+      .f = ~ plane_resolution(vbl, plane = .x)
+    )
 
-    warning("vbl2D is not offset.")
-    out <- NULL
+  names(res) <- unname(vbl_planes)
 
-  } else {
-
-    out <- ifelse(grepl("left|right", offset_dir(vbl2D)), "col", "row")
-
-  }
-
-  return(out)
+  rev(sort(res))
 
 }
 
-#' @keywords internal
-.offset_comp_fn <- function(offset_dir){
-
-  ifelse(grepl("right|bottom", offset_dir), .offset_add, .offset_subtract)
-
-}
-
-#' @keywords internal
-.offset_subtract <- function(limit, value){
-
-  limit[1] <- limit[1] - value
-  limit[2] <- limit[2] - value
-
-  sort(limit)
-
-}
 

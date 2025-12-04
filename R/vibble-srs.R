@@ -189,6 +189,16 @@ req_axes_2D <- function(plane){
 
 }
 
+#' @keywords internal
+.req_axis_2D_ref <- function(plane, plane_ref){
+
+  req_axes <- req_axes_2D(plane)
+  ccs_ref <- plane_to_ccs(plane_ref)
+
+  names(req2D)[req2D == ccs_ref]
+
+}
+
 #' @rdname vbl_doc_srs
 #' @keywords internal
 #' @export

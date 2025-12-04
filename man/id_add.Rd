@@ -10,7 +10,7 @@ id_add(vbl, rm_coords = FALSE)
 id_split(vbl)
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
 \item{rm_coords}{Logical. If \code{TRUE}, remove the original coordinate columns after creating the ID.}
 

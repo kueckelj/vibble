@@ -31,29 +31,24 @@ colors of specific labels (see \link{color_vector}()).}
 \item{lut}{Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 and character labels.}
 
-\item{offset_dir}{Direction in which to shift voxels when \code{offset_dist} is not 0.
-Valid options are \emph{c('left', 'right', 'top', 'bottom')}.}
-
-\item{offset_dist}{If not 0, shifts the slices in the 2D layout.
-Interpreted as:
-\itemize{
-\item \strong{absolute} when supplied as an integer (e.g. \code{2L}) or marked via \code{as_abs()}.
-\item \strong{relative} when supplied as a double (e.g. \code{0.1}) or marked via \code{as_rel()},
-in which case the shift is computed as a proportion of the full axis range.
-}}
-
 \item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
 data-masked expressions. See section \emph{Opacity options} for details.}
 
 \item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
+\item{rm0}{Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
+vibble. Replaces the deprecated argument \code{black_rm}.}
+
 \item{slice}{Integer value. The slice of interest.}
 
 \item{slices}{Integer vector. The slices of interest.}
 
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
 \item{vbl2D}{A \link{vibble2D}.}
+
+\item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
+console.}
 }
 \description{
 Dummy documentation for recurring parameters & sections

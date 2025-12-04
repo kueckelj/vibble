@@ -2,11 +2,11 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_slice_number}
 \alias{layer_slice_number}
-\title{Add slice-number labels}
+\title{Layer for displaying slice numbers}
 \usage{
 layer_slice_number(
   anchor,
-  to = "avg",
+  space = "avg",
   align = NULL,
   wrap = NULL,
   angle = 0,
@@ -17,28 +17,28 @@ layer_slice_number(
 )
 }
 \arguments{
-\item{anchor}{Anchor position for placing the label.
-Accepted inputs differ between offset and non-offset layouts:
+\item{anchor}{Character or numeric anchor specification defining the relative
+position of labels within each slice's bounding box. See
+\code{\link{img_anchors}} for valid presets.}
 
+\item{space}{One of \code{"slice"}, \code{"screen"}, or \code{"avg"}, indicating
+which 2D limit should define the anchor position:
 \itemize{
-\item{ Offset layout:}{ Character anchors only.\if{html}{\out{<br>}}
-If slices are offset left–right, valid anchors are \code{c("top", "bottom")}.\if{html}{\out{<br>}}
-If slices are offset top–bottom, valid anchors are \code{c("left", "right")}.\if{html}{\out{<br>}}
-Defaults are \code{"top"} for left–right offsets and \code{"left"} for top–bottom offsets.}\if{html}{\out{<br>}}
-\item{Non-offset layout:}{ Any relative or absolute \link[=is_img_anchor]{image anchor}.
-Supports named anchors (e.g. \code{"top-left"}) and numeric anchors.}
+\item \code{"slice"} – use raw slice limits.
+\item \code{"screen"} – use screen-space limits (after offsets).
+\item \code{"avg"} – use the average of slice and screen limits.
 }}
 
-\item{align}{Logical. If \code{TRUE}, ensures slice numbers align across slices when offsets are applied.}
+\item{align}{Optional. If \code{"col"} or \code{"row"}, enforce alignment of
+label positions across slices along the chosen axis.}
 
-\item{wrap}{Optional. Character template for constructing labels. Uses glue syntax, e.g. \code{"{slice}"}.}
+\item{wrap}{Optional template for label text. Defaults to \code{"{slice}"}.}
 
-\item{angle}{Rotation angle of the text.}
+\item{angle}{Rotation angle passed to \code{geom_text()}.}
 
-\item{alpha, color, size}{Passed to the respective standard parameters
-of \link{geom_text}() to control opacity, color and size of the drawn labels.}
+\item{alpha, color, size}{Passed to \code{geom_text()} to define the label aesthetics.}
 
-\item{...}{Additional arguments passed to \code{ggplot2::geom_text()}.}
+\item{...}{Additional arguments passed to \code{geom_text()}.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When
@@ -46,35 +46,15 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Draw slice numbers as text labels on each slice of a \code{ggvibble}. Supports both
-regular slice layouts and offset layouts produced by \code{offset_dist} / \code{offset_dir}
-in the \link{ggplane}() call.
+Add slice numbers as text labels to a 2D vibble (\code{vbl2D}). Labels are
+positioned using an anchor specification and can be computed relative to
+slice limits, screen limits, or their average. Optional alignment ensures
+consistent label placement across slices.
 }
 \details{
-Two internal implementations exist depending on whether the \code{vbl2D} has slice offsets
-as determined by \code{offset_dist} and \code{offset_dir} in \code{ggplane()}.
-
-\strong{Non-offset layout:}
-\itemize{
-\item Uses the provided \code{anchor} directly (\code{rel} or \code{abs}).
-\item Converts it to absolute coordinates via \code{as_img_anchor_abs(anchor, lim(vbl2D))}.
-\item Places labels exactly at the slice-specific anchoring point.
-\item Simple, consistent placement for grid/faceted layouts.
-}
-
-\strong{Offset layout:}
-\itemize{
-\item If \code{anchor} is missing, a default is chosen along the axis \emph{orthogonal} to the offset direction
-(e.g. \code{"top"} for left–right offsets, \code{"left"} for top–bottom offsets).
-\item Anchors must be \strong{character names}, not numeric.
-\item Anchor coordinates are derived slice-wise from \code{slice_bb()}.
-\item If \code{align = TRUE}, slice labels are aligned along the axis \emph{not} affected by the offset
-to avoid staggered-looking label positions.
-\item Additional nudging is applied to place the label visually centered between the slice bounding box
-and the overall plotting region (\code{lim_plot()}).
-}
-
-In short:
-\strong{non-offset = direct placement at a global anchor},
-\strong{offset = anchor restricted to the offset geometry, with optional cross-slice alignment and nudging}.
+Anchor coordinates may be supplied either as preset strings (e.g.
+\code{"top-right"}) or as relative coordinates in \eqn{[0,1]^2}. For each
+slice, the chosen limit specification (\code{to}) determines the bounding box
+in which the anchor is resolved. If \code{align} is used, the selected axis
+(\code{col} or \code{row}) is harmonized across all slices.
 }

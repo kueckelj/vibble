@@ -139,7 +139,7 @@ layer_mask <- function(color,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_mask(var = '{var}', ...")
+      layer <- glue::glue("layer_mask(color = '{color}', ...)")
       vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
 
       .layer_mask_impl(
@@ -290,7 +290,7 @@ layer_numeric <- function(var,
     ),
     scale_fill_numeric(
       clrsp,
-      limits = var_smr(vbl, var)$limits,
+      limits = var_limits(vbl2D, var),
       ...
     )
   )

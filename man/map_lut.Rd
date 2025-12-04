@@ -7,7 +7,7 @@
 map_lut(vbl, var, lut, ordered = FALSE, var_out = var, verbose = TRUE)
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
 \item{var}{Character. Name of the integer-coded variable to remap.}
 
@@ -17,6 +17,9 @@ and character labels.}
 \item{ordered}{Logical. If \code{TRUE}, the resulting factor is ordered. Defaults to \code{FALSE}.}
 
 \item{var_out}{Character. Output variable name. Defaults to the same name as \code{var}.}
+
+\item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
+console.}
 }
 \value{
 The input vibble with a new or replaced factor variable containing mapped

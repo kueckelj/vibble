@@ -75,7 +75,7 @@ is_bb3D <- function(x){
 
   is.list(x) &&
   length(x) %in% 1:3 &&
-  all(names(x) %in% ccs_labels) &&
+  all(names(x) %in% vbl_ccs_axes) &&
   all(map_lgl(.x = x, .f = is_limit))
 
 }
@@ -328,6 +328,21 @@ test_ccs_mapping <- function(map_a, map_b, fdb = FALSE){
 
     ref <- stringr::str_c(names(test_out)[!test_out], collapse = ", ")
     stop(glue::glue("Different CCS-mappings on axis {ref}."))
+
+  }
+
+  return(all(test_out))
+
+}
+
+test_ccs_steps <- function(steps_a, steps_b, fdb = FALSE){
+
+  test_out <- purrr::map2_lgl(.x = steps_a, .y = steps_b, .f = identical)
+
+  if(!all(test_out) & isTRUE(fdb)){
+
+    ref <- stringr::str_c(names(test_out)[!test_out], collapse = ", ")
+    stop(glue::glue("Different CCS-steps on axis {ref}."))
 
   }
 

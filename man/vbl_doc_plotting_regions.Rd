@@ -7,11 +7,11 @@
 \alias{layer_slice_limits}
 \title{Layers for visualizing 2D limit regions}
 \usage{
-layer_plot_limits(color = "yellow", fill = NA, ...)
+layer_plot_limits(color = alpha("yellow", 0.7), fill = NA, ...)
 
-layer_screen_limits(color = "blue", fill = NA, slices = NULL, ...)
+layer_screen_limits(color = alpha("blue", 0.7), fill = NA, slices = NULL, ...)
 
-layer_slice_limits(color = "red", fill = NA, slices = NULL, ...)
+layer_slice_limits(color = alpha("red", 0.7), fill = NA, slices = NULL, ...)
 }
 \arguments{
 \item{color}{Line color of the drawn rectangles.}

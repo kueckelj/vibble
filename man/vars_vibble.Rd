@@ -23,7 +23,7 @@ vars_spatial(vbl)
 vars_type(vbl, type)
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
 \item{type}{Character value. The data variable type of interest. Must be one of \emph{c('label', 'mask', 'numeric')}.}
 }

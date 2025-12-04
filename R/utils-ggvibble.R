@@ -286,10 +286,15 @@ NULL
 
       opacity_lim <- range(opacity_inp, na.rm = TRUE)
 
-      if(!within_limits(opacity_lim[1], c(0,1))){ opacity_lim[1] <- 0 }
-      if(!within_limits(opacity_lim[2], c(0,1))){ opacity_lim[2] <- 1 }
+      if(!inside_limits(opacity_lim[1], c(0,1))){ opacity_lim[1] <- 0 }
+      if(!inside_limits(opacity_lim[2], c(0,1))){ opacity_lim[2] <- 1 }
 
-      opacity_use <- scales::rescale(x = opacity_inp, to = opacity_lim)
+      opacity_use <-
+        scales::rescale(
+          x = opacity_inp,
+          to = opacity_lim,
+          from = range(opacity_inp, na.rm = TRUE)
+          )
 
     } else {
 
@@ -302,6 +307,9 @@ NULL
     stop("Invalid input for `opacity`.")
 
   }
+
+  assign("opacity_inp", opacity_inp, envir = .GlobalEnv)
+  assign("opacity_use", opacity_use, envir = .GlobalEnv)
 
   return(opacity_use)
 

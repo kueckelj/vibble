@@ -7,7 +7,7 @@
 filter_bb3D(vbl, bb3D)
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
 \item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.}
 }

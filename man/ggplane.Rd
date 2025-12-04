@@ -13,7 +13,7 @@ ggplane(
   expand = 0.1,
   offset_col = 0,
   offset_row = 0,
-  flip = FALSE,
+  order = "desc",
   clrp = vbl_opts("clrp"),
   clrsp = vbl_opts("clrsp"),
   interpolate = vbl_opts("interpolate"),
@@ -23,7 +23,7 @@ ggplane(
 )
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
 \item{var}{Character scalar naming the variable to plot.}
 
@@ -47,8 +47,6 @@ only voxels inside this region are retained, giving \code{lim} a filtering effec
 \item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits \strong{after}
 the interpretation and potential filtering of \code{lim}.}
 
-\item{flip}{Logical. If \code{TRUE}, the z-order of the slices is flipped. Only relevent for offset-layouts.}
-
 \item{clrp}{Character scalar specifying the categorical palette.
 Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
 
@@ -65,6 +63,8 @@ voxels plotted with \code{ggplane()} and passed to added \link[vbl_doc_vbl_layer
 The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.}
 
 \item{...}{Additional arguments forwarded to the scale functions controlling the fill aesthetic.}
+
+\item{flip}{Logical. If \code{TRUE}, the z-order of the slices is flipped. Only relevent for offset-layouts.}
 }
 \value{
 A \link{ggvibble} object.

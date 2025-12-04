@@ -14,6 +14,7 @@ BugReports: https://github.com/kueckelj/vibble/issues
 Imports: 
     concaveman,
     dbscan,
+    divest,
     dplyr,
     forcats,
     ggnewscale,

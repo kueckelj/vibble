@@ -6,7 +6,7 @@
 \title{2D Vibble objects}
 \description{
 A 2D vibble is a voxel-level tidy-data structure (tibble/data.frame) that
-represents a \link{vibble} prepared for visualization in 2D space. It is
+represents a \link[=vbl_doc_vbl]{vibble} prepared for visualization in 2D space. It is
 oriented along one anatomical plane: Sagittal (\emph{"sag"}), Axial (\emph{"axi"}),
 or Coronal (\emph{"cor"}).
 

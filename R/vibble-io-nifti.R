@@ -1,6 +1,56 @@
 # I/O and conversion between arrays and vibbles.
 
 
+#' @title Convert DICOM data to a vibble
+#' @description
+#' Convert a DICOM directory or file set into a NIfTI volume and return the result as a \link[=vbl_doc_vbl]{vibble}.
+#'
+#' @param x Path to a DICOM directory or vector of DICOM files.
+#' @param var Character name of the variable under which voxel values will be
+#'   stored in the output vibble (e.g. \code{"t1"}, \code{"flair"}).
+#' @param ... Additional arguments forwarded to \link{convertDicom}().
+#'
+#' @inheritParams vbl_doc
+#'
+#' @return A \link[=vbl_doc_vbl]{vibble}.
+#'
+#' @details
+#' The function performs:
+#' \enumerate{
+#'   \item Conversion of the provided DICOM input into a temporary NIfTI file via \link{convertDicom}().
+#'   \item Import of that NIfTI volume using \link{nifti_to_vbl}().
+#'   \item Automatic cleanup of the temporary NIfTI file.
+#' }
+#'
+#' All spatial metadata (orientation, dimensions, spacing) follow the
+#' conventions defined in the vibble 3D spatial reference system.
+#'
+#' @seealso \link{nifti_to_vbl}
+#'
+#' @examples
+#' \dontrun{
+#' d <- dcm_to_vbl("path/to/dicom_folder", var = "t1")
+#' }
+#'
+#' @export
+dcm_to_vbl <- function(x,
+                       var,
+                       rm0 = FALSE,
+                       verbose = vbl_opts("verbose"),
+                       ...){
+
+  stopifnot(is.character(var))
+
+  xpath <- divest::convertDicom(path = x, interactive = FALSE, ...)
+
+  out <- nifti_to_vbl(x = xpath, var = var, rm0 = rm0, verbose = verbose)
+
+  unlink(xpath)
+
+  return(out)
+
+}
+
 
 #' @title Write NIfTI volume from a vibble
 #' @description
@@ -254,10 +304,6 @@ make_nifti <- function(vbl,
 #' @param add_id
 #' Logical. If \code{TRUE}, add a unique voxel ID column.
 #'
-#' @param rm0
-#' Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
-#' vibble. Replaces the deprecated argument \code{black_rm}.
-#'
 #' @inherit vbl_doc params
 #'
 #' @param ...
@@ -297,7 +343,7 @@ nifti_to_vbl <- function(x,
 
   if(isTRUE(x@reoriented)){
 
-    warning("Input object has @reoriented == TRUE. Output orientation is not reliable.")
+    warning("Nifti object has @reoriented == TRUE. Output orientation is not reliable.")
 
   }
 
@@ -307,7 +353,7 @@ nifti_to_vbl <- function(x,
   flip_check <- list(x = "R", y = "S", z = "A")
 
   pointers <-
-    RNifti::orientation(x, useQuaternionFirst = TRUE) %>%
+    RNifti::orientation(x) %>%
     stringr::str_split_1(pattern = "")
 
   names(pointers) <-
@@ -325,36 +371,27 @@ nifti_to_vbl <- function(x,
     purrr::keep(.p = ~ .x) %>%
     names()
 
-  # create vbl
-  vbl <-
+  # create preliminary data for vbl and reorient if required
+  data <-
     reshape2::melt(x@.Data, varnames = unname(pointers), value.name = var) %>%
     tibble::as_tibble() %>%
     dplyr::select(!!!pointers[c(ccs_labels)], !!rlang::sym(var))
 
-  # identify logical input
-  if(is_mask_candidate(vbl[[var]])){
-
-    vbl[[var]] <- as.logical(vbl[[var]])
-
-  }
-
-  # set attributes
-  class(vbl) <- c("vbl", class(vbl))
-  attr(vbl, which = "orientation_orig") <- RNifti::orientation(x, useQuaternionFirst = TRUE)
-  attr(vbl, which = "ccs_mapping") <- ccs_orientation_mapping_fix # currently fixed XYZ = LIP
-  attr(vbl, which = "ccs_limits") <- purrr::map(vbl[,c(ccs_labels)], .f = range)
-
-  x@.Data <- array()
-  attr(vbl, which = "nifti") <- x # useful meta data for backwards compatibility
-
-  # post process
   for(fa in flip_axes){
 
-    vbl[[fa]] <- max(vbl[[fa]]) - vbl[[fa]] + 1
+    data[[fa]] <- max(data[[fa]]) - data[[fa]] + 1
 
   }
 
-  if(is_label_candidate(vbl[[var]])){
+  # identify logical input
+  if(is_mask_candidate(data[[var]])){
+
+    data[[var]] <- as.logical(data[[var]])
+
+  }
+
+  # identify label input
+  if(is_label_candidate(data[[var]])){
 
     if(is.null(lut)){
 
@@ -364,28 +401,54 @@ nifti_to_vbl <- function(x,
 
       msg <- paste0(msg, " Interpreting as label with provided LUT.")
 
-      vbl <- map_lut(vbl, var = var, lut = lut, ordered = isTRUE(ordered), verbose = verbose)
+      data <- map_lut(data, var = var, lut = lut, ordered = isTRUE(ordered), verbose = verbose)
 
     }
 
   } else { # numeric or mask
 
-    var_type <- ifelse(is_mask_var(vbl[[var]]), "mask", "numeric")
+    var_type <- ifelse(is_mask_var(data[[var]]), "mask", "numeric")
     msg <- paste0(msg, " Interpreting as {var_type}.")
 
   }
 
-  .glue_message(msg, verbose = verbose)
+  # identify numeric input
+  if(is_numeric_candidate(data[[var]])){
 
-  var_smr <- list()
-  var_smr[[var]] <- summarize_var(vbl[[var]])
-  attr(vbl, which = "var_smr") <- var_smr
-
-  if(isTRUE(rm0)){
-
-    vbl <- vbl[vbl[[var]] != 0, ]
+    var_limits(data[[var]]) <- range(data[[var]], na.rm = TRUE)
 
   }
+
+  # officially construct vibble with attributes
+  ccs_limits <-
+    purrr::map(
+      .x = data[,c(vbl_ccs_axes)],
+      .f = ~ range(.x) %>% as.integer()
+      )
+
+  ccs_steps <- vector(mode = "list", length = 3)
+  names(ccs_steps) <- vbl_ccs_axes
+  px_steps <- x@pixdim[2:4]
+
+  for(axis in vbl_ccs_axes){
+
+    idx <- which(names(pointers) == axis)
+
+    ccs_steps[[axis]] <- px_steps[idx]
+
+  }
+
+  vbl <-
+    new_vbl(
+      data = data,
+      ccs_limits = ccs_limits,
+      ccs_steps = ccs_steps
+      )
+
+  .glue_message(msg, verbose = verbose)
+
+  # post process
+  if(isTRUE(rm0)){ vbl <- vbl[vbl[[var]] != 0, ] }
 
   if(isTRUE(add_id)){ vbl <- id_add(vbl) }
 
@@ -474,25 +537,23 @@ niftis_to_vbl <- function(x,
                           rm0 = FALSE,
                           verbose = vbl_opts("verbose")){
 
-  input <- x
+  stopifnot(is.character(x))
 
-  stopifnot(is.character(input))
+  if(length(x) == 1){ # should be directory
 
-  if(length(input) == 1){ # should be directory
-
-    stopifnot(dir.exists(input))
+    stopifnot(dir.exists(x))
 
     nii_paths <-
-      list.files(path = input, full.names = TRUE, recursive = recursive) %>%
+      list.files(path = x, full.names = TRUE, recursive = recursive) %>%
       stringr::str_subset(pattern = ".nii.gz$")
 
-    if(length(nii_paths) == 0){ .glue_stop("No NIFTI files found in '{input}'.") }
+    if(length(nii_paths) == 0){ .glue_stop("No NIFTI files found in '{x}'.") }
 
   } else { # set of nifti file paths
 
-    nii_paths <- stringr::str_subset(input, pattern = ".nii.gz$")
+    nii_paths <- stringr::str_subset(x, pattern = ".nii.gz$")
 
-    if(length(nii_paths) == 0){ .glue_stop("No NIFTI files found in `input`.") }
+    if(length(nii_paths) == 0){ .glue_stop("No NIFTI files found in `x`.") }
 
   }
 
@@ -530,7 +591,7 @@ niftis_to_vbl <- function(x,
     purrr::map2(
       .x = nii_paths,
       .y = var_names,
-      .f = ~ nifti_to_vbl(x = .x, var = .y, rm0 = rm0, add_id = FALSE, verbose = verbose)
+      .f = ~ nifti_to_vbl(x = .x, var = .y, rm0 = rm0, verbose = verbose)
     ) %>%
     purrr::reduce(.x = ., .f = join_vibbles, join = join, .rfn = .rfn)
 
@@ -632,28 +693,22 @@ vbl_to_array <- function(vbl,
   message(glue::glue("Output orientation: {orientation}"))
 
   # encode variable as numeric
-  if(is.logical(vbl[[var]])){
-
-    vbl[[var]] <- as.numeric(vbl[[var]])
-
-  } else if(!is.numeric(vbl[[var]])){
-
-    if(!is.factor(vbl[[var]])){
-
-      vbl[[var]] <- as.factor(vbl[[var]])
-
-    }
+  # lgl -> c(0,1)
+  # fct -> level indices
+  if(!is.numeric(vbl[[var]])){
 
     vbl[[var]] <- as.numeric(vbl[[var]])
 
   }
 
   # reconstruct full voxel data.frame
-  lim_seq <- function(l){ min(l):max(l) } # helper
-
   full_vbl <-
-    tidyr::expand_grid(x = lim_seq(limits$x), y = lim_seq(limits$y), z = lim_seq(limits$z)) %>%
-    dplyr::left_join(x = ., y = vbl[,c(ccs_labels, var)], by = ccs_labels) %>%
+    tidyr::expand_grid(
+      x = seq_limits(ccs_lim$x),
+      y = seq_limits(ccs_lim$y),
+      z = seq_limits(ccs_lim$z)
+      ) %>%
+    dplyr::left_join(x = ., y = vbl[,c(vbl_ccs_axes, var)], by = vbl_ccs_axes) %>%
     dplyr::rename(v = !!rlang::sym(var)) %>%
     dplyr::mutate(v = tidyr::replace_na(v, replace = {{missing}}))
 
@@ -661,14 +716,14 @@ vbl_to_array <- function(vbl,
   pointers <- stringr::str_split_1(orientation, pattern = "")
 
   form_prel <- vector("character", length = 0)
-  ccs_map <- ccs_mapping(vbl)
+  ccs_map <- ccs_orientation_mapping
 
   # adjust the axes if required
   # for every pointer in the desired output orientation ...
   for(p in pointers){
 
     # ... extract the voxel orientation axis the pointer belongs to (e.g. R/L)
-    axis <- purrr::keep(.x = ccs_orientation_mapping, .p = ~ p %in% .x)
+    axis <- purrr::keep(.x = ccs_map, .p = ~ p %in% .x)
 
     # ... get the ccs axis label (e.g. x)
     ccs_axis <- names(axis)

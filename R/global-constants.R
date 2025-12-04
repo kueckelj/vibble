@@ -18,7 +18,6 @@ img_anchors <- list(
 #' @return A character vector with allowed offset directions.
 #'
 #' @export
-offset_directions <- c("left", "right", "top", "bottom")
 
 #' @export
 vbl_ccs_axes <- c("x", "y", "z")

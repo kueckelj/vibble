@@ -7,7 +7,7 @@
 bb3D(vbl, .cond, buffer = 0)
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 }
 \value{
 A named list of length three (for \code{x}, \code{y}, \code{z}) where each element is a numeric

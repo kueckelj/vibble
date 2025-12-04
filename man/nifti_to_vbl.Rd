@@ -32,6 +32,9 @@ resulting labeled factor is ordered. Defaults to \code{FALSE}.}
 \item{rm0}{Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
 vibble. Replaces the deprecated argument \code{black_rm}.}
 
+\item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
+console.}
+
 \item{...}{Additional arguments; currently supports the deprecated argument
 \code{black_rm}.}
 }
