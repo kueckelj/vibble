@@ -1,5 +1,9 @@
 # Misc internal helpers.
 
+#' @keywords internal
+#' @importFrom dplyr group_by summarise mutate arrange filter select rename slice
+NULL
+
 #' @importFrom magrittr %>%
 #' @export
 magrittr::`%>%`
