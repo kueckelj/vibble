@@ -115,7 +115,7 @@ map_lut <- function(vbl, var, lut, ordered = FALSE, var_out = var, verbose = TRU
 
     glue_message("Reading LUT from '{lut}'.", verbose = verbose)
 
-    lut <- read_lut(file = lut)
+    lut <- read_lut(lut)
 
   }
 

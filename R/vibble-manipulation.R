@@ -291,7 +291,7 @@ impute_scores <- function(vbl, var_mask, var_score, mx_dst = Inf, verbose = TRUE
   id_exists <- "id" %in% colnames(vbl)
   if(!id_exists){ vbl <- id_add(vbl) }
 
-  bb <- bb3D(vbl, var = var_mask, buffer = 0.01)
+  bb <- bb3D(vbl, .cond = !!rlang::sym(var_mask), buffer = 0.01)
 
   bb_id <- filter_bb3D(vbl, bb = bb)[["id"]]
 

@@ -12,7 +12,7 @@ identify_head <- function(vbl, var, var_out = "head", seed = 123, verbose = TRUE
 
   # ID for subsetting later on
   id_exists <- "id" %in% colnames(vbl)
-  if(!id_exists){ vbl <- id_add(vbl, arrange = FALSE) }
+  if(!id_exists){ vbl <- id_add(vbl) }
 
   # kmeans cluster to separate based on intensity
   set.seed(seed)

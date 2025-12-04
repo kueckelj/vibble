@@ -217,7 +217,7 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
     if(is.character(clrp_adjust) && .is_named(clrp_adjust)){
 
-      clrp_adjust <- .keep_named(input = clrp_adjust)
+      clrp_adjust <- .keep_named(clrp_adjust)
 
       clrp_adjust_names <- names(clrp_adjust)
 
@@ -397,7 +397,7 @@ color_opts_viridis <- function(){
 scale_fill_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
 
   values <- color_vector(clrp = clrp, names = names, clrp_adjust = clrp_adjust)
-print(values)
+
   ggplot2::scale_fill_manual(values = values, ...)
 
 }
