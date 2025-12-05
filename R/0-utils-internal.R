@@ -1,7 +1,7 @@
 # Misc internal helpers.
 
 #' @keywords internal
-#' @importFrom dplyr group_by summarise mutate arrange filter select rename slice
+#' @importFrom dplyr arrange filter group_by mutate rename select slice summarise summarize transmute ungroup
 NULL
 
 #' @importFrom magrittr %>%
