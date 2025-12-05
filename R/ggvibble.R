@@ -125,6 +125,7 @@ vbl_layer <- function(fun){
 #' plotted with \link{scale_fill_label}() using `clrp`. Note, that in `ggplane()`, logical mask variables
 #' are coerced to factors with levels `c("TRUE", "FALSE")` before plotting, for binary mask overlays see \link{layer_mask()}.
 
+#' @export
 ggplane <- function(vbl,
                     var,
                     plane,
@@ -195,7 +196,7 @@ ggplane <- function(vbl,
 
 }
 
-#' @export
+#' @keywords internal
 .ggplane_impl <- function(vbl2D,
                           var,
                           clrp = vbl_opts("clrp"),

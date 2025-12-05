@@ -10,7 +10,7 @@ vbl_attr2D <- c(vbl_attr, c("screen_limits", "offset_col", "offset_row", "plane"
 
 # core constructors and tests ---------------------------------------------
 
-#' @keywords internal
+#' @export
 new_vbl <- function(data,
                     ccs_limits,
                     ccs_steps){
@@ -196,11 +196,6 @@ print.vbl <- function(x, ...){
 
   invisible(x)
 }
-
-
-
-
-
 
 #' @export
 print.vbl2D <- function(x, ...){
@@ -650,12 +645,6 @@ ungroup.grouped_vbl2D <- function(x, ...){
   return(new)
 
 }
-
-
-
-
-
-
 
 
 
