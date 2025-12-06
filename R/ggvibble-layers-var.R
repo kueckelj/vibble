@@ -17,8 +17,6 @@
 #' @inheritParams vbl_doc
 #' @export
 layer_categorical <- function(var,
-                              labels = NULL,
-                              labels_rm = NULL,
                               clrp = "default",
                               clrp_adjust = NULL,
                               opacity = 0.45,
@@ -38,8 +36,6 @@ layer_categorical <- function(var,
       .layer_categorical_impl(
         vbl2D = vbl2D,
         var = var,
-        labels = labels,
-        labels_rm = labels_rm,
         clrp = clrp,
         clrp_adjust = clrp_adjust,
         opacity = opacity_quo,
@@ -55,8 +51,6 @@ layer_categorical <- function(var,
 #' @keywords internal
 .layer_categorical_impl <- function(vbl2D,
                                     var,
-                                    labels = NULL,
-                                    labels_rm = NULL,
                                     clrp = "default",
                                     clrp_adjust = NULL,
                                     opacity = 0.45,
@@ -72,29 +66,32 @@ layer_categorical <- function(var,
 
   vbl2D <- vbl2D[!is.na(vbl2D[[var]]), ]
 
-  if(is.character(labels)){ vbl2D <- vbl2D[vbl2D[[var]] %in% labels, ] }
-
-  if(is.character(labels_rm)){ vbl2D <- vbl2D[!vbl2D[[var]] %in% labels, ] }
+  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
 
   if(is.character(vbl2D[[var]])){ vbl2D[[var]] <- as.factor(vbl2D[[var]]) }
 
+  cvec <- color_vector(clrp, names = levels(vbl2D[[var]]), clrp_adjust = clrp_adjust)
+
+  alpha_use <- .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
+  color_use <- alpha(cvec[vbl2D[[var]]], alpha_use)
+
   list(
     ggnewscale::new_scale_fill(),
-    ggplot2::geom_raster(
+    ggplot2::geom_tile(
       data = vbl2D,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
+      alpha = alpha_use,
+      color = color_use
     ),
     scale_fill_categorical(
       clrp = clrp,
       clrp_adjust = clrp_adjust,
-      names = levels(vbl2D[[var]])
+      names = levels(vbl2D[[var]]),
+      ...
     )
   )
 
 }
-
-
 
 #' @title Add a color layer for mask
 #' @description Overlay a logical mask on a \link{ggplane}() plot by filling
@@ -170,9 +167,11 @@ layer_mask <- function(color,
                              nv = 50,
                              ...){
 
-  if(is.null(var)){ vbl2D$pseudo <- TRUE; var <- "pseudo" }
+  if(is.null(var)){ vbl2D[["pseudo."]] <- TRUE; var <- "pseudo." }
 
   is_vartype(vbl2D, var = var, type = "mask")
+
+  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
 
   data <- vbl2D[vbl2D[[var]], ]
 
@@ -181,10 +180,11 @@ layer_mask <- function(color,
   if(isTRUE(fill)){
 
     layer_lst$fill <-
-      ggplot2::geom_raster(
-        mapping = ggplot2::aes(x = col, y = row),
+      ggplot2::geom_tile(
         data = data,
+        mapping = ggplot2::aes(x = col, y = row),
         alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
+        color = color,
         fill = color
       )
 
@@ -247,6 +247,7 @@ layer_numeric <- function(var,
                           .by = NULL,
                           ...){
 
+  .by_quo <- rlang::enquo(.by)
   .cond_quo <- rlang::enquo(.cond)
   opacity_quo <- rlang::enquo(opacity)
 
@@ -254,7 +255,8 @@ layer_numeric <- function(var,
     fun = function(vbl2D){
 
       layer <- glue::glue("layer_numeric(var = '{var}', ...)")
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by_quo, layer = layer)
 
       .layer_numeric_impl(
         vbl2D = vbl2D,
@@ -280,13 +282,14 @@ layer_numeric <- function(var,
 
   is_vartype(vbl2D, var = var, type = "numeric")
 
+  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
+
   list(
     ggnewscale::new_scale_fill(),
-    ggplot2::geom_raster(
+    ggplot2::geom_tile(
       data = vbl2D,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
-      interpolate = interpolate
+      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
     ),
     scale_fill_numeric(
       clrsp,
@@ -296,3 +299,175 @@ layer_numeric <- function(var,
   )
 
 }
+
+
+
+
+layer_outline <- function(color,
+                          alpha = 0.9,
+                          linetype = "solid",
+                          linewidth = 0.5,
+                          use_dbscan = TRUE,
+                          concavity = 2.5,
+                          nv = 50,
+                          .cond = NULL,
+                          .by = NULL,
+                          ...){
+
+  .cond_quo <- rlang::enquo(.cond)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      outlines_slice <- NULL
+      if(is_offset(vbl2D)){
+
+        outlines_slice <-
+          .comp_outlines(
+            vbl2D = vbl2D,
+            var = NULL,
+            concavity = concavity,
+            use_dbscan = FALSE
+            )
+
+      }
+
+      layer <- glue::glue("layer_outline(color = '{color}', ...)")
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+
+      .layer_outline_impl(
+        vbl2D = vbl2D,
+        alpha = alpha,
+        color = color,
+        linetype = linetype,
+        linewidth = linewidth,
+        use_dbscan = use_dbscan,
+        concavity = concavity,
+        outlines_slice = outlines_slice,
+        ...
+      )
+
+    }
+  )
+
+}
+
+#' @keywords internal
+.layer_outline_impl <- function(vbl2D,
+                                color,
+                                alpha,
+                                linetype,
+                                linewidth,
+                                concavity,
+                                use_dbscan,
+                                outlines_slice,
+                                ...){
+
+
+  # create raw outlines on the input vbl2D
+  # (which was filtered by .cond/.by in layer_outline())
+  outlines <-
+    .comp_outlines(
+      vbl2D = vbl2D,
+      var = NULL,
+      concavity = concavity,
+      use_dbscan = use_dbscan,
+      ...)
+
+  # handle offset overlaps
+  if(is_offset(vbl2D)){
+
+    slices_main <- unique(vbl2D$slice)
+    slices_lead <- dplyr::lead(slices_main)
+
+    outlines <-
+      purrr::map_df(
+        .x = seq_along(slices_main),
+        .f = function(i){
+
+          sm <- slices_main[i]
+          sl <- slices_lead[i]
+
+          om <- dplyr::filter(outlines, slice == {{sm}})
+
+          # BREAK, if no leading slice for the last main slice
+          if(i == length(slices_main)){ return(om) }
+
+          # BREAK, if no outline available
+          if(nrow(om) == 0){ return(NULL) }
+
+          purrr::map_df(
+            .x = unique(om$outline),
+            .f = function(outline_use){
+
+              # split the outline according to the slice outline of the next slice
+              .split_outline(
+                outline = dplyr::filter(om, outline == {{outline_use}}),
+                outline_ref = dplyr::filter(outlines_slice, slice == {{sl}})
+              ) %>%
+                dplyr::filter(pos_rel == "outside")
+
+            }
+          )
+
+        }
+      )
+
+    outlines$split <- tidyr::replace_na(outlines$split, FALSE)
+    outlines$part <- tidyr::replace_na(outlines$part, 1)
+
+  } else {
+
+    outlines$part <- 1
+    outlines$split <- FALSE
+
+  }
+
+  assign("outlines", outlines, envir = .GlobalEnv)
+
+  # output
+  layer_lst <- list()
+
+  if(any(outlines$split)){
+
+    data <-
+      dplyr::filter(outlines, split) %>%
+      dplyr::mutate(outline = stringr::str_c(outline, slice, part, sep = "."))
+
+    layer_lst$path <-
+      ggplot2::geom_path(
+        data = data,
+        mapping = ggplot2::aes(x = col, y = row, group = outline),
+        alpha = alpha,
+        color = color,
+        linetype = linetype,
+        linewidth = linewidth
+      )
+
+  }
+
+  if(any(!outlines$split)){
+
+    data <-
+      dplyr::filter(outlines, !split) %>%
+      dplyr::mutate(outline = stringr::str_c(outline, slice, part, sep = "."))
+
+    layer_lst$polygon <-
+      ggplot2::geom_polygon(
+        data = data,
+        mapping = ggplot2::aes(x = col, y = row, group = outline),
+        color = ggplot2::alpha(color, alpha),
+        linetype = linetype,
+        linewidth = linewidth,
+        fill = NA,
+        ...
+      )
+
+  }
+
+  return(layer_lst)
+
+}
+
+
+

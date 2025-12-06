@@ -48,6 +48,7 @@ vibble2D <- function(vbl,
                      expand = FALSE,
                      offset_col = 0,
                      offset_row = 0,
+                     order = "asc",
                      .cond = NULL,
                      .by = NULL){
 
@@ -68,6 +69,15 @@ vibble2D <- function(vbl,
     dplyr::filter(slice %in% {{slices}}) %>%
     dplyr::select(col, row, slice, dplyr::everything())
 
+  # apply condition
+  .by_quo <- rlang::enquo(.by)
+  .cond_quo <- rlang::enquo(.cond)
+  if(!rlang::quo_is_null(.cond_quo)){
+
+    vbl2D <- dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by_quo }})
+
+  }
+
   # apply lim
   if(is.numeric(lim)){
 
@@ -82,27 +92,18 @@ vibble2D <- function(vbl,
   } else {
 
     lim <- list()
-    lim[c("col", "row")] <- ccs_limits(vbl)[req_axes[c("col", "row")]]
+    lim[c("col", "row")] <- list(col = range(vbl2D$col), row = range(vbl2D$row))
 
   }
+
+  screen_limits(vbl2D) <- expand_bb2D(bb2D = lim, expand = expand)
 
   vbl2D <-
     dplyr::filter(
       .data = vbl2D,
       within_limits(col, l = lim$col) &
       within_limits(row, l = lim$row)
-      )
-
-  screen_limits(vbl2D) <- expand_bb2D(bb2D = lim, expand = expand)
-
-  # apply condition
-  .by_quo <- rlang::enquo(.by)
-  .cond_quo <- rlang::enquo(.cond)
-  if(!rlang::quo_is_null(.cond_quo)){
-
-    vbl2D <- dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by_quo }})
-
-  }
+    )
 
   # apply offset
   offset_col(vbl2D) <- 0L
@@ -111,6 +112,23 @@ vibble2D <- function(vbl,
 
   # set vbl2D attributes
   plane(vbl2D) <- plane
+
+  # manage z-stack
+  if(is.character(order)){
+
+    order <- match.arg(order, choices = c("asc", "desc"))
+
+    if(order == "asc"){
+
+      vbl2D <- dplyr::arrange(vbl2D, slice)
+
+    } else {
+
+      vbl2D <- dplyr::arrange(vbl2D, dplyr::desc(slice))
+
+    }
+
+  }
 
   return(vbl2D)
 

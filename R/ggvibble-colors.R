@@ -402,6 +402,15 @@ scale_fill_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
 
 }
 
+#' @keywords internal
+.scale_color_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
+
+  values <- color_vector(clrp = clrp, names = names, clrp_adjust = clrp_adjust)
+
+  ggplot2::scale_color_manual(values = values, guide = "none", ...)
+
+}
+
 #' @title Numeric fill scale for ggvibble plots
 #' @description This function centralizes numeric color handling in vibbles plotting
 #' \link[vbl_doc_ggvibble]{framework} and creates a numeric fill scale from a flexible

@@ -4,6 +4,9 @@
 #' @importFrom dplyr arrange filter group_by mutate rename select slice summarise summarize transmute ungroup
 NULL
 
+#' @keywords internal
+#' @importFrom ggplot2 alpha
+
 #' @importFrom magrittr %>%
 #' @export
 magrittr::`%>%`

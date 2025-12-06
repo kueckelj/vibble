@@ -704,9 +704,9 @@ vbl_to_array <- function(vbl,
   # reconstruct full voxel data.frame
   full_vbl <-
     tidyr::expand_grid(
-      x = seq_limits(ccs_lim$x),
-      y = seq_limits(ccs_lim$y),
-      z = seq_limits(ccs_lim$z)
+      x = seq_range(ccs_lim$x),
+      y = seq_range(ccs_lim$y),
+      z = seq_range(ccs_lim$z)
       ) %>%
     dplyr::left_join(x = ., y = vbl[,c(vbl_ccs_axes, var)], by = vbl_ccs_axes) %>%
     dplyr::rename(v = !!rlang::sym(var)) %>%

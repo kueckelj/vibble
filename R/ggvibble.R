@@ -140,6 +140,7 @@ ggplane <- function(vbl,
                     interpolate = vbl_opts("interpolate"),
                     layout = NULL,
                     .cond = NULL,
+                    .by = NULL,
                     ...){
 
   stopifnot(is_vbl(vbl))
@@ -157,24 +158,16 @@ ggplane <- function(vbl,
     lim = lim,
     offset_col = offset_col,
     offset_row = offset_row,
+    order = order,
     expand = expand
   )
 
+  # filter
   .cond_quo <- rlang::enquo(.cond)
+  .by_quo <- rlang::enquo(.by)
+  vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by_quo, layer = "ggplane()")
 
-  vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, layer = "ggplane()")
-
-  # manage z-stack
-  order <- match.arg(order, choices = c("desc", "asc"))
-  if(is_offset(vbl2D) && order == "desc"){
-
-    vbl2D <- dplyr::arrange(vbl2D, dplyr::desc(slice))
-
-  } else {
-
-    vbl2D <- dplyr::arrange(vbl2D, slice)
-
-  }
+  assign("vbl2D", vbl2D, envir = .GlobalEnv)
 
   structure(
     list(
@@ -240,7 +233,10 @@ ggplane <- function(vbl,
 
   # construct plot
   ggplot2::ggplot(data = vbl2D) +
-    ggplot2::geom_raster(mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]), interpolate = interpolate) +
+    ggplot2::geom_tile(
+      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
+      color = NA
+    ) +
     layer_colors +
     layer_facet +
     ggplot2::scale_y_reverse() +

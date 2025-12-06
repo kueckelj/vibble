@@ -96,17 +96,26 @@ clean_mask <- function(vbl, var, var_clean = var, min_size = 5000, verbose = TRU
 
 }
 
+#' @importFrom rlang sym
+
 dbscan2D <- function(slice_df,
-                     var,
+                     var = NULL,
                      var_out = "dbscan2D",
                      pref_out = var,
                      eps = 1.5,
                      minPts = 3,
                      min_size = NULL,
-                     rm0 = FALSE,
+                     rm_outlier = FALSE,
                      ...){
 
   stopifnot(dplyr::n_distinct(slice_df$slice)==1)
+
+  if(is.null(var)){
+
+    var <- "pseudo."
+    slice_df[[var]] <- TRUE
+
+  }
 
   stopifnot(length(var)==1)
   stopifnot(var %in% colnames(slice_df))
@@ -122,7 +131,6 @@ dbscan2D <- function(slice_df,
 
   slice_df[[var_out]] <- NA
   slice_df[[var_out]][vox_apply] <- dbscan_out$cluster
-
 
   if(is.numeric(min_size)){
 
@@ -148,9 +156,10 @@ dbscan2D <- function(slice_df,
 
   }
 
-  if(isTRUE(rm0)){
+  # remove outliers if desired and factorize
+  if(isTRUE(rm_outlier)){
 
-    slice_df <- slice_df[vox_apply & slice_df[[var_out]] != 0, ]
+    slice_df <- dplyr::filter(slice_df, !!sym(var_out) != 0)
 
   }
 
@@ -158,7 +167,8 @@ dbscan2D <- function(slice_df,
     factor(
       x = paste0(pref_out, slice_df[[var_out]]),
       levels = paste0(pref_out, sort(unique(dbscan_out$cluster)))
-    )
+    ) %>%
+    droplevels()
 
   return(slice_df)
 

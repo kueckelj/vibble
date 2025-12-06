@@ -6,8 +6,6 @@
 \usage{
 layer_categorical(
   var,
-  labels = NULL,
-  labels_rm = NULL,
   clrp = "default",
   clrp_adjust = NULL,
   opacity = 0.45,
@@ -20,12 +18,6 @@ layer_categorical(
 \item{var}{Character. The name of a factor-variable with categorical labels.
 If a logical (mask) variable is specified, it is treated as a categorical one
 with labels = c('TRUE', 'FALSE').}
-
-\item{labels}{Optional character vector of label values to keep. If supplied,
-only voxels whose label is in \code{labels} are rendered.}
-
-\item{labels_rm}{Optional character vector of label values to remove. If
-supplied, voxels whose label is in \code{labels_rm} are excluded.}
 
 \item{clrp}{Character scalar specifying the categorical palette.
 Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
@@ -45,6 +37,12 @@ into this layer by \link{ggplane}(). See \link[=ggvibble_doc_cond]{Details} for 
 group by before applying the filtering logic of \code{.cond}.}
 
 \item{...}{Additional arguments passed to \link{scale_fill_manual}().}
+
+\item{labels}{Optional character vector of label values to keep. If supplied,
+only voxels whose label is in \code{labels} are rendered.}
+
+\item{labels_rm}{Optional character vector of label values to remove. If
+supplied, voxels whose label is in \code{labels_rm} are excluded.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

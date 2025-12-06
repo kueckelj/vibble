@@ -84,3 +84,12 @@ seq_slices <- function(vbl, plane, .cond = NULL, .by = NULL, buffer = 0, ...){
   return(seq_out)
 
 }
+
+#' @export
+seq_range <- function(x){
+
+    r <- range(x)
+    min(r):max(r)
+
+}
+

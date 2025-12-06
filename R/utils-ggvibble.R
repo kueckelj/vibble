@@ -240,6 +240,92 @@ NULL
 }
 
 
+#' @keywords internal
+.comp_outline <- function(df, concavity, nv = 50){
+
+  concaveman::concaveman(
+    points = as.matrix(df[,c("col", "row")]),
+    concavity = concavity
+  ) %>%
+    tibble::as_tibble() %>%
+    magrittr::set_colnames(value = c("col", "row")) %>%
+    .densify_poly(n = nv)
+
+}
+
+#' @keywords internal
+.comp_outlines <- function(vbl2D,
+                           var,
+                           use_dbscan,
+                           concavity = 2.5,
+                           nv = 50, ...){
+
+  if(is.null(var)){
+
+    var <- "pseudo."
+    vbl2D[[var]] <- TRUE
+
+  }
+
+  outlines <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = function(slice){
+
+        slice_df <- dplyr::filter(vbl2D, slice == {{slice}})
+
+        # BREAK if the slice does not have any var == TRUE voxels
+        if(!any(slice_df[[var]])){ return(NULL) }
+
+        # if TRUE, var is factorized into 2D clusters according to DBSCAN2
+        # and outlines are computed for every cluster
+        if(isTRUE(use_dbscan)){
+
+          slice_df <- dbscan2D(slice_df, var = var, var_out = var, rm_outlier = TRUE)
+
+          # BREAK if dbscan outlier removal does not keep enough voxels to be outlined
+          if(nrow(slice_df) <= 3){ return(NULL) }
+
+          groups <- levels(slice_df[[var]])
+
+          outlines_out <-
+            purrr::map_df(
+              .x = groups,
+              .f = function(group){
+
+                df <- dplyr::filter(slice_df, !!sym(var) == {{group}})
+
+                .comp_outline(df, concavity = concavity, nv = nv) %>%
+                  dplyr::mutate(
+                    vertex = dplyr::row_number(),
+                    outline = {{group}},
+                    slice = {{slice}}
+                  )
+
+              }
+            )
+
+        } else { # else one outline is computed for the whole slice, where var == TRUE
+
+          outlines_out <-
+            .comp_outline(slice_df, concavity = concavity, nv = nv) %>%
+            dplyr::mutate(
+              vertex = dplyr::row_number(),
+              outline = {{var}},
+              slice = {{slice}}
+            )
+
+        }
+
+        return(outlines_out)
+
+      }
+    )
+
+  return(outlines)
+
+}
+
 
 #' @keywords internal
 .densify_poly <- function(df, n = 50){
@@ -251,7 +337,7 @@ NULL
     function(i){
       col <- seq(df_closed$col[i], df_closed$col[i+1], length.out = n)
       row <- seq(df_closed$row[i], df_closed$row[i+1], length.out = n)
-      tibble(col = col, row = row)
+      tibble::tibble(col = col, row = row)
     }
   )
 }
@@ -260,6 +346,8 @@ NULL
 .eval_tidy_opacity <- function(vbl2D, opacity, var){
 
   opacity_inp <- rlang::eval_tidy(opacity, data = vbl2D)
+
+  assign("opacity_inp", opacity_inp, envir =.GlobalEnv)
 
   if(is.numeric(opacity_inp)){
 
@@ -275,11 +363,14 @@ NULL
 
       }
 
+      from <- var_limits(vbl2D, var)
+      if(is.null(from)){ from <- range(vbl2D[[var]], na.rm = TRUE, finite = TRUE) }
+
       opacity_use <-
         scales::rescale(
           x = vbl2D[[var]],
           to = c(pmax(0, min(opacity_inp)), pmin(1, max(opacity_inp))),
-          from = var_smr(vbl2D, var)$limits
+          from = from
         )
 
     } else if(length(opacity_inp) == nrow(vbl2D)) {
@@ -307,9 +398,6 @@ NULL
     stop("Invalid input for `opacity`.")
 
   }
-
-  assign("opacity_inp", opacity_inp, envir = .GlobalEnv)
-  assign("opacity_use", opacity_use, envir = .GlobalEnv)
 
   return(opacity_use)
 
@@ -399,3 +487,91 @@ NULL
 
 }
 
+#' @keywords internal
+.remove_overlap <- function(vbl2D){
+
+  vbl2D[["id."]] <- stringr::str_c(vbl2D$col, vbl2D$row, sep = ",")
+
+  slices_main <- unique(vbl2D$slice)
+  slices_lead <- dplyr::lead(slices_main)
+
+  for(i in 1:(length(slices_main)-1)){
+
+    sm <- slices_main[i]
+    sl <- slices_lead[i]
+
+    vm <- vbl2D[vbl2D$slice == sm, ]
+    vl <- vbl2D[vbl2D$slice == sl, ]
+
+    id_rm <- intersect(x = vm[["id."]], y = vl[["id."]])
+
+    vbl2D <- dplyr::filter(vbl2D, !(slice == {{sm}} & id. %in% {{id_rm}}))
+
+  }
+
+  vbl2D[["id."]] <- NULL
+
+  return(vbl2D)
+
+}
+
+#' @keywords internal
+.split_outline <- function(outline, outline_ref){
+
+  stopifnot(dplyr::n_distinct(outline$vertex) == nrow(outline))
+  stopifnot(dplyr::n_distinct(outline_ref$vertex) == nrow(outline_ref))
+
+  outline[["pip"]] <-
+    sp::point.in.polygon(
+      point.x = outline[["col"]],
+      point.y = outline[["row"]],
+      pol.x = outline_ref[["col"]],
+      pol.y = outline_ref[["row"]]
+    )
+
+  outline[["pos_rel"]] <-
+    dplyr::if_else(
+      condition = outline[["pip"]] %in% c(1,2),
+      true = "inside",
+      false = "outside"
+    )
+
+  outline[["split"]] <- FALSE
+  outline[["part"]] <- 1
+  outline[["number"]] <- outline[["vertex"]]
+
+  if(all(c("inside", "outside") %in% outline[["pos_rel"]])){
+
+    parts <- list(outside = 0, inside = 0)
+
+    for(i in 1:base::nrow(outline)){
+
+      current_pos <- base::as.character(outline[i, "pos_rel"])
+
+      # switch
+      if((i == 1) || (current_pos != prev_pos)){
+
+        parts[[current_pos]] <- parts[[current_pos]]+1
+
+        number <- 1
+
+      } else {
+
+        number <- number + 1
+
+      }
+
+      outline[i, "part"] <- parts[[current_pos]]
+      outline[i, "number"] <- number
+
+      prev_pos <- current_pos
+
+    }
+
+    outline[["split"]] <- TRUE
+
+  }
+
+  return(outline)
+
+}
