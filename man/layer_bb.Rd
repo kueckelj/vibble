@@ -11,12 +11,12 @@ layer_bb(color, fill = NA, expand = FALSE, .cond = NULL, .by = NULL, ...)
 
 \item{fill}{Fill of the bounding-box.}
 
-\item{.cond}{Optional. An additional logical filter expression that determines the specific
+\item{.cond}{A logical filter expression that determines the specific
 voxels for which this layer is drawn. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
-into this layer by \link{ggplane}(). See \link[=ggvibble_doc_cond]{Details} for more information and examples.}
+into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
-\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
 
 \item{...}{Additional arguments passed to \link{geom_rect}().}

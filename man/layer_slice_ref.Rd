@@ -27,13 +27,6 @@ from the plane used in \link{ggplane}().}
 \item{slices_ref}{Integer vector giving the slice indices (in
 \code{plane_ref}) to display as reference lines.}
 
-\item{alpha}{Controls the fill transparency. May be a single value in \verb{[0,1]},
-a numeric vector of length two, or an expression evaluated via
-\link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble
-underlying this layer.
-
-See \link[=ggvible_doc_alpha]{Details} for more information.}
-
 \item{color}{Character vector of length one or two specifying colors for
 the line and labels (recycled if length one).}
 

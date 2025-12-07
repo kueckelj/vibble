@@ -220,7 +220,7 @@ is_limit <- function(x){
 }
 
 
-#' @rdname vbl2D_attr
+#' @rdname vbl_doc_offset_utils
 #' @export
 is_offset <- function(x){
 

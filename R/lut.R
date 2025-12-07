@@ -11,7 +11,7 @@
 #' }
 #'
 #' @inherit vbl_doc params
-#' @inheritParams vbl_doc_var_label
+#' @inheritParams vbl_doc_var_categorical
 #'
 #' @return
 #' A tibble with columns \code{index} and \code{label}.

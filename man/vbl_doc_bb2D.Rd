@@ -11,12 +11,12 @@ bb2D_df(vbl2D, .cond = NULL, .by = NULL, slices = NULL, expand = FALSE)
 bb2D_lst(vbl2D, .cond = NULL, .by = NULL, slices = NULL, expand = FALSE)
 }
 \arguments{
-\item{vbl2D}{A \link{vibble2D}.}
+\item{vbl2D}{A \link[=vbl_doc_vbl2D]{2D vibble}.}
 
 \item{.cond}{Optional logical filter expression evaluated on \code{vbl2D} before computing bounding boxes.
 The expression is evaluated with \link[rlang:args_data_masking]{data-masking} semantics.}
 
-\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
 
 \item{slices}{Optional numeric vector of slice indices to include. Defaults to all \link{slices}.}

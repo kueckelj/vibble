@@ -26,6 +26,12 @@ matching NIfTI files.}
 the basename (without extension) of each NIfTI file.}
 
 \item{recursive}{Logical. If \code{TRUE} and \code{x} is a directory it is searched recursively for NIfTI files.}
+
+\item{join}{Type of join to perform. One of \code{"full"}, \code{"inner"}, \code{"left"},
+or \code{"right"}. Determines how voxel coordinates absent in one input are treated.}
+
+\item{.rfn}{Optional renaming function or formula applied to all non-coordinate
+variables of \code{b} before joining (e.g., \code{~ paste0(.x, "_b")}).}
 }
 \value{
 A merged \link{vibble} containing one voxel variable per input file.

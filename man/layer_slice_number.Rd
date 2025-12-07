@@ -46,10 +46,7 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Add slice numbers as text labels to a 2D vibble (\code{vbl2D}). Labels are
-positioned using an anchor specification and can be computed relative to
-slice limits, screen limits, or their average. Optional alignment ensures
-consistent label placement across slices.
+Add slice numbers as text labels to a \link{ggplane()}-plot.
 }
 \details{
 Anchor coordinates may be supplied either as preset strings (e.g.

@@ -98,5 +98,6 @@ vbl_opts_default <-
     vibble.expand.fraction = 0.05,
     vibble.ggplot.expand = TRUE,
     vibble.interpolate = TRUE,
+    vibble.n.vertices = 1,
     vibble.verbose = TRUE
   )

@@ -2,11 +2,11 @@
 % Please edit documentation in R/vibble-doc.R
 \name{vbl_doc_var_categorical}
 \alias{vbl_doc_var_categorical}
-\title{Dummy documentation for labeled voxel variables}
+\title{Dummy documentation for categorical voxel variables}
 \arguments{
 \item{var}{Character. The name of a labels (factor) column.}
 }
 \description{
-Dummy documentation for labeled voxel variables
+Dummy documentation for categorical voxel variables
 }
 \keyword{internal}

@@ -8,6 +8,8 @@ make_lut(vbl, var)
 }
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
+
+\item{var}{Character. The name of a labels (factor) column.}
 }
 \value{
 A tibble with columns \code{index} and \code{label}.

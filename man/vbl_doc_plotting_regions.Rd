@@ -2,26 +2,16 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{vbl_doc_plotting_regions}
 \alias{vbl_doc_plotting_regions}
-\alias{layer_plot_limits}
-\alias{layer_screen_limits}
-\alias{layer_slice_limits}
 \title{Layers for visualizing 2D limit regions}
-\usage{
-layer_plot_limits(color = alpha("yellow", 0.7), fill = NA, ...)
-
-layer_screen_limits(color = alpha("blue", 0.7), fill = NA, slices = NULL, ...)
-
-layer_slice_limits(color = alpha("red", 0.7), fill = NA, slices = NULL, ...)
-}
 \arguments{
 \item{color}{Line color of the drawn rectangles.}
 
 \item{fill}{Fill color for the rectangles. Defaults to \code{NA}.}
 
-\item{...}{Additional arguments passed to \code{geom_rect()}.}
-
 \item{slices}{Optional integer vector of slice values to visualize
 (for \code{layer_screen_limits()} and \code{layer_slice_limits()}).}
+
+\item{...}{Additional arguments passed to \code{geom_rect()}.}
 }
 \value{
 A list of ggplot2 layers.

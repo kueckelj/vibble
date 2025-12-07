@@ -4,14 +4,7 @@
 \alias{vbl_doc}
 \title{Dummy documentation for recurring parameters & sections}
 \arguments{
-\item{alpha}{Controls the fill transparency. May be a single value in \verb{[0,1]},
-a numeric vector of length two, or an expression evaluated via
-\link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble
-underlying this layer.
-
-See \link[=ggvible_doc_alpha]{Details} for more information.}
-
-\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
 
 \item{bb2D}{A named list that defines a \link[=is_bb2D]{2D bounding box} with \link[=is_limit]{limits} for col and row.}
@@ -24,7 +17,11 @@ Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")
 \item{clrp_adjust}{Optional named vector of named hex colors used to override
 colors of specific labels (see \link{color_vector}()).}
 
-\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}()`.}
+\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().}
+
+\item{concavity}{Numeric. A relative measure of concavity. Passed to \link[concaveman:concaveman]{concaveman()}.
+1 results in a relatively detailed shape, Infinity results in a convex hull. You can use values lower than 1,
+but they can produce pretty crazy shapes.}
 
 \item{interpolate}{Logical scalar indicating whether to interpolate raster tiles.}
 
@@ -32,12 +29,12 @@ colors of specific labels (see \link{color_vector}()).}
 and character labels.}
 
 \item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
-data-masked expressions. See section \emph{Opacity options} for details.}
+data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
 \item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
 \item{rm0}{Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
-vibble. Replaces the deprecated argument \code{black_rm}.}
+vibble.}
 
 \item{slice}{Integer value. The slice of interest.}
 
@@ -45,7 +42,7 @@ vibble. Replaces the deprecated argument \code{black_rm}.}
 
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
-\item{vbl2D}{A \link{vibble2D}.}
+\item{vbl2D}{A \link[=vbl_doc_vbl2D]{2D vibble}.}
 
 \item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
 console.}
@@ -53,36 +50,4 @@ console.}
 \description{
 Dummy documentation for recurring parameters & sections
 }
-\section{Opacity options}{
-
-The \code{opacity} parameter supports constant, ranged, and voxel-wise inputs.
-In all cases, the used values are guaranteed to lie within \verb{[0,1]},
-where \code{0} corresponds to full opacity (completely invisible) and \code{1}
-corresponds to full opacity (no shine-through).
-
-It is interpreted as follows:
-
-\itemize{
-
-\item \strong{Single numeric value: }
-A constant opacity in \verb{[0,1]} applied to all voxels.
-No scaling is performed. Example A.
-
-\item \strong{Numeric vector of length 2: }
-Interpreted as a lower and upper opacity bound. The numeric variable being plotted
-is rescaled into this interval, with the input range given by \link{var_limits}\verb{(vbl2D, var)}.
-Restricted to \link{layer_numeric_var()}. Example B.
-
-\item \strong{Data-masked expressions: }
-Any expression using column names of \code{vbl2D} are evaluated with
-\link{eval_tidy}(), meaning variable names refer to columns rather than
-R objects. See \link[rlang:args_data_masking]{data-masking}. Example C.
-
-\item \strong{Invalid input: }
-Non-numeric inputs or numeric vectors of unsupported length cause an error.
-Example D.
-
-}
-}
-
 \keyword{internal}

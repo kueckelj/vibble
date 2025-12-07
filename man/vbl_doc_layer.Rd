@@ -4,10 +4,23 @@
 \alias{vbl_doc_layer}
 \title{Dummy documentation for vibble layers}
 \arguments{
-\item{.cond}{Optional. An additional logical filter expression that determines the specific
+\item{.cond}{A logical filter expression that determines the specific
 voxels for which this layer is drawn. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
-into this layer by \link{ggplane}(). See \link[=ggvibble_doc_cond]{Details} for more information and examples.}
+into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
+
+\item{linetype}{Character. Line pattern for outlines. Supported values:
+\itemize{
+\item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
+\item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
+\item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
+}}
+
+\item{linewidth}{Numeric. Controlls the thickness of drawn lines.}
+
+\item{clip_overlap}{Logical. Applies only to offset layouts. If TRUE,
+content from each slice is clipped so that it cannot extend into adjacent
+slice regions.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

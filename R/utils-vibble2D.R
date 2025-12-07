@@ -66,7 +66,7 @@ expand_bb2D <- function(bb2D, expand){
 }
 
 #' @title Limits utilities for 2D vibbles
-#' @name vbl2D_limits
+#' @name vbl_doc_limits2D
 #' @description
 #' Helpers to get and set 2D screen limits of a \code{vbl2D} object and to derive
 #' overall plot limits across all slices.
@@ -116,7 +116,7 @@ screen_limits <- function(vbl2D, slice = NULL){
 
 }
 
-#' @rdname vbl2D_limits
+#' @rdname vbl_doc_limits2D
 #' @export
 `screen_limits<-` <- function(vbl2D, value){
 
@@ -129,7 +129,7 @@ screen_limits <- function(vbl2D, slice = NULL){
 
 }
 
-#' @rdname vbl2D_limits
+#' @rdname vbl_doc_limits2D
 #' @export
 plot_limits <- function(vbl2D){
 
@@ -209,8 +209,65 @@ slice_offset_index <- function(vbl2D, slice){
 
 
 
+#' @title Offset utilities for 2D vibbles
+#' @name vbl_doc_offset_utils
+#' @description
+#' Utilities to query and manipulate slice-wise spatial offsets in `vbl2D`
+#' objects. Offsets shift slices relative to each other in 2D layouts, allowing
+#' for staggered slice arrangements. Offsets operate separately along the `col`
+#' and `row` axes and are stored as integer attributes of the `vbl2D` object.
+#'
+#' The functions provided here support:
+#' \itemize{
+#'   \item retrieving per-axis offsets (\code{offset_col()}, \code{offset_row()});
+#'   \item setting offsets as integer values;
+#'   \item computing the effective offset applied to a specific slice;
+#'   \item deriving combined axis offsets used for layout transformations.
+#' }
+#'
+#' Offsets are interpreted in slice index order, where slices are assigned
+#' zero-based offset indices via \code{slice_offset_index()}. For slice \eqn{n},
+#' the spatial shift is computed as:
+#'
+#' \preformatted{
+#'   col_new = col + offset_col * n
+#'   row_new = row - offset_row * n
+#' }
+#'
+#' Signs are chosen to preserve visual consistency across sagittal, axial,
+#' and coronal layouts.
+#'
+#' @section Functions:
+#'
+#' \describe{
+#'
+#'   \item{\code{is_offset(vbl2D)}}{
+#'   Logical test whether col and/or row is offset.
+#'   }
+#'
+#'   \item{\code{offset_axes(vbl2D)}}{
+#'   Returns a named list containing the `col` and `row` offsets of a `vbl2D`.
+#'   }
+#'
+#'   \item{\code{offset_col(vbl2D)}, \code{offset_row(vbl2D)}}{
+#'   Accessors for the respective offset attributes.
+#'   }
+#'
+#'   \item{\code{offset_col<-()}, \code{offset_row<-()}}{
+#'   Setters for updating the per-axis offsets. Values must be integer.
+#'   }
+#'
+#' }
+#'
+#' @return
+#' Offset accessors return integer values. \code{offset_axes()} returns a
+#' named list. Internal helpers return shifted limit structures suitable for
+#' downstream layout operations.
+#'
+#' @keywords internal
+NULL
 
-#' @rdname vbl_doc_offset_utilities
+#' @rdname vbl_doc_offset_utils
 #' @export
 offset_axes <- function(vbl2D){
 
@@ -247,7 +304,7 @@ offset_axes <- function(vbl2D){
 
 }
 
-#' @rdname vbl_doc_offset_utilities
+#' @rdname vbl_doc_offset_utils
 #' @export
 offset_col <- function(vbl2D){
 
@@ -255,7 +312,7 @@ offset_col <- function(vbl2D){
 
 }
 
-#' @rdname vbl_doc_offset_utilities
+#' @rdname vbl_doc_offset_utils
 #' @export
 `offset_col<-` <- function(vbl2D, value){
 
@@ -267,7 +324,7 @@ offset_col <- function(vbl2D){
 
 }
 
-#' @rdname vbl_doc_offset_utilities
+#' @rdname vbl_doc_offset_utils
 #' @export
 offset_row <- function(vbl2D){
 
@@ -275,7 +332,7 @@ offset_row <- function(vbl2D){
 
 }
 
-#' @rdname vbl_doc_offset_utilities
+#' @rdname vbl_doc_offset_utils
 #' @export
 `offset_row<-` <- function(vbl2D, value){
 

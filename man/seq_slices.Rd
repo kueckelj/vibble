@@ -15,7 +15,7 @@ seq_slices(vbl, plane, .cond = NULL, .by = NULL, buffer = 0, ...)
 semantics on the \link{vibble2D}() representation (e.g., \code{expr = tumor},
 \code{expr = raw_t1 > 0.5}). Determines which slices are selected.}
 
-\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
 
 \item{buffer}{Numeric. If \code{buffer > 0}, the slice range is expanded before

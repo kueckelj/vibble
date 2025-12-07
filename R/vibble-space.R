@@ -1,26 +1,31 @@
 # Spatial reference and coordinate-system utilities.
 
 
-#' Apply slice-wise offsets to a 2D vibble
+#' @title Apply or reverse slice-wise offsets in a vbl2D object
+#' @description
+#' Applies per-slice spatial offsets to the `col` and `row` coordinates of a
+#' `vbl2D`, enabling staggered 2D slice arrangements; `reverse_offset()` undoes
+#' all previously applied offsets.
 #'
-#' Shift `col` and `row` coordinates of a `vbl2D` object by slice-specific offsets.
-#' This is used to arrange multiple slices next to each other for 2D plotting.
-#'
-#' @inherit vbl_doc params
-#'
-#' @return
-#' The input `vbl2D` tibble with updated `col` and `row` coordinates that include the slice-wise offsets.
-#' All attributes of the original object are preserved where possible.
+#' @param offset_col,offset_row Absolute or relative offsets applied per slice
+#' along the `col` and `row` axes.
+#' @inheritParams vbl_doc
 #'
 #' @details
-#' The function computes a slice index `idx` based on the unique values of `slice` and the requested `offset_dir`.
-#' Coordinates are shifted by calling \link{comp_offset_col}() and \link{comp_offset_row}() inside grouped `dplyr` operations so that offsets are consistent within plane, sequence, slice, and mask combinations.
+#' Offsets are applied using zero-based slice indices such that slice `n` is shifted
+#' by `offset * n`. Relative offsets (see \link{is_rel}()) are first converted to absolute
+#' distances based on the current screen limits and then truncated to integer values.
+#' Updated offsets are accumulated into the object's existing `offset_col` and
+#' `offset_row` attributes.
+#'
+#' @return
+#' A modified `vbl2D` with updated coordinates and updated offset attributes.
 #'
 #' @seealso
-#' \link{vibble2D}(), \link{comp_offset_col}(), \link{comp_offset_row}()
+#' `offset_col()`, `offset_row()`, `offset_axes()`, `screen_limits()`
 #'
 #' @export
-.apply_offset <- function(vbl2D, offset_col, offset_row){
+apply_offset <- function(vbl2D, offset_col, offset_row){
 
   slim <- screen_limits(vbl2D)
 
@@ -77,11 +82,11 @@
 
 }
 
-#' @rdname .apply_offset
+#' @rdname apply_offset
 #' @export
-.reverse_offset <- function(vbl2D){
+reverse_offset <- function(vbl2D){
 
-  .apply_offset(vbl2D, offset_col = -offset_col(vbl2D), offset_row = -offset_row(vbl2D))
+  apply_offset(vbl2D, offset_col = -offset_col(vbl2D), offset_row = -offset_row(vbl2D))
 
 }
 
@@ -311,7 +316,6 @@ bb2D_lst <- function(vbl2D,
 #' Compute a 3D bounding box (`bb3D`) from a vibble by extracting coordinate ranges for the
 #' spatial axes `x`, `y`, and `z`.
 #'
-#' @inheritParams bb2D
 #' @inheritParams vbl_doc
 #'
 #' @return
@@ -350,9 +354,16 @@ bb2D_lst <- function(vbl2D,
 #' bb_tumor <- bb3D(vbl, .cond = tumor == TRUE, buffer = 0.1)
 #'
 #' @export
-bb3D <- function(vbl, .cond, buffer = 0){
+bb3D <- function(vbl, .cond = NULL, .by = NULL, buffer = 0){
 
-  vbl <- dplyr::filter(vbl, !!.cond)
+  .by_quo <- rlang::enquo(.by)
+  .cond_quo <- rlang::enquo(.cond)
+
+  if(!rlang::quo_is_missing(.cond_quo)){
+
+    vbl <- dplyr::filter(vbl, !!.cond_quo, .by = {{ .by_quo }})
+
+  }
 
   purrr::imap(
     .x = vbl[, ccs_labels],

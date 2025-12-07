@@ -19,6 +19,7 @@ ggplane(
   interpolate = vbl_opts("interpolate"),
   layout = NULL,
   .cond = NULL,
+  .by = NULL,
   ...
 )
 }
@@ -50,7 +51,7 @@ the interpretation and potential filtering of \code{lim}.}
 \item{clrp}{Character scalar specifying the categorical palette.
 Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
 
-\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}()`.}
+\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().}
 
 \item{interpolate}{Logical scalar indicating whether to interpolate raster tiles.}
 
@@ -61,6 +62,9 @@ when multiple slices are shown and \code{offset_dist} ist 0.}
 voxels plotted with \code{ggplane()} and passed to added \link[vbl_doc_vbl_layer]{layers}. \if{html}{\out{<br>}}
 
 The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.}
+
+\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}.}
 
 \item{...}{Additional arguments forwarded to the scale functions controlling the fill aesthetic.}
 

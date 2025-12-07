@@ -448,7 +448,6 @@ scale_fill_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
 #' }
 #'
 #' @param ... Additional arguments forwarded to the underlying scale function.
-#' @inheritParams vbl_doc
 #'
 #' @return A ggplot2 fill scale for numeric variables.
 #'

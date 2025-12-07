@@ -81,7 +81,6 @@ is_expand_rel <- function(x){
 }
 
 
-
 #' @rdname vbl_doc_img_anchors
 #' @export
 is_img_anchor <- function(x){
@@ -241,7 +240,7 @@ NULL
 
 
 #' @keywords internal
-.comp_outline <- function(df, concavity, nv = 50){
+.comp_outline <- function(df, concavity){
 
   concaveman::concaveman(
     points = as.matrix(df[,c("col", "row")]),
@@ -249,7 +248,7 @@ NULL
   ) %>%
     tibble::as_tibble() %>%
     magrittr::set_colnames(value = c("col", "row")) %>%
-    .densify_poly(n = nv)
+    .close_poly()
 
 }
 
@@ -258,8 +257,9 @@ NULL
                            var,
                            use_dbscan,
                            concavity = 2.5,
-                           nv = 50, ...){
+                           ...){
 
+  # allow quick outline of all slice voxels
   if(is.null(var)){
 
     var <- "pseudo."
@@ -277,7 +277,7 @@ NULL
         # BREAK if the slice does not have any var == TRUE voxels
         if(!any(slice_df[[var]])){ return(NULL) }
 
-        # if TRUE, var is factorized into 2D clusters according to DBSCAN2
+        # if TRUE, var is factorized into 2D clusters according to dbscan2D
         # and outlines are computed for every cluster
         if(isTRUE(use_dbscan)){
 
@@ -295,7 +295,7 @@ NULL
 
                 df <- dplyr::filter(slice_df, !!sym(var) == {{group}})
 
-                .comp_outline(df, concavity = concavity, nv = nv) %>%
+                .comp_outline(df, concavity = concavity) %>%
                   dplyr::mutate(
                     vertex = dplyr::row_number(),
                     outline = {{group}},
@@ -308,7 +308,7 @@ NULL
         } else { # else one outline is computed for the whole slice, where var == TRUE
 
           outlines_out <-
-            .comp_outline(slice_df, concavity = concavity, nv = nv) %>%
+            .comp_outline(slice_df, concavity = concavity) %>%
             dplyr::mutate(
               vertex = dplyr::row_number(),
               outline = {{var}},
@@ -322,25 +322,30 @@ NULL
       }
     )
 
+  # prepare columns .split_outline()
+  outlines$part <- 1
+  outlines$split <- FALSE
+
   return(outlines)
 
 }
 
-
 #' @keywords internal
-.densify_poly <- function(df, n = 50){
+.close_poly <- function(df){
 
-  df_closed <- rbind(df, df[1, ])
+  fr <- df[1, c("col", "row")]
+  lr <- df[nrow(df), c("col", "row")]
 
-  purrr::map_dfr(
-    1:(nrow(df_closed)-1),
-    function(i){
-      col <- seq(df_closed$col[i], df_closed$col[i+1], length.out = n)
-      row <- seq(df_closed$row[i], df_closed$row[i+1], length.out = n)
-      tibble::tibble(col = col, row = row)
-    }
-  )
+  if(!identical(fr, lr)){
+
+    df <- rbind(df, df[1,])
+
+  }
+
+  return(df)
+
 }
+
 
 #' @keywords internal
 .eval_tidy_opacity <- function(vbl2D, opacity, var){
@@ -521,7 +526,7 @@ NULL
   stopifnot(dplyr::n_distinct(outline$vertex) == nrow(outline))
   stopifnot(dplyr::n_distinct(outline_ref$vertex) == nrow(outline_ref))
 
-  outline[["pip"]] <-
+  outline[["pos_rel"]] <-
     sp::point.in.polygon(
       point.x = outline[["col"]],
       point.y = outline[["row"]],
@@ -531,14 +536,10 @@ NULL
 
   outline[["pos_rel"]] <-
     dplyr::if_else(
-      condition = outline[["pip"]] %in% c(1,2),
+      condition = outline[["pos_rel"]] %in% c(1,2),
       true = "inside",
       false = "outside"
     )
-
-  outline[["split"]] <- FALSE
-  outline[["part"]] <- 1
-  outline[["number"]] <- outline[["vertex"]]
 
   if(all(c("inside", "outside") %in% outline[["pos_rel"]])){
 
@@ -562,7 +563,7 @@ NULL
       }
 
       outline[i, "part"] <- parts[[current_pos]]
-      outline[i, "number"] <- number
+      outline[i, "vertex"] <- number
 
       prev_pos <- current_pos
 

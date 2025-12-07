@@ -19,7 +19,7 @@ slice_offset_indices(vbl2D)
 slice_offset_index(vbl2D, slice)
 }
 \arguments{
-\item{vbl2D}{A \link{vibble2D}.}
+\item{vbl2D}{A \link[=vbl_doc_vbl2D]{2D vibble}.}
 
 \item{slice}{Integer value. The slice of interest.}
 }

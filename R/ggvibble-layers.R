@@ -71,6 +71,98 @@ layer_bb <- function(color,
 }
 
 
+#' @title Add a color layer for categorical variables
+#' @description Overlay a categorical label variable on a `ggplane()` plot by
+#' filling voxels with discrete colors.
+#'
+#' @param var Character. The name of a factor-variable with categorical labels.
+#' If a logical (mask) variable is specified, it is treated as a categorical one
+#' with labels = c('TRUE', 'FALSE').
+#' @param ... Additional arguments passed to \link{scale_fill_manual}().
+#'
+#' @inherit vbl_doc_layer params return
+#'
+#' @inheritParams vbl_doc_var_categorical
+#' @inheritParams vbl_doc
+#' @export
+layer_categorical <- function(var,
+                              clrp = "default",
+                              clrp_adjust = NULL,
+                              opacity = 0.45,
+                              .cond = NULL,
+                              .by = NULL,
+                              ...){
+
+  opacity_quo <- rlang::enquo(opacity)
+  .cond_quo <- rlang::enquo(.cond)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      layer <- glue::glue("layer_categorical(var = '{var}', ...")
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+
+      .layer_categorical_impl(
+        vbl2D = vbl2D,
+        var = var,
+        clrp = clrp,
+        clrp_adjust = clrp_adjust,
+        opacity = opacity_quo,
+        ...
+      )
+
+    }
+  )
+
+}
+
+
+#' @keywords internal
+.layer_categorical_impl <- function(vbl2D,
+                                    var,
+                                    clrp = "default",
+                                    clrp_adjust = NULL,
+                                    opacity = 0.45,
+                                    ...){
+
+  if(is_mask_var(vbl2D[[var]])){
+
+    vbl2D[[var]] <- factor(as.character(vbl2D[[var]]), levels = c("TRUE", "FALSE"))
+
+  }
+
+  is_vartype(vbl2D, var = var, type = "label")
+
+  vbl2D <- vbl2D[!is.na(vbl2D[[var]]), ]
+
+  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
+
+  if(is.character(vbl2D[[var]])){ vbl2D[[var]] <- as.factor(vbl2D[[var]]) }
+
+  cvec <- color_vector(clrp, names = levels(vbl2D[[var]]), clrp_adjust = clrp_adjust)
+
+  alpha_use <- .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
+  color_use <- alpha(cvec[vbl2D[[var]]], alpha_use)
+
+  list(
+    ggnewscale::new_scale_fill(),
+    ggplot2::geom_tile(
+      data = vbl2D,
+      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
+      alpha = alpha_use,
+      color = color_use
+    ),
+    scale_fill_categorical(
+      clrp = clrp,
+      clrp_adjust = clrp_adjust,
+      names = levels(vbl2D[[var]]),
+      ...
+    )
+  )
+
+}
+
+
 #' @title Add grid lines to a ggvibble plot
 #' @description Draw vertical and/or horizontal grid lines at regular positions
 #' across slices of a `vbl2D` object.
@@ -126,8 +218,6 @@ layer_grid <- function(col = 0.1,
                        linetype = "solid"
                        ){
 
-  .cond_quo <- rlang::enquo(.cond)
-
   vbl_layer(
     fun = function(vbl2D){
 
@@ -146,7 +236,6 @@ layer_grid <- function(col = 0.1,
 
 }
 
-
 #' @export
 .layer_grid_impl <- function(vbl2D,
                              col = 0.1,
@@ -163,9 +252,9 @@ layer_grid <- function(col = 0.1,
 
   data <-
     tidyr::expand_grid(
-      slice = sort(unique(vbl2D$slice)),
-      col = .grid_intercepts(col, limits = attr(vbl2D, "var_smr")[["col"]]$limits),
-      row = .grid_intercepts(row, limits = attr(vbl2D, "var_smr")[["row"]]$limits)
+      slice = if(!is_offset(vbl2D)){ slices(vbl2D) },
+      col = .grid_intercepts(col, limits = plot_limits(vbl2D)$col),
+      row = .grid_intercepts(row, limits = plot_limits(vbl2D)$row)
     )
 
   layer_lst <- list()
@@ -203,6 +292,533 @@ layer_grid <- function(col = 0.1,
 }
 
 
+
+#' @title Add label annotations to categorical regions
+#' @description
+#' Computes slice-wise centroid positions of categorical label regions and adds
+#' text annotations for each label.
+#'
+#' @param var Character. Name of a categorical variable to annotate.
+#' @param include Optional character vector of labels to include. If named the
+#' labels are renamed according to *c('<orig label>' = '<displayed label>').
+#' @param exclude Optional character vector of labels to exclude.
+#' @param alpha Numeric transparency for label text.
+#' @param color Text color passed to `geom_text()`.
+#' @param size Text size passed to `geom_text()`.
+#' @param use_dbscan Logical. If TRUE, label voxels within each slice are clustered
+#' using `dbscan2D()` before centroid computation; otherwise all voxels of a label
+#' form a single region.
+#' @param centroid The function with which to compute the centroid label position
+#' based on col and row. A named list of functions can be supplied, where names
+#' must be *c('col', 'row')*.
+#' @param abbrev Optional function applied to label names for abbreviation.
+#' @param repel Logical. If `TRUE`, the text is rendered with \link{geom_text_repel}()
+#' else with \link{geom_text}().
+#' @param ... Additional arguments passed to `geom_text()` or `geom_text_repel()`.
+#'
+#' @inherit vbl_doc_layer params return
+#'
+#' @details
+#' The function identifies, per slice, all occurrences of the categorical variable
+#' specified in `var`. Optionally, label sets can be restricted via `include`
+#' and/or filtered out via `exclude`. If `use_dbscan = TRUE`, voxels belonging to
+#' the same label are partitioned into spatial clusters using `dbscan2D()`, and
+#' centroids are computed for each cluster to avoid assigning a single label
+#' position to widely separated regions. If `use_dbscan = FALSE`, all voxels of a
+#' label within a slice are treated as one region. The resulting centroids are
+#' rendered using `geom_text()`. A user-supplied function in `abbrev` can modify
+#' displayed label text (e.g., shortening region names).
+#'
+#' @export
+
+layer_labels <- function(var,
+                         include = NULL,
+                         exclude = NULL,
+                         alpha = 0.9,
+                         color = "white",
+                         size = 4.5,
+                         use_dbscan = TRUE,
+                         abbrev = NULL,
+                         repel = FALSE,
+                         centroid = function(x) median(x, TRUE),
+                         .cond = NULL,
+                         .by = NULL,
+                         ...){
+
+  .cond_quo <- rlang::enquo(.cond)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      layer <- glue::glue("layer_labels(var = '{var}', ...")
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+
+      .layer_labels_impl(
+        vbl2D = vbl2D,
+        var = var,
+        include = include,
+        exclude = exclude,
+        alpha = alpha,
+        color = color,
+        size = size,
+        use_dbscan = use_dbscan,
+        centroid = centroid,
+        abbrev = abbrev,
+        repel = repel,
+        ...
+      )
+
+    }
+  )
+
+}
+
+#' @keywords internal
+.layer_labels_impl <- function(vbl2D,
+                               var,
+                               include,
+                               exclude,
+                               alpha,
+                               color,
+                               size,
+                               use_dbscan,
+                               centroid,
+                               abbrev,
+                               repel,
+                               ...){
+
+  if(!is.list(centroid)){
+
+    stopifnot(is.function(centroid))
+    centroid <- list(col = centroid, row = centroid)
+
+  } else {
+
+    stopifnot(all(c("col", "row") %in% names(centroid)))
+    stopifnot(all(purrr::map_lgl(centroid, is.function)))
+
+  }
+
+  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D)}
+
+  labels <- levels(vbl2D[[var]])
+
+  if(is.character(include)){
+
+    if(.is_named(include)){
+
+      labels <- labels[labels %in% names(include)]
+
+    } else {
+
+      labels <- labels[labels %in% include]
+
+    }
+
+  }
+
+  if(is.character(exclude)){ labels <- labels[!labels %in% exclude] }
+
+  data <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = function(slice){
+
+        slice_df <- dplyr::filter(vbl2D, slice == {{slice}})
+
+        purrr::map_df(
+          .x = labels[labels %in% slice_df[[var]]],
+          .f = function(label){
+
+            label_df <- slice_df[slice_df[[var]] == label,]
+
+            if(isTRUE(use_dbscan)){
+
+              label_df <-
+                dbscan2D(
+                  slice_df = label_df,
+                  var_out = "idx",
+                  pref_out = "lbl.",
+                  minPts = 6,
+                  min_size = 0.33,
+                  rm_outlier = TRUE
+                  )
+
+            } else {
+
+              label_df$idx <- "1"
+
+            }
+
+            dplyr::group_by(label_df, slice, idx, !!rlang::sym(var)) %>%
+              dplyr::mutate(
+                col_cent. = centroid[["col"]](col),
+                row_cent. = centroid[["row"]](row),
+                col_dist. = abs(col - col_cent.),
+                row_dist. = abs(row - row_cent.),
+                comb_dist. = col_dist. + row_dist.
+              ) %>%
+              dplyr::slice_min(order_by = comb_dist.)
+
+          }
+        )
+
+      }
+    )
+
+  data[[var]] <- as.character(data[[var]])
+
+  assign("labels", labels, envir = .GlobalEnv)
+  assign("data", data, envir = .GlobalEnv)
+
+  if(is.character(include) && .is_named(include)){
+
+    renamed <- unname(include[data[[var]]])
+
+    data[[var]] <- dplyr::if_else(is.na(renamed), data[[var]], renamed)
+
+  }
+
+  if(is.function(abbrev)){
+
+    data <-
+      dplyr::mutate(
+        .data = data,
+        dplyr::across(
+          .cols = dplyr::all_of(var),
+          .fns = abbrev
+        )
+      )
+
+  }
+
+  geom_use <- ifelse(repel, ggrepel::geom_text_repel, ggplot2::geom_text)
+
+  list(
+    geom_use(
+      data = data,
+      mapping = ggplot2::aes(x = col, y = row, label = .data[[var]]),
+      alpha = alpha,
+      color = color,
+      size = size,
+      ...
+    )
+  )
+
+}
+
+#' @title Add a masking layer
+#' @description Overlay a logical mask on a \link{ggplane}() plot by filling
+#' voxels.
+#'
+#' @param color Color used for the mask fill.
+#'
+#' @details
+#' The condition of `.cond` determines for which voxels are included in the mask.
+#' If no condition is provided (`.cond = NULL`) this layer masks every voxel in
+#' every slice of the 2D vibble passed to this layer by `ggplane()`.
+#'
+#' @inherit vbl_doc_layer params return
+#' @inheritParams vbl_doc
+#'
+#' @export
+layer_mask <- function(color,
+                       opacity = 0.25,
+                       .cond = NULL,
+                       .by = NULL,
+                       ...){
+
+  opacity_quo <- rlang::enquo(opacity)
+  .cond_quo <- rlang::enquo(.cond)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      layer <- glue::glue("layer_mask(color = '{color}', ...)")
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+
+      .layer_mask_impl(
+        vbl2D = vbl2D,
+        color = color,
+        opacity = opacity_quo,
+        ...
+      )
+
+    }
+  )
+
+}
+
+#' @keywords internal
+.layer_mask_impl <- function(vbl2D,
+                             color,
+                             opacity,
+                             ...){
+
+  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
+
+  list(
+    ggplot2::geom_raster(
+      data = vbl2D,
+      mapping = ggplot2::aes(x = col, y = row),
+      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+      fill = color
+    )
+  )
+
+}
+
+
+#' @title Add a color layer for numeric variables
+#' @description Overlay a numeric variable on a \link{ggplane}() plot by mapping its
+#' values to a continuous fill scale.
+#'
+#' @param ... Additional arguments passed to \link{scale_fill_numeric}().
+#'
+#' @inherit vbl_doc_layer params return
+#' @inheritParams vbl_doc_var_numeric
+#' @inheritParams vbl_doc
+#' @export
+layer_numeric <- function(var,
+                          clrsp,
+                          opacity = c(0.2, 0.45),
+                          interpolate = vbl_opts("interpolate"),
+                          .cond = NULL,
+                          .by = NULL,
+                          ...){
+
+  .cond_quo <- rlang::enquo(.cond)
+  opacity_quo <- rlang::enquo(opacity)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      layer <- glue::glue("layer_numeric(var = '{var}', ...)")
+
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+
+      .layer_numeric_impl(
+        vbl2D = vbl2D,
+        var = var,
+        clrsp = clrsp,
+        opacity = opacity_quo,
+        interpolate = interpolate,
+        ...
+      )
+
+    }
+  )
+
+}
+
+#' @keywords internal
+.layer_numeric_impl <- function(vbl2D,
+                                var,
+                                clrsp,
+                                opacity = c(0.2, 0.45),
+                                interpolate = vbl_opts("interpolate"),
+                                ...){
+
+  is_vartype(vbl2D, var = var, type = "numeric")
+
+  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
+
+  list(
+    ggnewscale::new_scale_fill(),
+    ggplot2::geom_raster(
+      data = vbl2D,
+      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
+      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+      interpolate = interpolate
+    ),
+    scale_fill_numeric(
+      clrsp,
+      limits = var_limits(vbl2D, var),
+      ...
+    )
+  )
+
+}
+
+
+
+#' @title Add an outline layer
+#' @description Overlay a \link{ggplane}() plot by outlining voxels
+#' that match a certain condition. Outlines are computed slice-wise.
+#'
+#' @param alpha Numeric. Controls the transparency of the lines.
+#' @param color Character. Controls the color used for the lines.
+#' @param use_dbscan Logical. If `TRUE`, for every slice \link[dbscan:dbscan]{DBSCAN}
+#' is used to identify spatial islands of voxels matching the condition which
+#' are then outlined separately.
+#'
+#' @details
+#' The condition of `.cond` determines which voxels are outlined. If no condition
+#' is provided (`.cond = NULL`) this layer outlines all voxels in every slice of the
+#' 2D vibble passed to this layer by `ggplane()`.
+#'
+#' @inherit vbl_doc_layer params return
+#' @inheritParams vbl_doc
+#'
+#' @export
+layer_outline <- function(color,
+                          alpha = 0.9,
+                          linetype = "solid",
+                          linewidth = 1,
+                          use_dbscan = TRUE,
+                          concavity = 2.5,
+                          clip_overlap = TRUE,
+                          .cond = NULL,
+                          .by = NULL,
+                          ...){
+
+  .cond_quo <- rlang::enquo(.cond)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      outlines_slice <- NULL
+      if(is_offset(vbl2D)){
+
+        outlines_slice <-
+          .comp_outlines(
+            vbl2D = vbl2D,
+            var = NULL,
+            concavity = concavity,
+            use_dbscan = FALSE
+          )
+
+      }
+
+      layer <- glue::glue("layer_outline(color = '{color}', ...)")
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+
+      .layer_outline_impl(
+        vbl2D = vbl2D,
+        alpha = alpha,
+        color = color,
+        linetype = linetype,
+        linewidth = linewidth,
+        use_dbscan = use_dbscan,
+        concavity = concavity,
+        clip_overlap = clip_overlap,
+        outlines_slice = outlines_slice,
+        ...
+      )
+
+    }
+  )
+
+}
+
+#' @keywords internal
+.layer_outline_impl <- function(vbl2D,
+                                color,
+                                alpha,
+                                linetype,
+                                linewidth,
+                                concavity,
+                                use_dbscan,
+                                outlines_slice,
+                                clip_overlap,
+                                ...){
+
+
+  # create raw outlines on the input vbl2D
+  # (which was filtered by .cond/.by in layer_outline())
+  outlines <-
+    .comp_outlines(
+      vbl2D = vbl2D,
+      var = NULL,
+      concavity = concavity,
+      use_dbscan = use_dbscan,
+      ...)
+
+  # handle offset overlaps
+  if(is_offset(vbl2D) && isTRUE(clip_overlap)){
+
+    slices_main <- unique(vbl2D$slice)
+    slices_lead <- dplyr::lead(slices_main)
+
+    outlines <-
+      purrr::map_df(
+        .x = seq_along(slices_main),
+        .f = function(i){
+
+          sm <- slices_main[i]
+          sl <- slices_lead[i]
+
+          om <- dplyr::filter(outlines, slice == {{sm}})
+
+          # BREAK, if no leading slice for the last main slice
+          if(i == length(slices_main)){ return(om) }
+
+          # BREAK, if no outline available
+          if(nrow(om) == 0){ return(NULL) }
+
+          purrr::map_df(
+            .x = unique(om$outline),
+            .f = function(outline_use){
+
+              # split the outline according to the slice outline of the next slice
+              .split_outline(
+                outline = dplyr::filter(om, outline == {{outline_use}}),
+                outline_ref = dplyr::filter(outlines_slice, slice == {{sl}})
+              ) %>%
+                dplyr::filter(pos_rel == "outside")
+
+            }
+          )
+
+        }
+      )
+
+  }
+
+  # output
+  layer_lst <- list()
+
+  if(any(outlines$split)){
+
+    data <-
+      dplyr::filter(outlines, split) %>%
+      dplyr::mutate(outline = stringr::str_c(outline, slice, part, sep = "."))
+
+    layer_lst$path <-
+      ggplot2::geom_path(
+        data = data,
+        mapping = ggplot2::aes(x = col, y = row, group = outline),
+        alpha = alpha,
+        color = color,
+        linetype = linetype,
+        linewidth = linewidth
+      )
+
+  }
+
+  if(any(!outlines$split)){
+
+    data <-
+      dplyr::filter(outlines, !split) %>%
+      dplyr::mutate(outline = stringr::str_c(outline, slice, part, sep = "."))
+
+    layer_lst$polygon <-
+      ggplot2::geom_polygon(
+        data = data,
+        mapping = ggplot2::aes(x = col, y = row, group = outline),
+        color = ggplot2::alpha(color, alpha),
+        linetype = linetype,
+        linewidth = linewidth,
+        fill = NA,
+        ...
+      )
+
+  }
+
+  return(layer_lst)
+
+}
+
 #' @title Layers for visualizing 2D limit regions
 #' @name vbl_doc_plotting_regions
 #' @description
@@ -236,7 +852,8 @@ layer_grid <- function(col = 0.1,
 #'
 NULL
 
-#' @rdname vbl_doc_plotting_regions
+
+#' @rdname vbl_doc_limits2D
 #' @export
 layer_plot_limits <- function(color = alpha("yellow", 0.7), fill = NA, ...){
 
@@ -272,7 +889,8 @@ layer_plot_limits <- function(color = alpha("yellow", 0.7), fill = NA, ...){
 
 }
 
-#' @rdname vbl_doc_plotting_regions
+
+#' @rdname vbl_doc_limits2D
 #' @export
 layer_screen_limits <- function(color = alpha("blue", 0.7),
                                 fill = NA,
@@ -301,7 +919,6 @@ layer_screen_limits <- function(color = alpha("blue", 0.7),
 }
 
 #' @keywords internal
-#' @rdname layer_screen_limits
 .layer_screen_limits_impl <- function(vbl2D,
                                       color,
                                       fill,
@@ -337,7 +954,7 @@ layer_screen_limits <- function(color = alpha("blue", 0.7),
 
 }
 
-#' @rdname vbl_doc_plotting_regions
+#' @rdname vbl_doc_limits2D
 #' @export
 layer_slice_limits <- function(color = alpha("red", 0.7),
                                fill = NA,
@@ -385,11 +1002,7 @@ layer_slice_limits <- function(color = alpha("red", 0.7),
 }
 
 #' @title Layer for displaying slice numbers
-#' @description
-#' Add slice numbers as text labels to a 2D vibble (\code{vbl2D}). Labels are
-#' positioned using an anchor specification and can be computed relative to
-#' slice limits, screen limits, or their average. Optional alignment ensures
-#' consistent label placement across slices.
+#' @description Add slice numbers as text labels to a \link{ggplane()}-plot.
 #'
 #' @param anchor Character or numeric anchor specification defining the relative
 #'   position of labels within each slice's bounding box. See
@@ -408,7 +1021,7 @@ layer_slice_limits <- function(color = alpha("red", 0.7),
 #' @param alpha,color,size Passed to \code{geom_text()} to define the label aesthetics.
 #' @param ... Additional arguments passed to \code{geom_text()}.
 #'
-#' @inherit vbl_doc_layer param return
+#' @inherit vbl_doc_layer return
 #'
 #' @details
 #' Anchor coordinates may be supplied either as preset strings (e.g.

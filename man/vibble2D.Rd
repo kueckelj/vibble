@@ -12,7 +12,7 @@ vibble2D(
   expand = FALSE,
   offset_col = 0,
   offset_row = 0,
-  full_grid = TRUE,
+  order = "asc",
   .cond = NULL,
   .by = NULL
 )

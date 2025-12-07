@@ -377,47 +377,49 @@ NULL
 # concepts ----------------------------------------------------------------
 
 
+#' @title Image anchors for positioning elements in 2D vibbles
+#' @name vbl_doc_img_anchors
+#' @description
+#' Defines a set of reference anchors used to position text or graphical
+#' elements relative to 2D bounding boxes in `vbl2D` layouts.
+#'
+#' @details
+#' Image anchors specify where, within a slice’s 2D bounding box, an element
+#' should be placed. Anchors can be supplied as named character identifiers or as numeric
+#' relative coordinates of length two, each value in `[0,1]`.
+#'
+#' Character anchors map to predefined relative positions:
+#' \itemize{
+#'   \item `"left"`   -> (0, 0.5)
+#'   \item `"right"`  -> (1, 0.5)
+#'   \item `"top"`    -> (0.5, 1)
+#'   \item `"bottom"` -> (0.5, 0)
+#' }
+#'
+#' A numeric anchor `(u, v)` is interpreted relative to the bounding box of the
+#' current slice:
+#' \preformatted{
+#'   col = cmin + u * (cmax - cmin)
+#'   row = rmin + v * (rmax - rmin)
+#' }
+#'
+#' These anchors are used by utilities such as `as_img_anchor_abs()`,
+#' `layer_slice_number()`, and other layout components that require consistent
+#' positioning within slice extents or screen limits.
+#'
+#' @return
+#' A named list of predefined anchors (character → numeric mapping), or a numeric
+#' vector of length two when user-supplied anchors are validated.
+#'
+#' @keywords internal
+NULL
 
-# params ------------------------------------------------------------------
 
-#' @title Dummy documentation for recurring parameters & sections
-#' @name vbl_doc
-#' @param alpha Controls the fill transparency. May be a single value in `[0,1]`,
-#' a numeric vector of length two, or an expression evaluated via
-#' \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble
-#' underlying this layer.
-#'
-#' See \link[=ggvible_doc_alpha]{Details} for more information.
-#'
-#' @param .by Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
-#' group by before applying the filtering logic of `.cond`.
-#'
-#' @param bb2D A named list that defines a \link[=is_bb2D]{2D bounding box} with \link[=is_limit]{limits} for col and row.
-#' @param bb3D A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.
-#' @param clrp Character scalar specifying the categorical palette.
-#' Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.
-#' @param clrp_adjust Optional named vector of named hex colors used to override
-#' colors of specific labels (see \link{color_vector}()).
-#' @param clrsp Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}()`.
-#' @param interpolate Logical scalar indicating whether to interpolate raster tiles.
-#' @param lut Either a file path to a LUT, character vector of labels or a data.frame with integer indices
-#' and character labels.
-#' @param opacity Controls voxel transparency. Accepts constants, ranges, or
-#' data-masked expressions. See section *Opacity options* for details.
-#' @param plane The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
-#' @param rm0 Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
-#' vibble. Replaces the deprecated argument \code{black_rm}.
-#' @param slice Integer value. The slice of interest.
-#' @param slices Integer vector. The slices of interest.
-#' @param vbl A \link[=vbl_doc_vbl]{vibble}.
-#' @param vbl2D A \link{vibble2D}.
-#' @param verbose Logical. If `TRUE`, informative messages are printed in the
-#' console.
-#'
-#' @section Opacity options:
-#' The `opacity` parameter supports constant, ranged, and voxel-wise inputs.
+#' @title Opacity options
+#' @name vbl_doc_opacity
+#' @description The `opacity` parameter supports constant, ranged, and voxel-wise inputs.
 #' In all cases, the used values are guaranteed to lie within `[0,1]`,
-#' where `0` corresponds to full opacity (completely invisible) and `1`
+#' where `0` corresponds to zero opacity (completely invisible) and `1`
 #' corresponds to full opacity (no shine-through).
 #'
 #' It is interpreted as follows:
@@ -443,15 +445,48 @@ NULL
 #'   Example D.
 #'
 #' }
+NULL
+
+# params ------------------------------------------------------------------
+
+#' @title Dummy documentation for recurring parameters & sections
+#' @name vbl_doc
+#'
+#' @param .by A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+#' group by before applying the filtering logic of `.cond`.
+#'
+#' @param bb2D A named list that defines a \link[=is_bb2D]{2D bounding box} with \link[=is_limit]{limits} for col and row.
+#' @param bb3D A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.
+#' @param clrp Character scalar specifying the categorical palette.
+#' Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.
+#' @param clrp_adjust Optional named vector of named hex colors used to override
+#' colors of specific labels (see \link{color_vector}()).
+#' @param clrsp Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().
+#' @param concavity Numeric. A relative measure of concavity. Passed to \link[concaveman:concaveman]{concaveman()}.
+#' 1 results in a relatively detailed shape, Infinity results in a convex hull. You can use values lower than 1,
+#' but they can produce pretty crazy shapes.
+#' @param interpolate Logical scalar indicating whether to interpolate raster tiles.
+#' @param lut Either a file path to a LUT, character vector of labels or a data.frame with integer indices
+#' and character labels.
+#' @param opacity Controls voxel transparency. Accepts constants, ranges, or
+#' data-masked expressions. See \link[=vbl_doc_opacity]{Details}.
+#' @param plane The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
+#' @param rm0 Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
+#' vibble.
+#' @param slice Integer value. The slice of interest.
+#' @param slices Integer vector. The slices of interest.
+#' @param vbl A \link[=vbl_doc_vbl]{vibble}.
+#' @param vbl2D A \link[=vbl_doc_vbl2D]{2D vibble}.
+#' @param verbose Logical. If `TRUE`, informative messages are printed in the
+#' console.
 #'
 #' @keywords internal
 NULL
 
-#' @title Dummy documentation for labeled voxel variables
+#' @title Dummy documentation for categorical voxel variables
 #' @name vbl_doc_var_categorical
 #'
-#' @param var
-#' Character. The name of a labels (factor) column.
+#' @param var Character. The name of a labels (factor) column.
 #'
 #' @keywords internal
 NULL
@@ -459,8 +494,7 @@ NULL
 #' @title Dummy documentation for logical mask variables
 #' @name vbl_doc_var_mask
 #'
-#' @param var
-#' Character. The name of a mask (logical) column.
+#' @param var Character. The name of a mask (logical) column.
 #'
 #' @keywords internal
 NULL
@@ -468,8 +502,7 @@ NULL
 #' @title Dummy documentation for numeric voxel variables
 #' @name vbl_doc_var_numeric
 #'
-#' @param var
-#' Character. The name of a numeric column.
+#' @param var Character. The name of a numeric column.
 #'
 #' @keywords internal
 NULL
@@ -477,10 +510,20 @@ NULL
 #' @title Dummy documentation for vibble layers
 #' @name vbl_doc_layer
 #'
-#' @param .cond Optional. An additional logical filter expression that determines the specific
+#' @param .cond A logical filter expression that determines the specific
 #' voxels for which this layer is drawn. The expression is evaluated via
 #' \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
-#' into this layer by \link{ggplane}(). See \link[=ggvibble_doc_cond]{Details} for more information and examples.
+#' into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.
+#' @param linetype Character. Line pattern for outlines. Supported values:
+#' \itemize{
+#'   \item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
+#'   \item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
+#'   \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
+#' }
+#' @param linewidth Numeric. Controlls the thickness of drawn lines.
+#' @param clip_overlap Logical. Applies only to offset layouts. If TRUE,
+#' content from each slice is clipped so that it cannot extend into adjacent
+#' slice regions.
 #'
 #' @return A `ggvibble_layer` object containing the supplied function. When
 #' added to a `ggvibble`, the function is executed and its returned layers are

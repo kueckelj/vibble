@@ -1,7 +1,7 @@
 # Verbs and manipulation helpers, all attribute-safe.
 
 #' @importFrom rlang sym
-add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, verbose = TRUE){
+add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, fn = max, verbose = vbl_opts("verbose")){
 
   stopifnot(is.numeric(vbl[[var]]))
   stopifnot(is.numeric(seed))
@@ -18,13 +18,16 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, verbose = 
   fg <-
     dplyr::group_by(vbl, !!sym(var_out)) %>%
     dplyr::summarise(avg = mean(!!sym(var), na.rm = TRUE), .groups = "drop") %>%
-    dplyr::filter(avg == max(avg)) %>%
+    dplyr::filter(avg == fn(avg)) %>%
     dplyr::pull(var = {{var_out}})
 
-  vbl2D_fg <- vibble2D(vbl[vbl[[var_out]] == fg, ], plane = "axi")
+  plane <- names(plane_resolutions(vbl))[1]
+
+  vbl2D <- vibble2D(vbl, plane = plane)
+  vbl2D_fg <- vbl2D[vbl2D[[var_out]] == fg, ]
 
   # include everything 'inside' the foreground
-  slice_iter <- sort(unique(vbl2D_fg$slice)) # slice seq
+  slice_iter <- slices(vbl2D_fg)
 
   pb <- set_up_progress_bar(length(slice_iter))
 
@@ -43,6 +46,7 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, verbose = 
 
         } else {
 
+          # get mask poly
           poly <-
             concaveman::concaveman(
               points = as.matrix(mask[,c("col", "row")]),
@@ -51,9 +55,10 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, verbose = 
             as.data.frame() %>%
             magrittr::set_colnames(value = c("col", "row"))
 
+          # identify every voxel of the complete vbl2D inside the mask poly
           out <-
             identify_voxels_in_poly(
-              vbl2D = vibble2D(vbl, plane = "axi", slices = si),
+              vbl2D = dplyr::filter(vbl2D, slice == {{si}}),
               poly = poly,
               strictly = TRUE,
               opt = "keep"
@@ -66,8 +71,9 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, verbose = 
       }
     )
 
-  vbl_fg_ids <- purrr::flatten_chr(vbl_fg_ids)
+  vbl_fg_ids <- purrr::flatten_int(vbl_fg_ids)
 
+  # overwrite var_out to logial mask
   vbl[[var_out]] <- vbl[["id"]] %in% vbl_fg_ids
 
   if(!id_exists){ vbl$id <- NULL }
@@ -134,18 +140,9 @@ dbscan2D <- function(slice_df,
 
   if(is.numeric(min_size)){
 
-    if(min_size < 1){
+    stopifnot(min_size > 0)
 
-      ccs_limits <- attr(slice_df, "ccs_limits")
-      ccs_axes <- req_axes_2d(attr(slice_df, "plane"))
-
-      max_size <-
-        purrr::map_dbl(ccs_limits[ccs_axes], .f = max) %>%
-        prod()
-
-      min_size <- ceiling(max_size * min_size)
-
-    }
+    if(min_size < 1){ min_size <- min_size * length(dbscan_out$cluster) }
 
     rm_size <-
       dplyr::group_by(slice_df, !!rlang::sym(var_out)) %>%
@@ -359,7 +356,34 @@ impute_scores <- function(vbl, var_mask, var_score, mx_dst = Inf, verbose = TRUE
 
 
 
+#' @title Join two vibbles by spatial coordinates
+#' @description
+#' Joins two `vbl` objects of the same reference space by their Cartesian coordinate
+#' columns (`x`, `y`, `z`).
+#'
+#' @param a,b `vbl` objects to be joined. Their `ccs_limits` must match exactly.
+#' @param .rfn Optional renaming function or formula applied to all non-coordinate
+#' variables of `b` before joining (e.g., `~ paste0(.x, "_b")`).
+#' @param join Type of join to perform. One of `"full"`, `"inner"`, `"left"`,
+#' or `"right"`. Determines how voxel coordinates absent in one input are treated.
+#' @param ... Reserved for future extensions.
+#'
+#' @details
+#' The join is performed strictly on the three spatial coordinate columns
+#' (`x`, `y`, `z`). Before joining, overlapping variable names between `a` and `b`
+#' (excluding the coordinate columns) are prohibited unless `.rfn` is used to
+#' disambiguate them. This prevents silent overwriting of voxelwise variables.
+#'
+#' Matching `ccs_limits` between the two vibbles is required to ensure that both
+#' objects reside in the same voxel grid and share a valid spatial reference
+#' system. If the limits differ, the function aborts with an informative error.
+#'
+#' @return
+#' A tibble containing all coordinate columns and the combined voxelwise
+#' variables from both inputs, according to the selected join strategy.
+#'
 #' @export
+
 join_vibbles <- function(a, b, .rfn = NULL, join = "full", ...){
 
   require(dplyr)

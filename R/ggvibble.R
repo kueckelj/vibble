@@ -233,9 +233,8 @@ ggplane <- function(vbl,
 
   # construct plot
   ggplot2::ggplot(data = vbl2D) +
-    ggplot2::geom_tile(
-      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      color = NA
+    ggplot2::geom_raster(
+      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]])
     ) +
     layer_colors +
     layer_facet +

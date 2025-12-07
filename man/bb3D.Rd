@@ -4,10 +4,13 @@
 \alias{bb3D}
 \title{Compute a 3D bounding box}
 \usage{
-bb3D(vbl, .cond, buffer = 0)
+bb3D(vbl, .cond = NULL, .by = NULL, buffer = 0)
 }
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
+
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}.}
 }
 \value{
 A named list of length three (for \code{x}, \code{y}, \code{z}) where each element is a numeric

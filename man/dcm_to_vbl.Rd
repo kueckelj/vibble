@@ -13,7 +13,7 @@ dcm_to_vbl(x, var, rm0 = FALSE, verbose = vbl_opts("verbose"), ...)
 stored in the output vibble (e.g. \code{"t1"}, \code{"flair"}).}
 
 \item{rm0}{Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
-vibble. Replaces the deprecated argument \code{black_rm}.}
+vibble.}
 
 \item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
 console.}
