@@ -6,7 +6,7 @@ vbl_attr <- c("ccs_limits", "ccs_steps")
 
 #' @keywords internal
 #' @export
-vbl_attr2D <- c(vbl_attr, c("screen_limits", "offset_col", "offset_row", "plane"))
+vbl_attr2D <- c(vbl_attr, c("data_bb", "offset_col", "offset_row", "plane", "screen_bb"))
 
 # core constructors and tests ---------------------------------------------
 
@@ -159,7 +159,7 @@ print.vbl <- function(x, ...){
     dvars <- vars_data(x)
     n_mask <- sum(purrr::map_lgl(x[dvars], is_mask_var))
     n_num  <- sum(purrr::map_lgl(x[dvars], is_numeric_var))
-    n_lab  <- sum(purrr::map_lgl(x[dvars], is_label_var))
+    n_lab  <- sum(purrr::map_lgl(x[dvars], is_categorical_var))
 
     info <- paste0(
       "<vibble> vbl object\n",
@@ -186,7 +186,7 @@ print.vbl <- function(x, ...){
         fmt_step(step_mm[3])
       ),
       "  data variables: ", length(dvars),
-      " (", n_lab, " label, ",
+      " (", n_lab, " categorical, ",
       n_mask, " mask, ",
       n_num, " numeric)\n"
     )
@@ -214,7 +214,7 @@ print.vbl2D <- function(x, ...){
 
   n_mask <- sum(map_lgl(x[dvars], is_mask_var))
   n_num  <- sum(map_lgl(x[dvars], is_numeric_var))
-  n_lab  <- sum(map_lgl(x[dvars], is_label_var))
+  n_lab  <- sum(map_lgl(x[dvars], is_categorical_var))
 
   # first print as tibble / data.frame
   NextMethod()
@@ -226,7 +226,7 @@ print.vbl2D <- function(x, ...){
 
     limits_string <-
       purrr::map_chr(
-        .x = screen_limits(x),
+        .x = screen_bb(x),
         .f = function(l, a){
 
           ifelse(is.null(l), "none", paste0(as.integer(l[[1]]), ":", as.integer(l[[2]])))
@@ -243,7 +243,7 @@ print.vbl2D <- function(x, ...){
         "  screen (col|row): ", limits_string, "\n",
         "  offset (col|row): ", offset_string, "\n",
         "  data variables: ", length(dvars), " (",
-        n_lab,  " label, ",
+        n_lab,  " categorical, ",
         n_mask, " mask, ",
         n_num,  " numeric)\n "
       )
@@ -284,13 +284,13 @@ print.vbl2D <- function(x, ...){
 #' @export
 `[[<-.vbl` <- function(x, i, value){
 
-  if(is.character(i) && i %in% ccs_labels){
+  if(is.character(i) && i %in% vbl_ccs_axes){
 
     stop("Spatial coordinates `x`, `y`, and `z` cannot be modified in a vibble.", call. = FALSE)
 
   }
 
-  if(is.numeric(i) && names(x)[i] %in% ccs_labels){
+  if(is.numeric(i) && names(x)[i] %in% vbl_ccs_axes){
 
     stop("Spatial coordinates `x`, `y`, and `z` cannot be modified in a vibble.", call. = FALSE)
 
@@ -305,13 +305,13 @@ print.vbl2D <- function(x, ...){
 #' @export
 `[<-.vbl` <- function(x, i, j, value){
 
-  if(!is.character(j) && any(j %in% ccs_labels)){
+  if(!is.character(j) && any(j %in% vbl_ccs_axes)){
 
     stop("Spatial coordinates `x`, `y`, and `z` cannot be modified in a vibble.", call. = FALSE)
 
   }
 
-  if(!is.numeric(j) && any(names(x)[j] %in% ccs_labels)){
+  if(!is.numeric(j) && any(names(x)[j] %in% vbl_ccs_axes)){
 
     stop("Spatial coordinates `x`, `y`, and `z` cannot be modified in a vibble.", call. = FALSE)
 
@@ -332,7 +332,7 @@ print.vbl2D <- function(x, ...){
 
     changed <- old != value
 
-    if(any(changed & old %in% ccs_labels)){
+    if(any(changed & old %in% vbl_ccs_axes)){
 
       stop("Spatial coordinates `x`, `y`, and `z` cannot be modified in a vibble.", call. = FALSE)
 
@@ -353,14 +353,14 @@ print.vbl2D <- function(x, ...){
 .vbl_check_spatial_unchanged <- function(old, new){
 
   # must still be present
-  if(!all(ccs_labels %in% colnames(new))){
+  if(!all(vbl_ccs_axes %in% colnames(new))){
 
     rlang::abort("Spatial coordinates `x`, `y`, and `z` must not be removed or renamed.")
 
   }
 
   # must not be modified
-  for(v in ccs_labels){
+  for(v in vbl_ccs_axes){
 
     if(!identical(old[[v]], new[[v]])){
 

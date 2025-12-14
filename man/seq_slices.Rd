@@ -9,7 +9,7 @@ seq_slices(vbl, plane, .cond = NULL, .by = NULL, buffer = 0, ...)
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
-\item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
 \item{.cond}{Logical expression evaluated \link[rlang:args_data_masking]{tidyverse's data-masking}
 semantics on the \link{vibble2D}() representation (e.g., \code{expr = tumor},

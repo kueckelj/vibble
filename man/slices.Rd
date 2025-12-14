@@ -2,15 +2,12 @@
 % Please edit documentation in R/utils-vibble2D.R
 \name{slices}
 \alias{slices}
-\alias{slice_limits}
 \alias{slice_range}
 \alias{slice_offset_indices}
 \alias{slice_offset_index}
 \title{Slice utilities for 2D vibbles}
 \usage{
 slices(vbl2D)
-
-slice_limits(vbl2D, slice)
 
 slice_range(vbl2D)
 
@@ -26,7 +23,6 @@ slice_offset_index(vbl2D, slice)
 \value{
 \itemize{
 \item \code{slices()}: Unique slice values.
-\item \code{slice_limits()}: 2D bounding box (col/row ranges) of one slice.
 \item \code{slice_range()}: Minimum and maximum slice values.
 \item \code{slice_offset_indices()}: Zero-based offset index for each slice.
 \item \code{slice_offset_index()}: Zero-based offset index of a specific slice.

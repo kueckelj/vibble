@@ -23,7 +23,7 @@ img_anchors <- list(
 vbl_ccs_axes <- c("x", "y", "z")
 
 #' @export
-vbl_data_var_types <- c("label", "mask", "numeric")
+vbl_data_var_types <- c("categorical", "mask", "numeric")
 
 #' @export
 vbl_planes <- c("Sagittal" = "sag", "Axial" = "axi", "Coronal" = "cor")

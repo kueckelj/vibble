@@ -28,10 +28,23 @@ but they can produce pretty crazy shapes.}
 \item{lut}{Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 and character labels.}
 
+\item{offset_col, offset_row}{Numeric scalars. Offsets applied per slice along
+the \code{col} and \code{row} axes, which can be specified as either \strong{absolute} or \strong{relative} values:
+
+\itemize{
+\item{Absolute:}{ Integers, or numeric values wrapped in \code{as_abs()}, are
+interpreted as absolute offsets in data coordinates.}
+\item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
+interpreted as offsets relative to the current plotting limits.}
+}
+
+If both, \code{offset_col} and \code{offset_row} are zero, each slice is displayed in its
+own panel using \code{facet_wrap()}, arranged according to \code{layout}.}
+
 \item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
 data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
-\item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
 \item{rm0}{Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
 vibble.}
@@ -46,6 +59,18 @@ vibble.}
 
 \item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
 console.}
+
+\item{x}{An object for which a method has been defined.}
+
+\item{zstack}{Character scalar. Controls the stacking order of slices along
+the slice axis when multiple slices are displayed with an offset-layout.
+
+\itemize{
+\item{\code{"asc"}: }{ Slices with lower slice indices are drawn first and may be
+occluded by higher-index slices in overlapping offset layouts.}
+\item{\code{"desc"}: }{ Slices with higher slice indices are drawn first and may be
+occluded by lower-index slices in overlapping offset layouts.}
+}}
 }
 \description{
 Dummy documentation for recurring parameters & sections

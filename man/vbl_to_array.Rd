@@ -4,20 +4,22 @@
 \alias{vbl_to_array}
 \title{Convert a vibble variable to a 3D array.}
 \usage{
-vbl_to_array(vbl, var, missing = 0, orientation = NULL)
+vbl_to_array(vbl, var, orientation, missing = 0, verbose = vbl_opts("verbose"))
 }
 \arguments{
-\item{vbl}{A \link{vibble} containing voxel coordinates and at least one voxel-wise
-variable.}
+\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
 \item{var}{Name of the voxel-wise variable in \code{vbl} to be converted to an array.}
-
-\item{missing}{Numeric value used to fill voxel locations that are not present in
-\code{vbl}. Defaults to \code{0}.}
 
 \item{orientation}{Optional character string specifying the desired output orientation
 (e.g. \code{"LIP"}). If \code{NULL}, the original orientation attribute of
 \code{vbl} is used.}
+
+\item{missing}{Numeric value used to fill voxel locations that are not present in
+\code{vbl}. Defaults to \code{0}.}
+
+\item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
+console.}
 }
 \value{
 A numeric 3D array containing the values of \code{var}, arranged according

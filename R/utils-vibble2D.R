@@ -65,80 +65,54 @@ expand_bb2D <- function(bb2D, expand){
 
 }
 
-#' @title Limits utilities for 2D vibbles
-#' @name vbl_doc_limits2D
-#' @description
-#' Helpers to get and set 2D screen limits of a \code{vbl2D} object and to derive
-#' overall plot limits across all slices.
-#'
-#' @inheritParams vbl_doc
-#' @param slice Integer slice value. If \code{NULL}, the first slice in
-#'   \code{slices(vbl2D)} is used.
-#' @param value A \link[=is_bb2D]{bb2D} object giving \code{col} and \code{row}
-#'   limits for the reference slice (slice 0).
-#'
-#' @return
-#' \itemize{
-#'   \item \code{screen_limits()}: A \link[=is_bb2D]{bb2D} object (list with
-#'   elements \code{col} and \code{row}) giving the screen-space limits for the
-#'   requested slice, after applying slice offsets.
-#'
-#'   \item \code{screen_limits<-}: The modified \code{vbl2D} with updated
-#'   \code{screen_limits} attribute.
-#'
-#'   \item \code{plot_limits()}: A named list with elements \code{col} and
-#'   \code{row} giving the global screen-space limits required to display all
-#'   slices in the current offset layout.
-#' }
-#'
+
+#' @keywords internal
+.data_bb0 <- function(vbl2D){
+
+  .vbl_attr(vbl2D, which = "data_bb")
+
+}
+
+#' @rdname vbl_doc_limits_2D
 #' @export
-screen_limits <- function(vbl2D, slice = NULL){
+data_bb <- function(vbl2D, slice = NULL){
 
   stopifnot(is_vbl2D(vbl2D))
 
-  screen_lim <- .vbl_attr(vbl2D, which = "screen_limits")
+  dbb <- .data_bb0(vbl2D)
 
   if(is.numeric(slice)){
 
-    screen_lim <- .offset_lim0(vbl2D, slice = slice, lim0 = screen_lim)
+    dbb <- .offset_bb0(vbl2D, slice = slice, bb0 = dbb)
 
   }
 
-  return(screen_lim)
+  return(dbb)
 
 }
 
 #' @keywords internal
-.screen_limits0 <- function(vbl2D){
-
-  slice <- slices(vbl2D)[1]
-  screen_limits(vbl2D, slice = slice)
-
-}
-
-#' @rdname vbl_doc_limits2D
-#' @export
-`screen_limits<-` <- function(vbl2D, value){
+`data_bb<-` <- function(vbl2D, value){
 
   stopifnot(is_vbl2D(vbl2D))
   stopifnot(is_bb2D(value))
 
-  attr(vbl2D, which = "screen_limits") <- value
+  attr(vbl2D, which = "data_bb") <- value
 
   return(vbl2D)
 
 }
 
-#' @rdname vbl_doc_limits2D
+#' @rdname vbl_doc_limits_2D
 #' @export
-plot_limits <- function(vbl2D){
+plot_bb <- function(vbl2D){
 
   stopifnot(is_vbl2D(vbl2D))
 
   lims <-
     purrr::map(
       .x = slice_range(vbl2D),
-      .f = ~ screen_limits(vbl2D, .x)
+      .f = ~ screen_bb(vbl2D, .x)
     )
 
   list(
@@ -148,7 +122,42 @@ plot_limits <- function(vbl2D){
 
 }
 
+#' @keywords internal
+.screen_bb0 <- function(vbl2D){
 
+  .vbl_attr(vbl2D, which = "screen_bb")
+
+}
+
+#' @rdname vbl_doc_limits_2D
+#' @export
+screen_bb <- function(vbl2D, slice = NULL){
+
+  stopifnot(is_vbl2D(vbl2D))
+
+  sbb <- .screen_bb0(vbl2D)
+
+  if(is.numeric(slice)){
+
+    sbb <- .offset_bb0(vbl2D, slice = slice, bb0 = sbb)
+
+  }
+
+  return(sbb)
+
+}
+
+#' @keywords internal
+`screen_bb<-` <- function(vbl2D, value){
+
+  stopifnot(is_vbl2D(vbl2D))
+  stopifnot(is_bb2D(value))
+
+  attr(vbl2D, which = "screen_bb") <- value
+
+  return(vbl2D)
+
+}
 
 #' @title Slice utilities for 2D vibbles
 #' @description
@@ -160,32 +169,36 @@ plot_limits <- function(vbl2D){
 #' @return
 #' \itemize{
 #'   \item \code{slices()}: Unique slice values.
-#'   \item \code{slice_limits()}: 2D bounding box (col/row ranges) of one slice.
 #'   \item \code{slice_range()}: Minimum and maximum slice values.
 #'   \item \code{slice_offset_indices()}: Zero-based offset index for each slice.
 #'   \item \code{slice_offset_index()}: Zero-based offset index of a specific slice.
 #' }
 #'
 #' @export
+
 slices <- function(vbl2D){
   sort(unique(vbl2D$slice))
 }
 
-#' @rdname slices
+
+#' @keywords internal
+.slice_bb0 <- function(vbl2D){
+
+  slice <- slices(vbl2D)[1]
+  slice_bb(vbl2D, slice = slice)
+
+}
+
+#' @rdname vbl_doc_limits_2D
 #' @export
-slice_limits <- function(vbl2D, slice){
+slice_bb <- function(vbl2D, slice){
+
   stopifnot(is_vbl2D(vbl2D))
   stopifnot(slice %in% slices(vbl2D))
   purrr::map(vbl2D[vbl2D$slice == slice, c("col", "row")], range)
-}
-
-#' @keywords internal
-.slice_limits0 <- function(vbl2D){
-
-  slice <- slices(vbl2D)[1]
-  slice_limits(vbl2D, slice = slice)
 
 }
+
 
 #' @rdname slices
 #' @export
@@ -281,12 +294,12 @@ offset_axes <- function(vbl2D){
 }
 
 #' @keywords internal
-.offset_lim0 <- function(vbl2D, slice, lim0){
+.offset_bb0 <- function(vbl2D, slice, bb0){
 
   sidx <- slice_offset_index(vbl2D, slice = slice)
 
   purrr::imap(
-    .x = lim0,
+    .x = bb0,
     .f = function(lim, axis){
 
       if(axis == "col"){

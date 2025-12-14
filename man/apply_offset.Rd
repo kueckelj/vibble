@@ -12,8 +12,18 @@ reverse_offset(vbl2D)
 \arguments{
 \item{vbl2D}{A \link[=vbl_doc_vbl2D]{2D vibble}.}
 
-\item{offset_col, offset_row}{Absolute or relative offsets applied per slice
-along the \code{col} and \code{row} axes.}
+\item{offset_col, offset_row}{Numeric scalars. Offsets applied per slice along
+the \code{col} and \code{row} axes, which can be specified as either \strong{absolute} or \strong{relative} values:
+
+\itemize{
+\item{Absolute:}{ Integers, or numeric values wrapped in \code{as_abs()}, are
+interpreted as absolute offsets in data coordinates.}
+\item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
+interpreted as offsets relative to the current plotting limits.}
+}
+
+If both, \code{offset_col} and \code{offset_row} are zero, each slice is displayed in its
+own panel using \code{facet_wrap()}, arranged according to \code{layout}.}
 }
 \value{
 A modified \code{vbl2D} with updated coordinates and updated offset attributes.
@@ -31,5 +41,5 @@ Updated offsets are accumulated into the object's existing \code{offset_col} and
 \code{offset_row} attributes.
 }
 \seealso{
-\code{offset_col()}, \code{offset_row()}, \code{offset_axes()}, \code{screen_limits()}
+\code{offset_col()}, \code{offset_row()}, \code{offset_axes()}, \code{screen_bb()}
 }

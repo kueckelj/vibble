@@ -2,12 +2,12 @@
 % Please edit documentation in R/vibble-tests.R
 \name{var_type_checks}
 \alias{var_type_checks}
-\alias{is_label_var}
+\alias{is_categorical_var}
 \alias{is_mask_var}
 \alias{is_numeric_var}
 \title{Identify var types in a vibble}
 \usage{
-is_label_var(x)
+is_categorical_var(x)
 
 is_mask_var()
 
@@ -29,7 +29,7 @@ on variables \emph{after} they have been converted into vibble format.
 They verify the expected final R types of voxel-wise columns:
 \itemize{
 \item \code{is_mask_var(x)} returns \code{TRUE} when \code{x} is a logical vector
-\item \code{is_label_var(x)} returns \code{TRUE} when \code{x} is a factor
+\item \code{is_categorical_var(x)} returns \code{TRUE} when \code{x} is a factor
 \item \code{is_numeric_var(x)} returns \code{TRUE} when \code{x} is numeric
 }
 
@@ -39,7 +39,7 @@ layer specifications.
 }
 \examples{
 is_mask_var(c(TRUE, FALSE, TRUE))
-is_label_var(factor(c("GM", "WM")))
+is_categorical_var(factor(c("GM", "WM")))
 is_numeric_var(c(1.2, 3.5, 7.9))
 
 }

@@ -4,11 +4,15 @@
 # non-data ----------------------------------------------------------------
 
 #' @title Add a data-driven 2D bounding-box
-#' @description Draw a rectangular bounding box around the extent of voxels
-#' that match a certain condition.
+#' @description Draw a rectangular bounding box around the extent of voxels.
 #'
 #' @param color Color of the bounding-box outline.
 #' @param fill Fill of the bounding-box.
+#' @param name Logical or character scalar. If character, the name with which
+#' the color is associated with in the color legend. If logical, `FALSE` prevents
+#' appearance in the legend and `TRUE` falls back to the naming default of the
+#' function.
+#'
 #' @param ... Additional arguments passed to \link{geom_rect}().
 #'
 #' @inherit vbl_doc_layer params return
@@ -24,13 +28,25 @@
 #'
 #' @export
 layer_bb <- function(color,
+                     .cond,
+                     .by = NULL,
                      fill = NA,
                      expand = FALSE,
-                     .cond = NULL,
-                     .by = NULL,
+                     name = TRUE,
                      ...){
 
   .cond_quo <- rlang::enquo(.cond)
+
+  color_nm <- NULL
+  if(isTRUE(name)){
+
+    color_nm <- purrr::set_names(color, rlang::quo_text(.cond_quo))
+
+  } else if(is.character(name)){
+
+    color_nm <- purrr::set_names(color, name)
+
+  }
 
   vbl_layer(
     fun = function(vbl2D){
@@ -42,10 +58,13 @@ layer_bb <- function(color,
         color = color,
         fill = fill,
         expand = expand,
+        name = names(color_nm),
         ...
       )
 
-    }
+    },
+    color_nm = color_nm,
+    class_add = "layer_bb"
   )
 
 }
@@ -55,18 +74,293 @@ layer_bb <- function(color,
 .layer_bb_impl <- function(vbl2D,
                            color,
                            fill,
-                           expand = FALSE,
+                           expand,
+                           name,
                            ...){
 
-  list(
-    ggplot2::geom_rect(
-      data = bb2D_df(vbl2D, expand = expand),
-      mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
-      color = color,
-      fill = fill,
-      ...
-    )
+  data <- bb2D_df(vbl2D, expand = expand)
+
+  .layer_lst_bb(
+    data = data,
+    name = name,
+    color = color,
+    fill = fill,
+    ...
   )
+
+}
+
+#' @rdname layer_bb
+#' @export
+layer_bb_data <- function(color = alpha("green", 0.7),
+                          fill = NA,
+                          slices = NULL,
+                          name = "Data",
+                          ...){
+
+  color_nm <- NULL
+  if(isTRUE(name)){
+
+    color_nm <- purrr::set_names(color, "Data")
+
+  } else if(is.character(name)){
+
+    color_nm <- purrr::set_names(color, name)
+
+  }
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      if(is.numeric(slices)){
+
+        vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
+
+      }
+
+      .layer_bb_data_impl(
+        vbl2D = vbl2D,
+        color = color,
+        fill = fill,
+        name = names(color_nm),
+        ...
+      )
+
+    },
+    color_nm = color_nm,
+    class_add = "layer_bb"
+  )
+
+}
+
+#' @keywords internal
+.layer_bb_data_impl <- function(vbl2D,
+                                color,
+                                fill,
+                                name,
+                                ...){
+
+  data <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = function(slice){
+
+        ls <- data_bb(vbl2D, slice = slice)
+
+        tibble::tibble(
+          slice = slice,
+          cmin = ls$col[1],
+          cmax = ls$col[2],
+          rmin = ls$row[1],
+          rmax = ls$row[2]
+        )
+
+      }
+    )
+
+  .layer_lst_bb(
+    data = data,
+    name = name,
+    color = color,
+    fill = fill,
+    ...
+  )
+
+}
+
+
+#' @rdname layer_bb
+#' @export
+layer_bb_plot <- function(color = alpha("yellow", 0.7),
+                          fill = NA,
+                          name = TRUE,
+                          ...){
+
+  color_nm <- NULL
+  if(isTRUE(name)){
+
+    color_nm <- purrr::set_names(color, "Plot")
+
+  } else if(is.character(name)){
+
+    color_nm <- purrr::set_names(color, name)
+
+  }
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      .layer_bb_plot_impl(
+        vbl2D = vbl2D,
+        color = color,
+        fill = fill,
+        name = names(color_nm),
+        ...
+      )
+
+    },
+    color_nm = color_nm,
+    class_add = "layer_bb"
+  )
+
+}
+
+#' @keywords internal
+.layer_bb_plot_impl <- function(vbl2D,
+                                color,
+                                fill,
+                                name,
+                                ...){
+
+  data <- as_bb2D_df(plot_bb(vbl2D))
+
+  .layer_lst_bb(
+    data = data,
+    name = name,
+    color = color,
+    fill = fill,
+    ...
+  )
+
+}
+
+#' @rdname layer_bb
+#' @export
+layer_bb_screen <- function(color = alpha("blue", 0.7),
+                            fill = NA,
+                            slices = NULL,
+                            name = TRUE,
+                            ...){
+
+  color_nm <- NULL
+  if(isTRUE(name)){
+
+    color_nm <- purrr::set_names(color, "Screen")
+
+  } else if(is.character(name)){
+
+    color_nm <- purrr::set_names(color, name)
+
+  }
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      if(is.numeric(slices)){
+
+        vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
+
+      }
+
+      .layer_bb_screen_impl(
+        vbl2D = vbl2D,
+        color = color,
+        fill = fill,
+        name = name,
+        ...
+      )
+
+    },
+    color_nm = color_nm,
+    class_add = "layer_bb"
+  )
+
+}
+
+#' @keywords internal
+.layer_bb_screen_impl <- function(vbl2D,
+                                  color,
+                                  fill,
+                                  name,
+                                  ...){
+
+  data <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = function(slice){
+
+        ls <- screen_bb(vbl2D, slice = slice)
+
+        tibble::tibble(
+          slice = slice,
+          cmin = ls$col[1],
+          cmax = ls$col[2],
+          rmin = ls$row[1],
+          rmax = ls$row[2]
+        )
+
+      }
+    )
+
+  .layer_lst_bb(
+    data = data,
+    name = name,
+    color = color,
+    fill = fill,
+    ...
+  )
+
+}
+
+#' @rdname layer_bb
+#' @export
+layer_bb_slice <- function(color = alpha("red", 0.7),
+                           fill = NA,
+                           slices = NULL,
+                           name = TRUE,
+                           ...){
+
+  color_nm <- NULL
+  if(isTRUE(name)){
+
+    color_nm <- purrr::set_names(color, "Slice")
+
+  } else if(is.character(name)){
+
+    color_nm <- purrr::set_names(color, name)
+
+  }
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      if(is.numeric(slices)){
+
+        vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
+
+      }
+
+      .layer_bb_slice_impl(
+        vbl2D = vbl2D,
+        color = color,
+        fill = fill,
+        name = names(color_nm),
+        ...
+      )
+
+    },
+    color_nm = color_nm,
+    class_add = "layer_bb"
+  )
+
+}
+
+#' @keywords internal
+.layer_bb_slice_impl <- function(vbl2D,
+                                 color,
+                                 fill,
+                                 name,
+                                 ...){
+
+  data <- bb2D_df(vbl2D, expand = FALSE)
+
+  .layer_lst_bb(
+    data = data,
+    name = name,
+    color = color,
+    fill = fill,
+    ...
+    )
 
 }
 
@@ -111,7 +405,8 @@ layer_categorical <- function(var,
         ...
       )
 
-    }
+    },
+    class_add = "layer_raster"
   )
 
 }
@@ -131,7 +426,7 @@ layer_categorical <- function(var,
 
   }
 
-  is_vartype(vbl2D, var = var, type = "label")
+  is_vartype(vbl2D, var = var, type = "categorical")
 
   vbl2D <- vbl2D[!is.na(vbl2D[[var]]), ]
 
@@ -231,7 +526,8 @@ layer_grid <- function(col = 0.1,
         linewidth = linewidth
       )
 
-    }
+    },
+    class_add = "layer_ann"
   )
 
 }
@@ -253,8 +549,8 @@ layer_grid <- function(col = 0.1,
   data <-
     tidyr::expand_grid(
       slice = if(!is_offset(vbl2D)){ slices(vbl2D) },
-      col = .grid_intercepts(col, limits = plot_limits(vbl2D)$col),
-      row = .grid_intercepts(row, limits = plot_limits(vbl2D)$row)
+      col = .grid_intercepts(col, limits = plot_bb(vbl2D)$col),
+      row = .grid_intercepts(row, limits = plot_bb(vbl2D)$row)
     )
 
   layer_lst <- list()
@@ -368,7 +664,8 @@ layer_labels <- function(var,
         ...
       )
 
-    }
+    },
+    class_add = "layer_ann"
   )
 
 }
@@ -523,13 +820,25 @@ layer_labels <- function(var,
 #'
 #' @export
 layer_mask <- function(color,
-                       opacity = 0.25,
                        .cond = NULL,
                        .by = NULL,
+                       opacity = 0.25,
+                       name = TRUE,
                        ...){
 
   opacity_quo <- rlang::enquo(opacity)
   .cond_quo <- rlang::enquo(.cond)
+
+  color_nm <- NULL
+  if(isTRUE(name)){
+
+    color_nm <- purrr::set_names(color, rlang::quo_text(.cond_quo))
+
+  } else if(is.character(name)){
+
+    color_nm <- purrr::set_names(color, name)
+
+  }
 
   vbl_layer(
     fun = function(vbl2D){
@@ -541,10 +850,13 @@ layer_mask <- function(color,
         vbl2D = vbl2D,
         color = color,
         opacity = opacity_quo,
+        name = names(color_nm),
         ...
       )
 
-    }
+    },
+    color_nm = color_nm,
+    class_add = "layer_mask"
   )
 
 }
@@ -553,18 +865,37 @@ layer_mask <- function(color,
 .layer_mask_impl <- function(vbl2D,
                              color,
                              opacity,
+                             name,
                              ...){
 
-  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
+  data <- if(is_offset(vbl2D)){ .remove_overlap(vbl2D) } else { vbl2D }
 
-  list(
-    ggplot2::geom_raster(
-      data = vbl2D,
-      mapping = ggplot2::aes(x = col, y = row),
-      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
-      fill = color
-    )
-  )
+  if(is.character(name)){
+
+    layer_lst <-
+      list(
+        ggplot2::geom_raster(
+          data = dplyr::mutate(vbl2D, mask. = {{ name }}),
+          mapping = ggplot2::aes(x = col, y = row, fill = mask.),
+          alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
+        )
+      )
+
+  } else {
+
+    layer_lst <-
+      list(
+        ggplot2::geom_raster(
+          data = vbl2D,
+          mapping = ggplot2::aes(x = col, y = row),
+          alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+          fill = color
+        )
+      )
+
+  }
+
+  return(layer_lst)
 
 }
 
@@ -606,7 +937,8 @@ layer_numeric <- function(var,
         ...
       )
 
-    }
+    },
+    class_add = "layer_raster"
   )
 
 }
@@ -633,7 +965,7 @@ layer_numeric <- function(var,
     ),
     scale_fill_numeric(
       clrsp,
-      limits = var_limits(vbl2D, var),
+      limits = .get_var_limits(vbl2D, var),
       ...
     )
   )
@@ -662,17 +994,28 @@ layer_numeric <- function(var,
 #'
 #' @export
 layer_outline <- function(color,
-                          alpha = 0.9,
+                          .cond = NULL,
+                          .by = NULL,
                           linetype = "solid",
                           linewidth = 1,
                           use_dbscan = TRUE,
                           concavity = 2.5,
                           clip_overlap = TRUE,
-                          .cond = NULL,
-                          .by = NULL,
+                          name = TRUE,
                           ...){
 
   .cond_quo <- rlang::enquo(.cond)
+
+  color_nm <- NULL
+  if(isTRUE(name)){
+
+    color_nm <- purrr::set_names(color, rlang::quo_text(.cond_quo))
+
+  } else if(is.character(name)){
+
+    color_nm <- purrr::set_names(color, name)
+
+  }
 
   vbl_layer(
     fun = function(vbl2D){
@@ -695,7 +1038,6 @@ layer_outline <- function(color,
 
       .layer_outline_impl(
         vbl2D = vbl2D,
-        alpha = alpha,
         color = color,
         linetype = linetype,
         linewidth = linewidth,
@@ -703,10 +1045,13 @@ layer_outline <- function(color,
         concavity = concavity,
         clip_overlap = clip_overlap,
         outlines_slice = outlines_slice,
+        name = names(color_nm),
         ...
       )
 
-    }
+    },
+    color_nm = color_nm,
+    class = "layer_outline"
   )
 
 }
@@ -714,13 +1059,13 @@ layer_outline <- function(color,
 #' @keywords internal
 .layer_outline_impl <- function(vbl2D,
                                 color,
-                                alpha,
                                 linetype,
                                 linewidth,
                                 concavity,
                                 use_dbscan,
                                 outlines_slice,
                                 clip_overlap,
+                                name,
                                 ...){
 
 
@@ -784,15 +1129,28 @@ layer_outline <- function(color,
       dplyr::filter(outlines, split) %>%
       dplyr::mutate(outline = stringr::str_c(outline, slice, part, sep = "."))
 
-    layer_lst$path <-
-      ggplot2::geom_path(
-        data = data,
-        mapping = ggplot2::aes(x = col, y = row, group = outline),
-        alpha = alpha,
-        color = color,
-        linetype = linetype,
-        linewidth = linewidth
-      )
+    if(is.character(name)){
+
+      layer_lst$path <-
+        ggplot2::geom_path(
+          data = dplyr::mutate(data, outline. = {{ name }}),
+          mapping = ggplot2::aes(x = col, y = row, group = outline, color = outline.),
+          linetype = linetype,
+          linewidth = linewidth
+        )
+
+    } else {
+
+      layer_lst$path <-
+        ggplot2::geom_path(
+          data = data,
+          mapping = ggplot2::aes(x = col, y = row, group = outline),
+          color = color,
+          linetype = linetype,
+          linewidth = linewidth
+        )
+
+    }
 
   }
 
@@ -802,16 +1160,32 @@ layer_outline <- function(color,
       dplyr::filter(outlines, !split) %>%
       dplyr::mutate(outline = stringr::str_c(outline, slice, part, sep = "."))
 
-    layer_lst$polygon <-
-      ggplot2::geom_polygon(
-        data = data,
-        mapping = ggplot2::aes(x = col, y = row, group = outline),
-        color = ggplot2::alpha(color, alpha),
-        linetype = linetype,
-        linewidth = linewidth,
-        fill = NA,
-        ...
-      )
+    if(is.character(name)){
+
+      layer_lst$polygon <-
+        ggplot2::geom_polygon(
+          data = dplyr::mutate(data, outline. = {{ name }}),
+          mapping = ggplot2::aes(x = col, y = row, group = outline, color = outline.),
+          linetype = linetype,
+          linewidth = linewidth,
+          fill = NA,
+          ...
+        )
+
+    } else {
+
+      layer_lst$polygon <-
+        ggplot2::geom_polygon(
+          data = data,
+          mapping = ggplot2::aes(x = col, y = row, group = outline),
+          color = ggplot2::alpha(color, alpha),
+          linetype = linetype,
+          linewidth = linewidth,
+          fill = NA,
+          ...
+        )
+
+    }
 
   }
 
@@ -819,187 +1193,6 @@ layer_outline <- function(color,
 
 }
 
-#' @title Layers for visualizing 2D limit regions
-#' @name vbl_doc_plotting_regions
-#' @description
-#' Add rectangular overlays showing different 2D limit regions of a \code{vbl2D}
-#' object. These layers visualize:
-#'
-#' \itemize{
-#'   \item \code{layer_plot_limits()}: The global plot limits spanning all slices
-#'     after applying screen-space offsets.
-#'
-#'   \item \code{layer_screen_limits()}: The screen-space limits of each slice,
-#'     optionally restricted to selected slices.
-#'
-#'   \item \code{layer_slice_limits()}: The raw per-slice bounding boxes
-#'     (voxel extents) without offsets or screen-space adjustments.
-#' }
-#'
-#' Each function draws one or more \code{geom_rect()} layers representing the
-#' corresponding limit region in the 2D layout.
-#'
-#' @param color Line color of the drawn rectangles.
-#' @param fill Fill color for the rectangles. Defaults to \code{NA}.
-#' @param slices Optional integer vector of slice values to visualize
-#'   (for \code{layer_screen_limits()} and \code{layer_slice_limits()}).
-#' @param ... Additional arguments passed to \code{geom_rect()}.
-#'
-#' @return A list of ggplot2 layers.
-#'
-#' @seealso \code{\link{plot_limits}()}, \code{\link{screen_limits}()},
-#'   \code{\link{slice_limits}()}
-#'
-NULL
-
-
-#' @rdname vbl_doc_limits2D
-#' @export
-layer_plot_limits <- function(color = alpha("yellow", 0.7), fill = NA, ...){
-
-  vbl_layer(
-    fun = function(vbl2D){
-
-      .layer_plot_limits_impl(
-        vbl2D = vbl2D,
-        color = color,
-        fill = fill,
-        ...
-      )
-
-    }
-  )
-
-}
-
-#' @keywords internal
-.layer_plot_limits_impl <- function(vbl2D, color, fill, ...){
-
-  data <- as_bb2D_df(plot_limits(vbl2D))
-
-  list(
-    ggplot2::geom_rect(
-      data = data,
-      mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
-      color = color,
-      fill = fill,
-      ...
-    )
-  )
-
-}
-
-
-#' @rdname vbl_doc_limits2D
-#' @export
-layer_screen_limits <- function(color = alpha("blue", 0.7),
-                                fill = NA,
-                                slices = NULL,
-                                ...){
-
-  if(is.numeric(slices)){
-
-    vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
-
-    }
-
-  vbl_layer(
-    fun = function(vbl2D){
-
-      .layer_screen_limits_impl(
-        vbl2D = vbl2D,
-        color = color,
-        fill = fill,
-        ...
-      )
-
-    }
-  )
-
-}
-
-#' @keywords internal
-.layer_screen_limits_impl <- function(vbl2D,
-                                      color,
-                                      fill,
-                                      ...){
-
-  data <-
-    purrr::map_df(
-      .x = slices(vbl2D),
-      .f = function(slice){
-
-        ls <- screen_limits(vbl2D, slice = slice)
-
-        tibble::tibble(
-          slice = slice,
-          cmin = ls$col[1],
-          cmax = ls$col[2],
-          rmin = ls$row[1],
-          rmax = ls$row[2]
-        )
-
-      }
-    )
-
-  list(
-    ggplot2::geom_rect(
-      data = data,
-      mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
-      color = color,
-      fill = fill,
-      ...
-    )
-  )
-
-}
-
-#' @rdname vbl_doc_limits2D
-#' @export
-layer_slice_limits <- function(color = alpha("red", 0.7),
-                               fill = NA,
-                               slices = NULL,
-                               ...){
-
-  if(is.numeric(slices)){
-
-    vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
-
-  }
-
-  vbl_layer(
-    fun = function(vbl2D){
-
-      .layer_bb_impl(
-        vbl2D = vbl2D,
-        color = color,
-        fill = fill,
-        ...
-      )
-
-    }
-  )
-
-}
-
-
-#' @keywords internal
-.layer_slice_limits_impl <- function(vbl2D,
-                                     color,
-                                     fill,
-                                     ...){
-
-  list(
-    ggplot2::geom_rect(
-      data = bb2D_df(vbl2D, expand = FALSE),
-      mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
-      color = color,
-      fill = fill,
-      ...
-    )
-  )
-
-}
 
 #' @title Layer for displaying slice numbers
 #' @description Add slice numbers as text labels to a \link{ggplane()}-plot.
@@ -1058,7 +1251,8 @@ layer_slice_number <- function(anchor,
         ...
       )
 
-    }
+    },
+    class_add = "layer_ann"
   )
 
 }
@@ -1100,17 +1294,17 @@ layer_slice_number <- function(anchor,
 
         if(space == "slice"){
 
-          bb2D <- slice_limits(vbl2D, slice)
+          bb2D <- slice_bb(vbl2D, slice)
 
         } else if(space == "screen"){
 
-          bb2D <- screen_limits(vbl2D, slice)
+          bb2D <- screen_bb(vbl2D, slice)
 
         } else if(space == "avg"){
 
           bb2D <- avg_bb2D(
-            a = slice_limits(vbl2D, slice),
-            b = screen_limits(vbl2D, slice)
+            a = slice_bb(vbl2D, slice),
+            b = screen_bb(vbl2D, slice)
           )
 
         }
@@ -1182,8 +1376,8 @@ layer_slice_number <- function(anchor,
 #' @param space Character scalar indicating which 2D limit space to use when
 #'   constructing reference lines:
 #'   \itemize{
-#'     \item \code{"slice"} – use per-slice limits from \link{slice_limits}.
-#'     \item \code{"screen"} – use screen-space limits from \link{screen_limits} (after offsets).
+#'     \item \code{"slice"} – use per-slice limits from \link{slice_bb}.
+#'     \item \code{"screen"} – use screen-space limits from \link{screen_bb} (after offsets).
 #'   }
 #' @param spacer Numeric offset (in voxel units) applied to the label position
 #' away from the reference line along the perpendicular axis. Interpreted in absolutes.
@@ -1206,7 +1400,7 @@ layer_slice_number <- function(anchor,
 #' reapplies the offset layout. Label alignment (\code{hjust}/\code{vjust}) is
 #' determined automatically from \code{anchor}.
 #'
-#' @seealso \code{\link{slice_limits}}, \code{\link{screen_limits}},
+#' @seealso \code{\link{slice_bb}}, \code{\link{screen_bb}},
 #'   \code{\link{layer_slice_number}}
 #'
 #' @export
@@ -1249,7 +1443,8 @@ layer_slice_ref <- function(plane_ref,
         ...
       )
 
-    }
+    },
+    class_add = "layer_ann"
   )
 
 }
@@ -1325,11 +1520,11 @@ layer_slice_ref <- function(plane_ref,
 
             if(space == "screen"){
 
-              lim0 <- screen_limits(vbl2D_ref, slice = slice)
+              lim0 <- screen_bb(vbl2D_ref, slice = slice)
 
             } else if(space == "slice") {
 
-              lim0 <- slice_limits(vbl2D_ref, slice)
+              lim0 <- slice_bb(vbl2D_ref, slice)
 
             }
 

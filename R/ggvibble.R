@@ -18,9 +18,104 @@ build_ggplot.ggvibble <- function(p){
   # add ggvibble_layers
   if(length(p$layers) > 0){
 
-    for(ly in p$layers){
+    # sort layers
+    layers_ann <- purrr::keep(p$layers, .p = ~ "layer_ann" %in% class(.x))
+    layers_bb <- purrr::keep(p$layers, .p = ~ "layer_bb" %in% class(.x))
+    layers_mask <- purrr::keep(p$layers, .p = ~ "layer_mask" %in% class(.x))
+    layers_outline <- purrr::keep(p$layers, .p = ~ "layer_outline" %in% class(.x))
+    layers_raster <- purrr::keep(p$layers, .p = ~ "layer_raster" %in% class(.x))
 
-      g <- g + ly$fun(vbl2D)
+    # 1. raster
+    if(length(layers_raster) != 0){
+
+      for(ly in layers_raster){
+
+        g <- g + ly$fun(vbl2D)
+
+      }
+
+    }
+
+    # 2. masks
+    if(length(layers_mask) != 0){
+
+      color_naming <-
+        purrr::map(layers_mask, "color_nm") %>%
+        purrr::flatten_chr()
+
+      if(length(color_naming) != 0){
+
+        g <-
+          g +
+          ggnewscale::new_scale_fill() +
+          ggplot2::scale_fill_manual(values = color_naming, name = vbl_opts("legend.name.mask"))
+
+      }
+
+      for(ly in layers_mask){
+
+        g <- g + ly$fun(vbl2D)
+
+      }
+
+    }
+
+    # 3. bbs
+    if(length(layers_bb) != 0){
+
+      color_naming <-
+        purrr::map(layers_bb, "color_nm") %>%
+        purrr::flatten_chr()
+
+      if(length(color_naming) != 0){
+
+        g <-
+          g +
+          ggnewscale::new_scale_color() +
+          ggplot2::scale_color_manual(values = color_naming, name = vbl_opts("legend.name.bb"))
+
+      }
+
+      for(ly in layers_bb){
+
+        g <- g + ly$fun(vbl2D)
+
+      }
+
+    }
+
+    # 4. outlines
+    if(length(layers_outline) != 0){
+
+      color_naming <-
+        purrr::map(layers_outline, "color_nm") %>%
+        purrr::flatten_chr()
+
+      if(length(color_naming) != 0){
+
+        g <-
+          g +
+          ggnewscale::new_scale_color() +
+          ggplot2::scale_color_manual(values = color_naming, name = vbl_opts("legend.name.outline"))
+
+      }
+
+      for(ly in layers_outline){
+
+        g <- g + ly$fun(vbl2D)
+
+      }
+
+    }
+
+    # 5. annotations
+    if(length(layers_ann) != 0){
+
+      for(ly in layers_ann){
+
+        g <- g + ly$fun(vbl2D)
+
+      }
 
     }
 
@@ -51,6 +146,9 @@ print.ggvibble <- function(x, ...){
 #'
 #' @param fun A function that takes a `vbl2D` object and returns one or more
 #' ggplot2 layers (typically a list of geoms or scales).
+#' @param class_add Character or NULL. If character, specifies additional layer
+#' classes for (potential) specific management in the `build_ggplot.ggvibble()`.
+#'
 #'
 #' @return A `ggvibble_layer` object containing the supplied function. When
 #' added to a `ggvibble`, the function is executed and its returned layers are
@@ -67,11 +165,11 @@ print.ggvibble <- function(x, ...){
 #' vbl_layer(function(v) ggplot2::geom_point(aes(x = col, y = row)))
 #'
 #' @keywords internal
-vbl_layer <- function(fun){
+vbl_layer <- function(fun, class_add = NULL, ...){
 
   structure(
-    .Data = list(fun = fun),
-    class = "ggvibble_layer"
+    .Data = list(fun = fun, ...),
+    class = c(class_add, "ggvibble_layer")
   )
 
 }
@@ -98,13 +196,14 @@ vbl_layer <- function(fun){
 
 
 #' @title Build a 2D ggplot representation of voxel data
-#' @description Build a 2D visualization of vocel data by selecting slices in a
-#' specified anatomical plane and plotting a numeric variable as a raster image.
+#' @description Build a 2D visualization of voxel data by selecting slices in a
+#' specified anatomical plane.
 #'
 #' @param var Character scalar naming the variable to plot.
+#' @param slices Integer vector. Slice indices in the specified anatomical
+#' `plane` to be included in the plot.
 #' @param layout Optional numeric vector of length two specifying `c(ncol, nrow)` for `facet_wrap()`
-#' when multiple slices are shown and `offset_dist` ist 0.
-#' @param flip Logical. If `TRUE`, the z-order of the slices is flipped. Only relevent for offset-layouts.
+#' when neither of `offset_col` or `offset_row` differs from 0.
 #' @param .cond Optional. An additional logical filter expression that determines the specific
 #' voxels plotted with `ggplane()` and passed to added \link[vbl_doc_vbl_layer]{layers}. <br>
 #'
@@ -124,21 +223,21 @@ vbl_layer <- function(fun){
 #' Numeric variables are plotted with \link{scale_fill_numeric}() using `clrsp`. Non-numeric variables are
 #' plotted with \link{scale_fill_label}() using `clrp`. Note, that in `ggplane()`, logical mask variables
 #' are coerced to factors with levels `c("TRUE", "FALSE")` before plotting, for binary mask overlays see \link{layer_mask()}.
-
 #' @export
 ggplane <- function(vbl,
                     var,
                     plane,
                     slices,
-                    lim = NULL,
+                    screen_bb = NULL,
                     expand = 0.1,
                     offset_col = 0,
                     offset_row = 0,
-                    order = "desc",
+                    zstack = "desc",
+                    layout = NULL,
                     clrp = vbl_opts("clrp"),
                     clrsp = vbl_opts("clrsp"),
                     interpolate = vbl_opts("interpolate"),
-                    layout = NULL,
+                    verbose = vbl_opts("verbose"),
                     .cond = NULL,
                     .by = NULL,
                     ...){
@@ -155,10 +254,10 @@ ggplane <- function(vbl,
     vbl = vbl,
     plane = plane,
     slices = slices,
-    lim = lim,
+    screen_bb = screen_bb,
     offset_col = offset_col,
     offset_row = offset_row,
-    order = order,
+    zstack = zstack,
     expand = expand
   )
 
@@ -166,8 +265,6 @@ ggplane <- function(vbl,
   .cond_quo <- rlang::enquo(.cond)
   .by_quo <- rlang::enquo(.by)
   vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by_quo, layer = "ggplane()")
-
-  assign("vbl2D", vbl2D, envir = .GlobalEnv)
 
   structure(
     list(
@@ -180,6 +277,7 @@ ggplane <- function(vbl,
         clrsp = clrsp,
         interpolate = interpolate,
         layout = layout,
+        verbose = verbose,
         ...
       ),
       layers = list()
@@ -196,6 +294,7 @@ ggplane <- function(vbl,
                           clrsp = vbl_opts("clrsp"),
                           interpolate = vbl_opts("interpolate"),
                           layout = NULL,
+                          verbose = verbose,
                           ...){
 
   stopifnot(is.numeric(vbl2D[[var]]))
@@ -214,7 +313,7 @@ ggplane <- function(vbl,
   # layer colors
   if(is_numeric_var(vbl2D[[var]])){
 
-    layer_colors <- scale_fill_numeric(clrsp = clrsp, limits = var_limits(vbl2D, var), ...)
+    layer_colors <- scale_fill_numeric(clrsp = clrsp, limits = .get_var_limits(vbl2D, var, verbose), ...)
 
   } else {
 
@@ -224,17 +323,18 @@ ggplane <- function(vbl,
 
     }
 
-    layer_colors <- scale_fill_label(clrp = clrp, ...)
+    layer_colors <- scale_fill_categorical(clrp = clrp, ...)
 
   }
 
-  col_lim <- plot_limits(vbl2D)$col
-  row_lim <- plot_limits(vbl2D)$row
+  col_lim <- plot_bb(vbl2D)$col
+  row_lim <- plot_bb(vbl2D)$row
 
   # construct plot
   ggplot2::ggplot(data = vbl2D) +
     ggplot2::geom_raster(
-      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]])
+      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
+      interpolate = interpolate
     ) +
     layer_colors +
     layer_facet +

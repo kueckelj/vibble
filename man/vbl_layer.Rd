@@ -4,11 +4,14 @@
 \alias{vbl_layer}
 \title{Create a ggvibble layer object}
 \usage{
-vbl_layer(fun)
+vbl_layer(fun, class_add = NULL)
 }
 \arguments{
 \item{fun}{A function that takes a \code{vbl2D} object and returns one or more
 ggplot2 layers (typically a list of geoms or scales).}
+
+\item{class_add}{Character or NULL. If character, specifies additional layer
+classes for (potential) specific management in the \code{build_ggplot.ggvibble()}.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

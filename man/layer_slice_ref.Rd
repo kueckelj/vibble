@@ -45,8 +45,8 @@ based on the intersecting axis.}
 \item{space}{Character scalar indicating which 2D limit space to use when
 constructing reference lines:
 \itemize{
-\item \code{"slice"} – use per-slice limits from \link{slice_limits}.
-\item \code{"screen"} – use screen-space limits from \link{screen_limits} (after offsets).
+\item \code{"slice"} – use per-slice limits from \link{slice_bb}.
+\item \code{"screen"} – use screen-space limits from \link{screen_bb} (after offsets).
 }}
 
 \item{spacer}{Numeric offset (in voxel units) applied to the label position
@@ -71,6 +71,6 @@ reapplies the offset layout. Label alignment (\code{hjust}/\code{vjust}) is
 determined automatically from \code{anchor}.
 }
 \seealso{
-\code{\link{slice_limits}}, \code{\link{screen_limits}},
+\code{\link{slice_bb}}, \code{\link{screen_bb}},
 \code{\link{layer_slice_number}}
 }

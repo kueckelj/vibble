@@ -151,7 +151,7 @@ is_numeric_candidate <- function(x){
 #' They verify the expected final R types of voxel-wise columns:
 #' \itemize{
 #'   \item `is_mask_var(x)` returns `TRUE` when `x` is a logical vector
-#'   \item `is_label_var(x)` returns `TRUE` when `x` is a factor
+#'   \item `is_categorical_var(x)` returns `TRUE` when `x` is a factor
 #'   \item `is_numeric_var(x)` returns `TRUE` when `x` is numeric
 #' }
 #'
@@ -167,14 +167,14 @@ is_numeric_candidate <- function(x){
 #'
 #' @examples
 #' is_mask_var(c(TRUE, FALSE, TRUE))
-#' is_label_var(factor(c("GM", "WM")))
+#' is_categorical_var(factor(c("GM", "WM")))
 #' is_numeric_var(c(1.2, 3.5, 7.9))
 #'
 #' @name var_type_checks
 NULL
 
 #' @rdname var_type_checks
-is_label_var <- is.factor
+is_categorical_var <- is.factor
 
 #' @rdname var_type_checks
 is_mask_var <- is.logical

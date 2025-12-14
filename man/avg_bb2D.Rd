@@ -24,7 +24,7 @@ lower and upper bounds of each axis are averaged separately.
 vbl <- example_vbl()
 vbl2D <- vibble2D(vbl, plane = "axi", slices = 60)
 bb_slice <- slice_bb(vbl2D, slice = 60)
-bb_screen <- screen_limits(vbl2D, slice = 60)
+bb_screen <- screen_bb(vbl2D, slice = 60)
 avg_bb <- avg_bb2D(bb_slice, bb_screen)
 
 }

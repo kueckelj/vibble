@@ -2,14 +2,30 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_bb}
 \alias{layer_bb}
+\alias{layer_bb_data}
+\alias{layer_bb_plot}
+\alias{layer_bb_screen}
+\alias{layer_bb_slice}
 \title{Add a data-driven 2D bounding-box}
 \usage{
-layer_bb(color, fill = NA, expand = FALSE, .cond = NULL, .by = NULL, ...)
+layer_bb(color, .cond, .by = NULL, fill = NA, expand = FALSE, name = TRUE, ...)
+
+layer_bb_data(
+  color = alpha("green", 0.7),
+  fill = NA,
+  slices = NULL,
+  name = TRUE,
+  ...
+)
+
+layer_bb_plot(color = alpha("yellow", 0.7), fill = NA, ...)
+
+layer_bb_screen(color = alpha("blue", 0.7), fill = NA, slices = NULL, ...)
+
+layer_bb_slice(color = alpha("red", 0.7), fill = NA, slices = NULL, ...)
 }
 \arguments{
 \item{color}{Color of the bounding-box outline.}
-
-\item{fill}{Fill of the bounding-box.}
 
 \item{.cond}{A logical filter expression that determines the specific
 voxels for which this layer is drawn. The expression is evaluated via
@@ -19,7 +35,16 @@ into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
 
+\item{fill}{Fill of the bounding-box.}
+
+\item{name}{Logical or character scalar. If character, the name with which
+the color is associated with in the color legend. If logical, \code{FALSE} prevents
+appearance in the legend and \code{TRUE} falls back to the naming default of the
+function.}
+
 \item{...}{Additional arguments passed to \link{geom_rect}().}
+
+\item{slices}{Integer vector. The slices of interest.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When
@@ -27,8 +52,7 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Draw a rectangular bounding box around the extent of voxels
-that match a certain condition.
+Draw a rectangular bounding box around the extent of voxels.
 }
 \details{
 \code{layer_bb()} computes and visualizes a 2D bounding box for voxels based on the

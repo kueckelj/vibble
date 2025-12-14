@@ -205,83 +205,6 @@ is_ccs_steps <- function(x){
 }
 
 
-
-
-
-
-#' @title Create variable-level metadata
-#' @description
-#' Generate a metadata list for a single variable, including labels for
-#' categorical data, counts for logical data, and summary statistics for
-#' numeric data.
-#'
-#' @details
-#' The function inspects the type of `dvar` and computes the corresponding
-#' metadata elements. Fields not applicable to the input type are returned
-#' as `NULL`.
-#'
-#' @param dvar
-#' A vector of type character, factor, logical, or numeric.
-#'
-#' @return
-#' A named list with the following elements:
-#' \itemize{
-#'   \item{\code{labels: }}{Sorted unique entries (character) or factor levels (factor).}
-#'   \item{\code{nT: }}{Number of \code{TRUE} values (logical).}
-#'   \item{\code{limits: }}{Numeric range: \code{c(min, max)}.}
-#'   \item{\code{mean: }}{Mean of numeric values.}
-#'   \item{\code{median: }}{Median of numeric values.}
-#' }
-#'
-#' @examples
-#' summarize_var(c(1, 3, 5))
-#' summarize_var(c(TRUE, FALSE, TRUE))
-#' summarize_var(c("a", "b", "b"))
-#'
-#' @export
-summarize_var <- function(dvar){
-
-  list(
-
-    # character
-    labels = if(is.character(dvar)){ sort(unique(dvar)) } else if(is.factor(dvar)){ levels(dvar) },
-
-    # logical
-    nT = if(is.logical(dvar)) sum(dvar, na.rm = TRUE),
-
-    # numeric
-    limits = if(is.numeric(dvar)) range(dvar, na.rm = TRUE),
-    mean = if(is.numeric(dvar)) mean(dvar, na.rm = TRUE),
-    median = if(is.numeric(dvar)) median(dvar, na.rm = TRUE)
-
-  )
-
-}
-
-update_var_smr <- function(vbl, vars = NULL){
-
-  vars <- vars[!vars %in% vbl_doc_ccs_axes]
-
-  if(is.character(vars)){
-
-    stopifnot(all(vars %in% colnames(vbl)))
-
-  } else {
-
-    vars <- colnames(vbl)
-    vars <- vars[!vars %in% vbl_doc_ccs_axes]
-
-  }
-
-  vm <- var_smr(vbl)
-  vm[vars] <- purrr::map(vbl[,vars], .f = summarize_var)
-  attr(vbl, which = "var_smr") <- vm
-
-  return(vbl)
-
-}
-
-
 #' @title Get or set variable limits
 #' @description
 #' Access or modify the stored limit attribute of a variable in a \code{vbl} or
@@ -392,13 +315,37 @@ var_limits.numeric <- function(x, ...){
 
 }
 
+
+#' @export
+var_range <- function(x, var, ...){
+
+  UseMethod("var_range")
+
+}
+
+#' @export
+var_range.vbl <- function(x, var, ...){
+
+  stopifnot(var %in% names(x))
+  range(x[[var]], na.rm = TRUE, finite = TRUE)
+
+}
+
+#' @export
+var_range.vbl2D <- function(x, var, ...){
+
+  stopifnot(var %in% names(x))
+  range(x[[var]], na.rm = TRUE, finite = TRUE)
+
+}
+
 #' @keywords internal
 #' @export
 var_type <- function(x){
 
-  if(is_label_var(x)){
+  if(is_categorical_var(x)){
 
-    "label"
+    "categorical"
 
   } else if(is_mask_var(x)){
 

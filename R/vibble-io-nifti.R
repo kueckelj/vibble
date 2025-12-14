@@ -51,6 +51,85 @@ dcm_to_vbl <- function(x,
 
 }
 
+#' @title Convert vibble variable to NIfTI object.
+#'
+#' @description
+#' `vbl_to_nifti()` converts a single non-ccs variable of a vibble into an
+#' in-memory NIfTI object. Voxel values are taken from the vibble, arranged
+#' according to the requested orientation, and written into a NIfTI volume
+#' with minimal but valid spatial header information.
+#'
+#' @details
+#' If `datatype` is not explicitly provided, it is inferred from the vibble
+#' variable content using `.infer_datatype()`.
+#'
+#' Voxel spacing (`pixdim`) is derived from the vibble coordinate step sizes
+#' and reordered to match the specified orientation. A simple diagonal
+#' voxel-to-world transform is written to both sform and qform to ensure that
+#' the orientation is well-defined. No attempt is made to recover real scanner
+#' geometry beyond voxel spacing and axis orientation.
+#'
+#' @param var Character scalar. Name of a variable in `vbl` to be
+#' converted into a NIfTI volume.
+#' @param orientation Character scalar. Three-letter orientation string
+#' specifying axis directions (e.g. `"RAS"`, `"LPI"`).
+#' @param missing Numeric scalar. Value used to fill voxels that are missing
+#' in the vibble.
+#' @param datatype Integer scalar. NIfTI datatype code. If `NULL`, the datatype
+#' is inferred automatically from the variable content.
+#'
+#' @inheritParams vbl_doc
+#'
+#' @return
+#' A `oro.nifti` object containing the voxel data and basic spatial metadata.
+#'
+#' @keywords internal
+
+vbl_to_nifti <- function(vbl,
+                         var,
+                         orientation = "RAS",
+                         missing = 0,
+                         datatype = NULL,
+                         verbose = vbl_opts("verbose")
+                         ){
+
+  if(is.null(datatype)){
+
+    datatype <- .infer_datatype(vbl, var = var)
+
+  }
+
+  data <-
+    vbl_to_array(
+      vbl = vbl,
+      var = var,
+      orientation = orientation,
+      missing = missing,
+      verbose = verbose
+      )
+
+  nii <- oro.nifti::nifti(data, datatype = datatype)
+
+  # basic header geometry
+  nii@pixdim[2:4] <-
+    ccs_steps(vbl) %>%
+    .reorder_lip(x = ., orientation = orientation) %>%
+    purrr::flatten_int()
+
+  # set a simple sform/qform so orientation is defined
+  # (voxel -> world: diagonal scaling, zero offset)
+  M <- diag(c(nii@pixdim[2:4], 1))
+  nii@sform_code <- 1L
+  nii@qform_code <- 1L
+  nii@srow_x <- M[1, ]
+  nii@srow_y <- M[2, ]
+  nii@srow_z <- M[3, ]
+
+  nii
+
+}
+
+
 
 #' @title Write NIfTI volume from a vibble
 #' @description
@@ -88,8 +167,7 @@ dcm_to_vbl <- function(x,
 #' object is returned invisibly.
 #'
 #' @param vbl A \link{vibble}.
-#' @param var
-#' Name of the variable in `vbl` to export as a NIfTI volume.
+#' @param var Character scalar. Name of the variable in `vbl` to export as a NIfTI volume.
 #' @param path_out
 #' Optional character path to the output NIfTI file (`.nii.gz`). If `NULL`,
 #' no file is written.
@@ -143,116 +221,95 @@ dcm_to_vbl <- function(x,
 #'
 #' @export
 
-make_nifti <- function(vbl,
-                       var,
-                       path_out = NULL,
-                       path_lut = NULL,
-                       path_target = NULL,
-                       dir_temp = getwd(),
-                       path_fs = "/Applications/freesurfer/7.4.0",
-                       interp = NULL,
-                       missing = 0,
-                       verbose = vbl_opts("verbose"),
-                       ...){
+write_nifti <- function(vbl,
+                        var,
+                        orientation = "RAS",
+                        missing = 0,
+                        interp = NULL,
+                        datatype = NULL,
+                        path_out = NULL,
+                        path_lut = NULL,
+                        path_target = NULL,
+                        path_fs = "/Applications/freesurfer/7.4.0",
+                        dir_temp = getwd(),
+                        verbose = vbl_opts("verbose"),
+                        ...){
 
   type <- var_type(vbl[[var]])
 
-  if(is.character(path_target)){ stopifnot(file.exists(path_target)) }
+  nii <-
+    vbl_to_nifti(
+      vbl = vbl,
+      var = var,
+      orientation = orientation,
+      missing = missing,
+      datatype = datatype,
+      verbose = verbose
+    )
 
-  path_ref = list(...)[["path_ref"]]
-  if(is.character(path_ref)){
+  # handle LUT if required
+  if(type == "label" & !is.na(path_lut)){
 
-    nii <- oro.nifti::readNIfTI(fname = path_ref, reorient = FALSE)
+    lut <- make_lut(vbl, var = var)
 
-  } else {
+    if(!is.character(path_lut)){
 
-    nii <- attr(vbl, which = "nifti")
-
-    if(!oro.nifti::is.nifti(nii)){
-
-      stop("Requiring `path_ref` cause `attr(vbl, which = 'nifti')` is invalid for this vibble.")
+      path_lut <- stringr::str_replace(path_out, "\\.nii\\.gz$", "_lut.csv")
 
     }
+
+    stopifnot(stringr::str_detect(path_lut, "_lut.csv$"))
+
+    .glue_message("Writing LUT to '{path_lut}'.", verbose)
 
   }
 
-  # exchange data array
-  nii@.Data <-
-    vbl_to_array(
-      vbl = vbl,
-      var = var,
-      orientation = RNifti::orientation(nii),
-      missing = missing
-    )
+  # adjust to target volume with mri_vol2vol
+  if(is.character(path_target)){
 
-  # write to disk if required
-  if(is.character(path_out)){
+    if(is.null(interp)){
 
-    # handle LUT if required
-    if(type == "label" & !is.na(path_lut)){
+      interp <- ifelse(type == "numeric", "cubic", "nearest")
 
-      lut <- make_lut(vbl, var = var)
-
-      if(!is.character(path_lut)){
-
-        path_lut <- stringr::str_replace(path_out, "\\.nii\\.gz$", "_lut.csv")
-
-      }
-
-      stopifnot(stringr::str_detect(path_lut, "_lut.csv$"))
-
-      .glue_message("Writing LUT to '{path_lut}'.", verbose)
-
-    }
-
-    # adjust to target volume with mri_vol2vol
-    if(is.character(path_target)){
-
-      if(is.null(interp)){
-
-        interp <- ifelse(type == "numeric", "cubic", "nearest")
-
-      } else {
-
-        interp <- match.arg(interp, choices = c("cubic", "linear", "nearest"))
-
-      }
-
-      path_nii_mov <-
-        stringr::str_c(sample(x = letters, size = 30, replace = T), collapse = "") %>%
-        stringr::str_c("temp_", ., ".nii.gz") %>%
-        file.path(dir_temp, .)
-
-      oro.nifti::writeNIfTI(nii, filename = stringr::str_remove(path_nii_mov, ".nii.gz"))
-
-      cmd <- paste0(
-        'bash -lc "',
-        'export FREESURFER_HOME=', shQuote(path_fs), '; ',
-        'source ', shQuote(file.path(path_fs, "SetUpFreeSurfer.sh")), '; ',
-        'mri_vol2vol ',
-        '--mov ',  shQuote(path_nii_mov), ' ',
-        '--targ ', shQuote(path_target), ' ',
-        '--regheader ',
-        '--o ',    shQuote(path_out), ' ',
-        '--interp ', interp, '"',
-        collapse = ""
-      )
-
-      .glue_message("Writing NIFTI to '{path_out}' with:\n {stringr::str_replace_all(cmd,';', ';\n')}")
-      out <- system(cmd, show.output.on.console = verbose)
-
-      unlink(path_nii_mov)
-
-      nii <- oro.nifti::readNIfTI(fname = path_out, reorient = FALSE)
-
-      # directly save as output
     } else {
 
-      if(verbose){ message(glue("Writing NIFTI to '{path_out}'."))}
-
-      oro.nifti::writeNIfTI(nii, filename = stringr::str_remove(path_out, ".nii.gz"))
+      interp <- match.arg(interp, choices = c("cubic", "linear", "nearest"))
 
     }
+
+    path_nii_mov <-
+      stringr::str_c(sample(x = letters, size = 30, replace = T), collapse = "") %>%
+      stringr::str_c("temp_", ., ".nii.gz") %>%
+      file.path(dir_temp, .)
+
+    oro.nifti::writeNIfTI(nii, filename = stringr::str_remove(path_nii_mov, ".nii.gz"))
+
+    cmd <- paste0(
+      'bash -lc "',
+      'export FREESURFER_HOME=', shQuote(path_fs), '; ',
+      'source ', shQuote(file.path(path_fs, "SetUpFreeSurfer.sh")), '; ',
+      'mri_vol2vol ',
+      '--mov ',  shQuote(path_nii_mov), ' ',
+      '--targ ', shQuote(path_target), ' ',
+      '--regheader ',
+      '--o ',    shQuote(path_out), ' ',
+      '--interp ', interp, '"',
+      collapse = ""
+    )
+
+    .glue_message("Writing NIFTI to '{path_out}' with:\n {stringr::str_replace_all(cmd,';', ';\n')}", verbose = verbose)
+    out <- system(cmd, show.output.on.console = verbose)
+
+    unlink(path_nii_mov)
+
+    nii <- oro.nifti::readNIfTI(fname = path_out, reorient = FALSE)
+
+    # directly save as output
+  } else {
+
+    .glue_message("Writing NIFTI to '{path_out}'.", verbose = verbose)
+
+    oro.nifti::writeNIfTI(nii, filename = stringr::str_remove(path_out, ".nii.gz"))
 
   }
 
@@ -636,10 +693,6 @@ niftis_to_vbl <- function(x,
 #'   \item \code{orientation} passes \link{valid_orientation}().
 #' }
 #'
-#' @param vbl
-#' A \link{vibble} containing voxel coordinates and at least one voxel-wise
-#' variable.
-#'
 #' @param var
 #' Name of the voxel-wise variable in \code{vbl} to be converted to an array.
 #'
@@ -651,6 +704,8 @@ niftis_to_vbl <- function(x,
 #' Optional character string specifying the desired output orientation
 #' (e.g. \code{"LIP"}). If \code{NULL}, the original orientation attribute of
 #' \code{vbl} is used.
+#'
+#' @inheritParams vbl_doc
 #'
 #' @return
 #' A numeric 3D array containing the values of \code{var}, arranged according
@@ -670,27 +725,17 @@ niftis_to_vbl <- function(x,
 
 vbl_to_array <- function(vbl,
                          var,
+                         orientation,
                          missing = 0,
-                         orientation = NULL){
-
-  cvars <- c("x", "y", "z")
+                         verbose = vbl_opts("verbose")
+                         ){
 
   # get and check limits
+  is_ccs_limits(ccs_limits(vbl))
   ccs_lim <- ccs_limits(vbl)
 
-  stopifnot(all(cvars %in% names(ccs_lim)))
-  stopifnot(all(purrr::map_lgl(ccs_lim, .f = is.numeric)))
-  stopifnot(all(purrr::map_lgl(ccs_lim, .f = ~ length(.x)==2)))
-
-  # get and check desired output orientation
-  if(!is.character(orientation)){
-
-    orientation <- attr(vdf, which = "orig_orientation")
-
-  }
-
   valid_orientation(orientation, error = TRUE)
-  message(glue::glue("Output orientation: {orientation}"))
+  .glue_message("Output orientation: {orientation}", verbose = verbose)
 
   # encode variable as numeric
   # lgl -> c(0,1)
@@ -710,13 +755,14 @@ vbl_to_array <- function(vbl,
       ) %>%
     dplyr::left_join(x = ., y = vbl[,c(vbl_ccs_axes, var)], by = vbl_ccs_axes) %>%
     dplyr::rename(v = !!rlang::sym(var)) %>%
-    dplyr::mutate(v = tidyr::replace_na(v, replace = {{missing}}))
+    dplyr::mutate(v = tidyr::replace_na(v, replace = {{ missing }}))
 
   # reorient voxel data.frame if required
   pointers <- stringr::str_split_1(orientation, pattern = "")
 
   form_prel <- vector("character", length = 0)
   ccs_map <- ccs_orientation_mapping
+  ccs_map_fx <- ccs_orientation_mapping_fix
 
   # adjust the axes if required
   # for every pointer in the desired output orientation ...
@@ -728,8 +774,9 @@ vbl_to_array <- function(vbl,
     # ... get the ccs axis label (e.g. x)
     ccs_axis <- names(axis)
 
-    # if wrong direction -> flip
-    if(ccs_map[[ccs_axis]] != p){
+    # if the desired direction of the pointer does not correspond to the
+    # fixed orientation mapping XYZ=LIP, flip
+    if(p != ccs_map_fx[[ccs_axis]]){
 
       full_vbl[[ccs_axis]] <- max(ccs_lim[[ccs_axis]]) - full_vbl[[ccs_axis]] + 1
 

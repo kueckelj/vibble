@@ -421,7 +421,7 @@ NULL
 
   if(nrow(vbl2D) == 0){
 
-    expr_text <- rlang::as_label(rlang::get_expr(.cond))
+    expr_text <- rlang::quo_text(.cond)
     msg <- glue::glue("No voxels remain in {layer} after filtering with `{expr_text}`.")
 
     stop(msg, call. = FALSE)
@@ -478,6 +478,38 @@ NULL
 
 }
 
+#' @keywords internal
+.layer_lst_bb <- function(data, name, color, fill, ...){
+
+  if(is.character(name)){
+
+    layer_lst <-
+      list(
+        ggplot2::geom_rect(
+          data = dplyr::mutate(data, bb. = {{name}}),
+          mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax, color = bb.),
+          fill = fill,
+          ...
+        )
+      )
+
+  } else {
+
+    layer_lst <-
+      list(
+        ggplot2::geom_rect(
+          data = data,
+          mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
+          color = color,
+          fill = fill,
+          ...
+        )
+      )
+
+  }
+
+}
+
 
 #' @keywords internal
 .ratio2D <- function(vbl2D){
@@ -495,22 +527,27 @@ NULL
 #' @keywords internal
 .remove_overlap <- function(vbl2D){
 
-  vbl2D[["id."]] <- stringr::str_c(vbl2D$col, vbl2D$row, sep = ",")
-
   slices_main <- unique(vbl2D$slice)
-  slices_lead <- dplyr::lead(slices_main)
 
-  for(i in 1:(length(slices_main)-1)){
+  if(length(slices_main) > 1){
 
-    sm <- slices_main[i]
-    sl <- slices_lead[i]
+    vbl2D[["id."]] <- stringr::str_c(vbl2D$col, vbl2D$row, sep = ",")
 
-    vm <- vbl2D[vbl2D$slice == sm, ]
-    vl <- vbl2D[vbl2D$slice == sl, ]
+    slices_lead <- dplyr::lead(slices_main)
 
-    id_rm <- intersect(x = vm[["id."]], y = vl[["id."]])
+    for(i in 1:(length(slices_main)-1)){
 
-    vbl2D <- dplyr::filter(vbl2D, !(slice == {{sm}} & id. %in% {{id_rm}}))
+      sm <- slices_main[i]
+      sl <- slices_lead[i]
+
+      vm <- vbl2D[vbl2D$slice == sm, ]
+      vl <- vbl2D[vbl2D$slice == sl, ]
+
+      id_rm <- intersect(x = vm[["id."]], y = vl[["id."]])
+
+      vbl2D <- dplyr::filter(vbl2D, !(slice == {{sm}} & id. %in% {{id_rm}}))
+
+    }
 
   }
 

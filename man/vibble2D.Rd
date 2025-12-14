@@ -8,11 +8,11 @@ vibble2D(
   vbl,
   plane,
   slices = NULL,
-  lim = NULL,
+  screen_bb = NULL,
   expand = FALSE,
   offset_col = 0,
   offset_row = 0,
-  order = "asc",
+  zstack = "asc",
   .cond = NULL,
   .by = NULL
 )
@@ -20,39 +20,62 @@ vibble2D(
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
-\item{plane}{The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
 \item{slices}{Optional. Integer vector of slice positions in the selected \code{plane}
 to keep. If \code{NULL}, all slices are retained.}
 
-\item{lim}{Defines the 2D spatial limits of the resulting \code{vbl2D}. By default, the
-\link[=ccs_limits]{coordinate-space} limits of the input vibble are and mapped to
-col and rowdepending on \code{plane}. User can adjust that by supplying:
+\item{screen_bb}{\code{bb2D}, \code{limit}, or \code{NULL}. Bounding box defining the common
+\link[=vbl_doc_limits_2D]{screen window} applied to all slices in native (pre-offset) coordinates.
 
 \itemize{
-\item  a valid \link[=is_limit]{limit}: a numeric vector of length two which is recycled for col and row.
-\item a list with \code{col} and \code{row} elements, each being a \link[=is_limit]{limit} for the respective axis.
+\item{\code{NULL}: }{ Screen window defaults to the global data extent.}
+\item{\code{limit}: }{ A single spatial \link[=is_limit]{limit} recycled for both \code{col} and \code{row}.}
+\item{\code{bb2D}: }{ A \link[=is_bb2D]{2D bounding box} with separate limits for \code{col} and \code{row}.}
 }
 
-When the supplied \link[=is_bb2D]{2D bounding-box} is smaller than the slice extents,
-only voxels inside this region are retained, giving \code{lim} a filtering effect.}
+When the supplied bounding box is smaller than the slice extents, only voxels
+inside this region are retained, giving \code{screen_bb} a filtering effect.}
 
-\item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits \strong{after}
-the interpretation and potential filtering of \code{lim}.}
+\item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits
+of \code{screen_bb} \strong{after} interpretation and potential filtering.}
 
-\item{.cond}{Optional. An expression evaluated with \link[rlang:args_data_masking]{data-masking}
+\item{offset_col, offset_row}{Numeric scalars. Offsets applied per slice along
+the \code{col} and \code{row} axes, which can be specified as either \strong{absolute} or \strong{relative} values:
+
+\itemize{
+\item{Absolute:}{ Integers, or numeric values wrapped in \code{as_abs()}, are
+interpreted as absolute offsets in data coordinates.}
+\item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
+interpreted as offsets relative to the current plotting limits.}
+}
+
+If both, \code{offset_col} and \code{offset_row} are zero, each slice is displayed in its
+own panel using \code{facet_wrap()}, arranged according to \code{layout}.}
+
+\item{zstack}{Character scalar. Controls the stacking order of slices along
+the slice axis when multiple slices are displayed with an offset-layout.
+
+\itemize{
+\item{\code{"asc"}: }{ Slices with lower slice indices are drawn first and may be
+occluded by higher-index slices in overlapping offset layouts.}
+\item{\code{"desc"}: }{ Slices with higher slice indices are drawn first and may be
+occluded by lower-index slices in overlapping offset layouts.}
+}}
+
+\item{.cond}{An expression evaluated with \link[rlang:args_data_masking]{data-masking}
 to filter voxels. If \code{NULL}, all voxels are retained.}
 
-\item{.by}{Optional. A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
 }
 \value{
-A \code{tibble} with class \code{vbl2D} containing columns \code{col}, \code{row}, \code{slice},
-and all remaining variables from \code{vbl}. Attributes store the used plane and any
-applied offsets.
+A \link[=vbl_doc_vbl2D]{2D vibble}.
 }
 \description{
-Convert a 3D \code{vbl} object into a 2D representation for a given anatomical plane and selected slices. Optionally apply filtering conditions and spatial offsets for visualization.
+Convert a 3D \code{vbl} object into a 2D representation for a given
+anatomical plane and selected slices. Optionally apply filtering conditions
+and spatial offsets for visualization.
 }
 \details{
 The function derives the required axes using \link{req_axes_2D}() and

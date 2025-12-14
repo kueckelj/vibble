@@ -77,7 +77,7 @@
 #' A vibble behaves like a tibble, except for one thing - Spatial variables x, y and z can not be renamed, removed or manipulated.
 NULL
 
-#' @title 2D Vibble objects
+#' @title 2D vibble objects
 #' @name vbl_doc_vbl2D
 #' @docType class
 #' @description
@@ -104,7 +104,7 @@ NULL
 #'   \item{Slice:}{ A variable with *fixed naming* \code{slice} defines the slice
 #'   index along the anatomical axis to which the 2D vibble corresponds.}
 #'
-#'   \item{Labels:}{ Variables of class \link{factor} storing categorical or ordinal information.}
+#'   \item{Categorical:}{ Variables of class \link{factor} storing categorical or ordinal information.}
 #'
 #'   \item{Mask:}{ Variables of class \link{logical} storing binary voxel-wise information.}
 #'
@@ -128,19 +128,29 @@ NULL
 #' A 2D vibble must contain the following attributes:
 #'
 #' \itemize{
-#'   \item \code{screen_limits}: A list of length two containing the valid
-#'   \link[=is_limit]{limits} for \code{col} and \code{row} in the proxy 2D slice
-#'   layout. Slice 0 defines the reference (non-offset) slice.
+#'
+#'   \item \code{data_bb}: Global data bounding box defined by the minimum and
+#'   maximum of \code{col} and \code{row} across all slices, in native
+#'   (pre-offset) coordinates. Represents the full spatial extent of the data
+#'   and serves as the default reference window when no explicit screen window
+#'   is specified.
 #'
 #'   \item \code{offset_col, offset_row}: Integer offsets applied to a slice based
-#'   on its \link[=slice_offset_index]{offset index} `[0,n]`. For a voxel in slice \code{n}, the 2D
-#'   position is \code{col + offset_col * n} and \code{row + offset_row * n}.
+#'   on its \link[=slice_offset_index]{offset index} \code{[0,n]}. For a voxel in
+#'   slice \code{n}, the 2D position is computed as
+#'   \code{col + offset_col * n} and \code{row + offset_row * n}.
 #'
 #'   \item \code{plane}: A character value indicating the anatomical plane
 #'   represented by the 2D vibble.
+#'
+#'   \item \code{screen_bb}: Common screen bounding box applied uniformly to all
+#'   slices in native (pre-offset) coordinates. Defines the shared viewing window
+#'   used for cropping data and anchoring annotations consistently across slices.
+#'   Defaults to \code{data_bb} if not explicitly specified.
+#'
 #' }
 #'
-#' @section Behaviour:  2D vibble behaves like a tibble.
+#' @section Behaviour: A 2D vibble behaves like a tibble.
 NULL
 
 
@@ -415,6 +425,58 @@ NULL
 NULL
 
 
+#' @title 2D bounding boxes for slice plotting
+#' @name vbl_doc_limits_2D
+#' @description
+#' This documentation defines the different `bb2D` limit concepts used in
+#' vibble 2D plotting workflows. 2D limits are used to crop data, to define the
+#' visible plotting area, and to anchor annotations consistently across slices,
+#' including offset layouts.
+#'
+#' @inheritParams vbl_doc
+#' @param slice Integer slice value.
+#'
+#' @details
+#' Each function returns \link[=is_bb2D]{2D bounding box} objects that correspond to specific extents:
+#'
+#' \itemize{
+#'
+#'   \item{`slice_bb()`: }{ Per-slice extent in native coordinates.
+#'   Defined by `range(col)` and `range(row)` computed within each slice. Useful
+#'   for slice-local annotations (e.g. label placement at slice centroid) and
+#'   for diagnostics of slice coverage.}
+#'
+#'   \item{`data_bb()`: }{ Global extent of the voxel data across all selected slices in
+#'   native coordinates. Defined by `range(col)` and `range(row)` computed over
+#'   all slices in the 2D vibble. Useful as a stable, data-driven
+#'   reference window when no explicit limits are provided.
+#'
+#'   In offset-layouts, `slice` can be used to get the data bounding box of a specific
+#'   slice post-offset. If `NULL` in this case, the first slice is used.
+#'   }
+#'
+#'   \item{`screen_bb()`: }{ A single common bounding box applied to all slices in
+#'   native coordinates. This is the user-imposed viewing window, typically derived
+#'   from `bb` plus `expand` in \link{vibble2D}(). Useful to anchor annotations at consistent screen
+#'   positions across slices (e.g. always place a legend label at the top-left of the same window).
+#'
+#'   In offset-layouts, `slice` can be used to get the screen bounding box of a specific
+#'   slice post-offset. If `NULL` in this case, the first slice is used.
+#'   }
+#'
+#'   \item{`plot_bb()`: }{ The final bounding box in plotting (post-offset)
+#'   coordinates. Defined as the union of all translated `screen_bb()` after
+#'   applying per-slice offsets. Useful to compute global annotation positions
+#'   for the complete composite layout and to ensure all offset slices remain
+#'   within the visible plotting area.}
+#' }
+#'
+#' In no-offset layouts, `plot_bb()` and `screen_bb()` are identical because
+#' all slices share the same coordinate frame.
+#'
+NULL
+
+
 #' @title Opacity options
 #' @name vbl_doc_opacity
 #' @description The `opacity` parameter supports constant, ranged, and voxel-wise inputs.
@@ -447,6 +509,34 @@ NULL
 #' }
 NULL
 
+#' @title This is documentation for plot layouts in ggplane.
+#' @name vbl_doc_plot_layouts
+#' @description
+#' This documentation defines the two layout modes used to display multiple
+#' slices in `ggplane()`: no-offset layouts and offset layouts.
+#'
+#' @details
+#' \itemize{
+#'   \item{No-offset layout: }{ Used when `offset_col = 0` and `offset_row = 0`.
+#'   Each slice is displayed in its own panel using `facet_wrap()`. Slices do not
+#'   share a coordinate system, so slices cannot overlap visually.}
+#'
+#'   \item{Offset layout: }{ Used when either `offset_col` or `offset_row` is
+#'   non-zero. All slices are translated into a shared plotting space by applying
+#'   slice-wise offsets, so multiple slices can be displayed together without
+#'   faceting. Slices may overlap; in overlaps, the stacking order is controlled
+#'   by `zstack` (ascending or descending slice order). Global plot bounds are
+#'   derived from the union of translated `screen_bb` windows (`plot_bb`). This
+#'   layout enables annotations anchored to the full composite layout (e.g.
+#'   top-left of `plot_bb`) and consistent screen-relative placement across the
+#'   entire offset arrangement.}
+#' }
+#'
+#' See `vbl_doc_limits_2D` for definitions of `data_bb`, `screen_bb`, and
+#' `plot_bb` as they relate to layout and annotation anchoring.
+NULL
+
+
 # params ------------------------------------------------------------------
 
 #' @title Dummy documentation for recurring parameters & sections
@@ -468,9 +558,22 @@ NULL
 #' @param interpolate Logical scalar indicating whether to interpolate raster tiles.
 #' @param lut Either a file path to a LUT, character vector of labels or a data.frame with integer indices
 #' and character labels.
+#' @param offset_col,offset_row Numeric scalars. Offsets applied per slice along
+#' the `col` and `row` axes, which can be specified as either **absolute** or **relative** values:
+#'
+#' \itemize{
+#'   \item{Absolute:}{ Integers, or numeric values wrapped in `as_abs()`, are
+#'   interpreted as absolute offsets in data coordinates.}
+#'   \item{Relative:}{ Numeric values, or values wrapped in `as_rel()`, are
+#'   interpreted as offsets relative to the current plotting limits.}
+#' }
+#'
+#' If both, `offset_col` and `offset_row` are zero, each slice is displayed in its
+#' own panel using `facet_wrap()`, arranged according to `layout`.
+#'
 #' @param opacity Controls voxel transparency. Accepts constants, ranges, or
 #' data-masked expressions. See \link[=vbl_doc_opacity]{Details}.
-#' @param plane The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
+#' @param plane Character scalar. The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
 #' @param rm0 Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
 #' vibble.
 #' @param slice Integer value. The slice of interest.
@@ -479,6 +582,16 @@ NULL
 #' @param vbl2D A \link[=vbl_doc_vbl2D]{2D vibble}.
 #' @param verbose Logical. If `TRUE`, informative messages are printed in the
 #' console.
+#' @param x An object for which a method has been defined.
+#' @param zstack Character scalar. Controls the stacking order of slices along
+#' the slice axis when multiple slices are displayed with an offset-layout.
+#'
+#' \itemize{
+#'   \item{`"asc"`: }{ Slices with lower slice indices are drawn first and may be
+#'   occluded by higher-index slices in overlapping offset layouts.}
+#'   \item{`"desc"`: }{ Slices with higher slice indices are drawn first and may be
+#'   occluded by lower-index slices in overlapping offset layouts.}
+#' }
 #'
 #' @keywords internal
 NULL

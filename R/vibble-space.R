@@ -7,8 +7,6 @@
 #' `vbl2D`, enabling staggered 2D slice arrangements; `reverse_offset()` undoes
 #' all previously applied offsets.
 #'
-#' @param offset_col,offset_row Absolute or relative offsets applied per slice
-#' along the `col` and `row` axes.
 #' @inheritParams vbl_doc
 #'
 #' @details
@@ -22,23 +20,23 @@
 #' A modified `vbl2D` with updated coordinates and updated offset attributes.
 #'
 #' @seealso
-#' `offset_col()`, `offset_row()`, `offset_axes()`, `screen_limits()`
+#' `offset_col()`, `offset_row()`, `offset_axes()`, `screen_bb()`
 #'
 #' @export
 apply_offset <- function(vbl2D, offset_col, offset_row){
 
-  slim <- screen_limits(vbl2D)
+  sbb <- screen_bb(vbl2D)
 
   # convert relative offsets
   if(is_rel(offset_col)){
 
-    offset_col <- diff(slim$col) * offset_col
+    offset_col <- diff(sbb$col) * offset_col
 
   }
 
   if(is_rel(offset_row)){
 
-    offset_row <- diff(slim$row) * offset_row
+    offset_row <- diff(sbb$row) * offset_row
 
   }
 
@@ -129,7 +127,7 @@ as_bb2D_df <- function(bb2D){
 #' vbl <- example_vbl()
 #' vbl2D <- vibble2D(vbl, plane = "axi", slices = 60)
 #' bb_slice <- slice_bb(vbl2D, slice = 60)
-#' bb_screen <- screen_limits(vbl2D, slice = 60)
+#' bb_screen <- screen_bb(vbl2D, slice = 60)
 #' avg_bb <- avg_bb2D(bb_slice, bb_screen)
 #'
 #' @export

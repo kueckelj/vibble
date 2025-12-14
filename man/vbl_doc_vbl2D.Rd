@@ -3,7 +3,7 @@
 \docType{class}
 \name{vbl_doc_vbl2D}
 \alias{vbl_doc_vbl2D}
-\title{2D Vibble objects}
+\title{2D vibble objects}
 \description{
 A 2D vibble is a voxel-level tidy-data structure (tibble/data.frame) that
 represents a \link[=vbl_doc_vbl]{vibble} prepared for visualization in 2D space. It is
@@ -29,7 +29,7 @@ specify the voxel position in the 2D layout according to a
 \item{Slice:}{ A variable with \emph{fixed naming} \code{slice} defines the slice
 index along the anatomical axis to which the 2D vibble corresponds.}
 
-\item{Labels:}{ Variables of class \link{factor} storing categorical or ordinal information.}
+\item{Categorical:}{ Variables of class \link{factor} storing categorical or ordinal information.}
 
 \item{Mask:}{ Variables of class \link{logical} storing binary voxel-wise information.}
 
@@ -59,20 +59,30 @@ A 2D vibble must contain at least the following columns:
 A 2D vibble must contain the following attributes:
 
 \itemize{
-\item \code{screen_limits}: A list of length two containing the valid
-\link[=is_limit]{limits} for \code{col} and \code{row} in the proxy 2D slice
-layout. Slice 0 defines the reference (non-offset) slice.
+
+\item \code{data_bb}: Global data bounding box defined by the minimum and
+maximum of \code{col} and \code{row} across all slices, in native
+(pre-offset) coordinates. Represents the full spatial extent of the data
+and serves as the default reference window when no explicit screen window
+is specified.
 
 \item \code{offset_col, offset_row}: Integer offsets applied to a slice based
-on its \link[=slice_offset_index]{offset index} \verb{[0,n]}. For a voxel in slice \code{n}, the 2D
-position is \code{col + offset_col * n} and \code{row + offset_row * n}.
+on its \link[=slice_offset_index]{offset index} \code{[0,n]}. For a voxel in
+slice \code{n}, the 2D position is computed as
+\code{col + offset_col * n} and \code{row + offset_row * n}.
 
 \item \code{plane}: A character value indicating the anatomical plane
 represented by the 2D vibble.
+
+\item \code{screen_bb}: Common screen bounding box applied uniformly to all
+slices in native (pre-offset) coordinates. Defines the shared viewing window
+used for cropping data and anchoring annotations consistently across slices.
+Defaults to \code{data_bb} if not explicitly specified.
+
 }
 }
 
 \section{Behaviour}{
-  2D vibble behaves like a tibble.
+ A 2D vibble behaves like a tibble.
 }
 
