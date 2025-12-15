@@ -5,20 +5,20 @@
 #'
 #' @param slices Optional. Integer vector of slice positions in the selected `plane`
 #' to keep. If `NULL`, all slices are retained.
-#' @param screen_bb `bb2D`, `limit`, or `NULL`. Bounding box defining the common
-#' \link[=vbl_doc_limits_2D]{screen window} applied to all slices in native (pre-offset) coordinates.
+#' @param crop Defines the \link[=vbl_doc_ref_bb]{data bounding box}
+#' applied to all slices in native (pre-offset) coordinates.
 #'
 #' \itemize{
-#'   \item{`NULL`: }{ Screen window defaults to the global data extent.}
+#'   \item{`NULL`: }{ Defaults to the global data extent.}
 #'   \item{`limit`: }{ A single spatial \link[=is_limit]{limit} recycled for both `col` and `row`.}
 #'   \item{`bb2D`: }{ A \link[=is_bb2D]{2D bounding box} with separate limits for `col` and `row`.}
 #' }
 #'
 #' When the supplied bounding box is smaller than the slice extents, only voxels
-#' inside this region are retained, giving `screen_bb` a filtering effect.
+#' inside this region are retained, giving `crop` a filtering effect.
 #'
 #' @param expand An \link[=is_expand]{expand} specification applied to the col/row limits
-#' of `screen_bb` **after** interpretation and potential filtering.
+#' of `crop` **after** interpretation and potential filtering to set the \link[=vbl_doc_ref_bb]{screen bounding box}.
 #' @param .cond An expression evaluated with \link[rlang:args_data_masking]{data-masking}
 #' to filter voxels. If `NULL`, all voxels are retained.
 #' @param .by A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
@@ -44,7 +44,7 @@
 vibble2D <- function(vbl,
                      plane,
                      slices = NULL,
-                     screen_bb = NULL,
+                     crop = NULL,
                      expand = FALSE,
                      offset_col = 0,
                      offset_row = 0,
@@ -58,7 +58,24 @@ vibble2D <- function(vbl,
   req_axes <- req_axes_2D(plane = plane)
   slice_axis <- req_axes["slice"]
 
-  if(!is.numeric(slices)){ slices <- unique(vbl[[slice_axis]]) }
+  if(!is.numeric(slices)){
+
+    slices <- unique(vbl[[slice_axis]])
+
+  } else {
+
+    slices_missing <- slices[!slices %in% unique(vbl[[slice_axis]])]
+    n_missing <- length(slices_missing)
+
+    if(n_missing != 0){
+
+      slice_ref <- ifelse(n_missing == 1, "slice", "slices")
+      slices_missing <- stringr::str_c(slices_missing, collapse = "', '")
+      .glue_warning("No data for {slice_ref} '{slices_missing}' in plane {plane}. Ignoring.")
+
+    }
+
+  }
 
   # change class name HERE to allow x,y,z manipulation/renaming
   class(vbl) <- stringr::str_replace(class(vbl), "vbl", "vbl2D")
@@ -68,8 +85,6 @@ vibble2D <- function(vbl,
     dplyr::rename(vbl, !!!req_axes) %>%
     dplyr::filter(slice %in% {{slices}}) %>%
     dplyr::select(col, row, slice, dplyr::everything())
-
-  data_bb(vbl2D) <- list(col = range(vbl2D$col), row = range(vbl2D$row))
 
   offset_col(vbl2D) <- 0L
   offset_row(vbl2D) <- 0L
@@ -85,34 +100,35 @@ vibble2D <- function(vbl,
 
   }
 
-  # apply screen_bb
-  if(is_limit(screen_bb)){
+  # apply crop
+  if(is_limit(crop)){
 
-    screen_bb <- list(col = screen_bb, row = screen_bb)
+    crop <- list(col = crop, row = crop)
 
-  } else if(is_bb2D(screen_bb)){
+  } else if(is_bb2D(crop)){
 
     # pass, already valid input
 
-  } else if(is.null(screen_bb)) {
-
-    screen_bb <- data_bb(vbl2D)
-
   } else {
 
-    stop("Invalid input for `screen_bb`.")
+    crop <- list(col = range(vbl2D$col), row = range(vbl2D$row))
 
   }
 
-  # apply (potential) filtering, then set
+  crop <- expand_bb2D(bb2D = crop, expand = vbl_opts("expand.refbb"))
+
+  # crop
   vbl2D <-
     dplyr::filter(
       .data = vbl2D,
-      within_limits(col, l = screen_bb$col) &
-      within_limits(row, l = screen_bb$row)
+      within_limits(col, l = crop$col) &
+      within_limits(row, l = crop$row)
     )
 
-  screen_bb(vbl2D) <- expand_bb2D(bb2D = screen_bb, expand = expand)
+  data_bb(vbl2D) <- crop
+
+  # set screen
+  screen_bb(vbl2D) <- expand_bb2D(bb2D = crop, expand = expand)
 
   # apply offset
   vbl2D <- apply_offset(vbl2D, offset_col = offset_col, offset_row = offset_row)

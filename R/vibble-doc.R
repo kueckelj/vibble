@@ -387,14 +387,127 @@ NULL
 # concepts ----------------------------------------------------------------
 
 
-#' @title Image anchors for positioning elements in 2D vibbles
+#' @title Plotting voxel data with ggvibble
+#' @name vbl_doc_ggvibble
+#' @description
+#' ggvibble provides a user-oriented interface for visualizing voxel-based medical
+#' imaging data stored as tidy data. It allows users to create 2D slice-based
+#' plots that behave like ggplot2 objects, while handling voxel-specific details
+#' such as slicing, spatial layout, layer ordering, and multiple color scales
+#' automatically.
+#'
+#' @details
+#' From a user perspective, ggvibble works similarly to ggplot2:
+#'
+#' \itemize{
+#'   \item A plot is initialized from a \link{vibble} using \link{ggplane}().
+#'   \item Additional visual elements are added using the \code{+} operator.
+#'   \item The plot is rendered automatically when printed.
+#' }
+#'
+#' Internally, ggvibble separates plotting into three steps, but users usually do
+#' not need to be aware of this:
+#'
+#' \itemize{
+#'   \item{Data preparation}: {Voxel data are converted to a 2D representation
+#'   (\code{vbl2D}) by selecting an anatomical plane and one or more slices.}
+#'
+#'   \item{Plot specification}: {A \code{ggvibble} object stores the prepared data,
+#'   base plotting options, and a list of layers added by the user.}
+#'
+#'   \item{Rendering}: {The final ggplot object is built lazily when the plot is
+#'   printed, ensuring consistent layer ordering and correct legend handling.}
+#' }
+#'
+#' Users can think of ggvibble layers as semantic plotting actions such as
+#' "show voxel intensities", "overlay a mask", or "draw region outlines".
+#' The internal ordering of layers (e.g. raster first, annotations last) is
+#' handled automatically and does not depend on the order in which layers are
+#' added.
+#'
+#' @section Basic usage:
+#' The plot is initialized with \link{ggplane}() for a set of slices. While the variable
+#' used for the coloring should be an intensity like T1, FLAIR or T2, data-driven variables
+#' like masks or categorical labels can also be used.
+#' \preformatted{
+#' vbl <- example_vbl()
+#'
+#' # start with an intensity
+#' p <-
+#'  ggplane(
+#'    vbl = vbl,
+#'    var = "t1",
+#'    plane = "axi",
+#'    slices = c(90, 100, 110),
+#'    clrsp = c("black", "white")
+#'  )
+#'
+#'  p
+#'
+#'  # start with categorical label data
+#'  p_cat <-
+#'    ggplane(
+#'     vbl = vbl,
+#'     var = "macro",
+#'     plane = "axi",
+#'     slices = c(90, 100, 110),
+#'     clrp = "default"
+#'     )
+#'
+#'  p_cat
+#'
+#' }
+#'
+#' @section Adding layers:
+#' Similar to ggplot2, ggvibbles are rendered during printing. So `p` itself is
+#' a lightweight container with data and instructions that can be complemented
+#' with additional layers that built on the underlying data.
+#'
+#' \preformatted{
+#' p_with_layers <- p +
+#'   layer_mask(.cond = tumor, color = "red", opacity = 0.6) +
+#'   layer_outline(.cond = tumor, color = "red") +
+#'   layer_labels(var = "macro")
+#'
+#' p_with_layers
+#'
+#' }
+#'
+#' @section ggplot2 compatibility:
+#' A ggvibble plot can be treated like a ggplot object **after explicit building** with
+#' \link{as_ggplot}(). Standard ggplot2 themes and modifications can be added directly:
+#'
+#' \preformatted{
+#'
+#'  ggp <- as_ggplot(p)
+#'
+#'  ggp + ggplot2::theme_void()
+#'
+#' }
+#'
+#' @note
+#' ggvibble is designed to remove common sources of friction when plotting voxel
+#' data (slice selection, raster alignment, scale conflicts), while remaining
+#' familiar to users who already know ggplot2.
+#'
+#' @seealso
+#' \link{ggplane}(),
+#' \link{layer_mask}(),
+#' \link{layer_outline}(),
+#' \link{layer_labels}(),
+#' \link{as_ggplot}()
+NULL
+
+
+
+#' @title Image anchors for positioning elements in ggvibble plots
 #' @name vbl_doc_img_anchors
 #' @description
 #' Defines a set of reference anchors used to position text or graphical
-#' elements relative to 2D bounding boxes in `vbl2D` layouts.
+#' elements relative to 2D bounding boxes in \link[=vbl_doc_ggvibble]{ggvibble plots}.
 #'
 #' @details
-#' Image anchors specify where, within a slice’s 2D bounding box, an element
+#' Image anchors specify where, within a bounding box, an element
 #' should be placed. Anchors can be supplied as named character identifiers or as numeric
 #' relative coordinates of length two, each value in `[0,1]`.
 #'
@@ -414,22 +527,24 @@ NULL
 #' }
 #'
 #' These anchors are used by utilities such as `as_img_anchor_abs()`,
-#' `layer_slice_number()`, and other layout components that require consistent
+#' `layer_slice_numbers()`, and other layout components that require consistent
 #' positioning within slice extents or screen limits.
 #'
 #' @return
 #' A named list of predefined anchors (character → numeric mapping), or a numeric
 #' vector of length two when user-supplied anchors are validated.
 #'
+#' @seealso \link[=vbl_doc_ref_bb]{2D reference bounding boxes}.
+#'
 #' @keywords internal
 NULL
 
 
-#' @title 2D bounding boxes for slice plotting
-#' @name vbl_doc_limits_2D
+#' @title 2D reference bounding boxes
+#' @name vbl_doc_ref_bb
 #' @description
-#' This documentation defines the different `bb2D` limit concepts used in
-#' vibble 2D plotting workflows. 2D limits are used to crop data, to define the
+#' This documentation defines the different \link[=is_bb2D]{bounding boxes} used in
+#' ggvibble plotting workflows. 2D bounding boxes are used to crop data, to define the
 #' visible plotting area, and to anchor annotations consistently across slices,
 #' including offset layouts.
 #'
@@ -451,17 +566,17 @@ NULL
 #'   all slices in the 2D vibble. Useful as a stable, data-driven
 #'   reference window when no explicit limits are provided.
 #'
-#'   In offset-layouts, `slice` can be used to get the data bounding box of a specific
-#'   slice post-offset. If `NULL` in this case, the first slice is used.
+#'   In offset-layouts: `slice` can be used to get the data bounding box of a specific
+#'   slice post-offset. If `NULL`, the first slice is used.
 #'   }
 #'
 #'   \item{`screen_bb()`: }{ A single common bounding box applied to all slices in
 #'   native coordinates. This is the user-imposed viewing window, typically derived
-#'   from `bb` plus `expand` in \link{vibble2D}(). Useful to anchor annotations at consistent screen
+#'   from `crop` plus `expand` in \link{vibble2D}(). Useful to anchor annotations at consistent screen
 #'   positions across slices (e.g. always place a legend label at the top-left of the same window).
 #'
-#'   In offset-layouts, `slice` can be used to get the screen bounding box of a specific
-#'   slice post-offset. If `NULL` in this case, the first slice is used.
+#'   In offset-layouts: `slice` can be used to get the screen bounding box of a specific
+#'   slice post-offset. If `NULL`, the first slice is used.
 #'   }
 #'
 #'   \item{`plot_bb()`: }{ The final bounding box in plotting (post-offset)
@@ -509,7 +624,7 @@ NULL
 #' }
 NULL
 
-#' @title This is documentation for plot layouts in ggplane.
+#' @title Plotting layouts
 #' @name vbl_doc_plot_layouts
 #' @description
 #' This documentation defines the two layout modes used to display multiple
@@ -627,16 +742,22 @@ NULL
 #' voxels for which this layer is drawn. The expression is evaluated via
 #' \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 #' into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.
-#' @param linetype Character. Line pattern for outlines. Supported values:
+#' @param clip_overlap Logical. Applies only to offset layouts. If `TRUE`,
+#' content from each slice is clipped so that it cannot extend into adjacent
+#' slice regions.
+#' @param linetype Defines the line pattern. Supported values:
 #' \itemize{
 #'   \item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
 #'   \item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
 #'   \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
 #' }
-#' @param linewidth Numeric. Controlls the thickness of drawn lines.
-#' @param clip_overlap Logical. Applies only to offset layouts. If TRUE,
-#' content from each slice is clipped so that it cannot extend into adjacent
-#' slice regions.
+#' @param linewidth Numeric scalar. Controlls the thickness of drawn lines.
+#' @param name Logical or character scalar. If character, the name with which
+#' the color is associated with in the color legend. If logical, `FALSE` prevents
+#' appearance in the legend and `TRUE` falls back to the naming default of the
+#' function.
+#' @param slices Optional numeric vector of slice indices to which the content
+#' of this layer is restricted. If `NULL`, the content is drawn for all slices.
 #'
 #' @return A `ggvibble_layer` object containing the supplied function. When
 #' added to a `ggvibble`, the function is executed and its returned layers are

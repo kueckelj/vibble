@@ -7,7 +7,7 @@
 \alias{is_img_anchor_rel}
 \alias{as_img_anchor_abs}
 \alias{vbl_doc_img_anchors}
-\title{Image anchors for positioning elements in 2D vibbles}
+\title{Image anchors for positioning elements in ggvibble plots}
 \usage{
 is_img_anchor(x)
 
@@ -25,10 +25,10 @@ vector of length two when user-supplied anchors are validated.
 }
 \description{
 Defines a set of reference anchors used to position text or graphical
-elements relative to 2D bounding boxes in \code{vbl2D} layouts.
+elements relative to 2D bounding boxes in \link[=vbl_doc_ggvibble]{ggvibble plots}.
 }
 \details{
-Image anchors specify where, within a slice’s 2D bounding box, an element
+Image anchors specify where, within a bounding box, an element
 should be placed. Anchors can be supplied as named character identifiers or as numeric
 relative coordinates of length two, each value in \verb{[0,1]}.
 
@@ -48,7 +48,10 @@ current slice:
 }
 
 These anchors are used by utilities such as \code{as_img_anchor_abs()},
-\code{layer_slice_number()}, and other layout components that require consistent
+\code{layer_slice_numbers()}, and other layout components that require consistent
 positioning within slice extents or screen limits.
+}
+\seealso{
+\link[=vbl_doc_ref_bb]{2D reference bounding boxes}.
 }
 \keyword{internal}

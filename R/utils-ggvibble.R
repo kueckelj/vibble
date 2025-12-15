@@ -479,16 +479,18 @@ NULL
 }
 
 #' @keywords internal
-.layer_lst_bb <- function(data, name, color, fill, ...){
+.layer_lst_bb <- function(data, name, color, fill, linetype, linewidth, ...){
 
   if(is.character(name)){
 
     layer_lst <-
       list(
         ggplot2::geom_rect(
-          data = dplyr::mutate(data, bb. = {{name}}),
+          data = dplyr::mutate(data, bb. = {{ name }}),
           mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax, color = bb.),
           fill = fill,
+          linetype = linetype,
+          linewidth = linewidth,
           ...
         )
       )
@@ -502,6 +504,8 @@ NULL
           mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
           color = color,
           fill = fill,
+          linetype = linetype,
+          linewidth = linewidth,
           ...
         )
       )

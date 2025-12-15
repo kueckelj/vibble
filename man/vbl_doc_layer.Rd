@@ -9,18 +9,26 @@ voxels for which this layer is drawn. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
-\item{linetype}{Character. Line pattern for outlines. Supported values:
+\item{clip_overlap}{Logical. Applies only to offset layouts. If \code{TRUE},
+content from each slice is clipped so that it cannot extend into adjacent
+slice regions.}
+
+\item{linetype}{Defines the line pattern. Supported values:
 \itemize{
 \item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
 \item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
 \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
 }}
 
-\item{linewidth}{Numeric. Controlls the thickness of drawn lines.}
+\item{linewidth}{Numeric scalar. Controlls the thickness of drawn lines.}
 
-\item{clip_overlap}{Logical. Applies only to offset layouts. If TRUE,
-content from each slice is clipped so that it cannot extend into adjacent
-slice regions.}
+\item{name}{Logical or character scalar. If character, the name with which
+the color is associated with in the color legend. If logical, \code{FALSE} prevents
+appearance in the legend and \code{TRUE} falls back to the naming default of the
+function.}
+
+\item{slices}{Optional numeric vector of slice indices to which the content
+of this layer is restricted. If \code{NULL}, the content is drawn for all slices.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

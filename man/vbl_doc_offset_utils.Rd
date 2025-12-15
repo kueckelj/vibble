@@ -42,8 +42,7 @@ The functions provided here support:
 }
 
 Offsets are interpreted in slice index order, where slices are assigned
-zero-based offset indices via \code{slice_offset_index()}. For slice \eqn{n},
-the spatial shift is computed as:
+zero-based offset indices. For slice \eqn{n}, the spatial shift is computed as:
 
 \preformatted{
   col_new = col + offset_col * n

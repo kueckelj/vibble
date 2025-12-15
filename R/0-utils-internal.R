@@ -13,6 +13,22 @@ magrittr::`%>%`
 
 
 #' @keywords internal
+.downsample <- function(x, n){
+
+  stopifnot(length(n) == 1 && n > 0)
+
+  if(identical(n, Inf)) return(x)
+
+  if(n < 1) n <- round(length(x) * n)
+
+  idx <- round(seq(1, length(x), length.out = n))
+  idx <- pmax(1L, pmin(length(x), idx))
+
+  x[idx]
+
+}
+
+#' @keywords internal
 .get_var_limits <- function(vbl2D, var, verbose = vbl_opts("verbose")){
 
   out <- var_limits(vbl2D, var)

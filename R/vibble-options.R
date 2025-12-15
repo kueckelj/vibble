@@ -96,11 +96,13 @@ vbl_opts_default <-
     vibble.clrp = "default",
     vibble.clrsp = c("black", "white"),
     vibble.expand.fraction = 0.05,
-    vibble.ggplot.expand = TRUE,
+    vibble.expand.ggplot = TRUE,
+    vibble.expand.refbb = as_abs(0.5),
     vibble.legend.name.bb = "Box",
     vibble.legend.name.mask = "Mask",
     vibble.legend.name.outline = "Outline",
     vibble.interpolate = TRUE,
-    vibble.n.vertices = 1,
+    vibble.plane = "axi",
+    vibble.slices.n = 6,
     vibble.verbose = TRUE
   )

@@ -46,7 +46,6 @@ apply_offset <- function(vbl2D, offset_col, offset_row){
 
   # save idx in case the var exists
   vbl_names <- names(vbl2D)
-  if("idx" %in% vbl_names){ idx_var <- vbl2D[["idx"]] }
 
   # apply offset
   idx_levels <- slices(vbl2D)
@@ -55,26 +54,19 @@ apply_offset <- function(vbl2D, offset_col, offset_row){
   vbl2D <-
     dplyr::mutate(
       .data = vbl2D,
-      idx = as.numeric(factor(paste0("slice", slice), levels = idx_levels))-1
+      idx. = as.numeric(factor(paste0("slice", slice), levels = idx_levels))-1
     ) %>%
-    dplyr::group_by(slice) %>%
+    dplyr::group_by(idx.) %>%
     dplyr::mutate(
-      col = .comp_offset_col(x = col, idx = unique(idx), offset = {{offset_col}}),
-      row = .comp_offset_row(x = row, idx = unique(idx), offset = {{offset_row}}),
-      idx = NULL
+      col = .comp_offset_col(x = col, idx = unique(idx.), offset = {{offset_col}}),
+      row = .comp_offset_row(x = row, idx = unique(idx.), offset = {{offset_row}})
     ) %>%
-    dplyr::ungroup()
+    dplyr::ungroup() %>%
+    dplyr::arrange(idx.) %>%
+    dplyr::select(-idx.)
 
   offset_col(vbl2D) <- offset_col(vbl2D) + offset_col
   offset_row(vbl2D) <- offset_row(vbl2D) + offset_row
-
-  # restore idx in case the var exists  - and col ordering
-  if("idx" %in% vbl_names){
-
-    vbl2D[["idx"]] <- idx_var
-    vbl2D <- vbl2D[,vbl_names]
-
-  }
 
   return(vbl2D)
 
@@ -232,20 +224,15 @@ bb2D_df <- function(vbl2D,
 
       if(!.bb2D_possible(slice_df)) return(NULL)
 
-      bb <-
-        purrr::map2(
-          .x = slice_df,
-          .y = expand,
-          .f = ~ .apply_expand(range(.x), expand = .y)
-        )
+      sbb <- slice_bb(vbl2D, slice)
 
       tibble::tibble(
         plane = plane(vbl2D),
         slice = slice,
-        cmin = min(bb$col),
-        cmax = max(bb$col),
-        rmin = min(bb$row),
-        rmax = max(bb$row)
+        cmin = min(sbb$col),
+        cmax = max(sbb$col),
+        rmin = min(sbb$row),
+        rmax = max(sbb$row)
       )
 
     }

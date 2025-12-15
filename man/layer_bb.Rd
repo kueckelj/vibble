@@ -8,21 +8,56 @@
 \alias{layer_bb_slice}
 \title{Add a data-driven 2D bounding-box}
 \usage{
-layer_bb(color, .cond, .by = NULL, fill = NA, expand = FALSE, name = TRUE, ...)
+layer_bb(
+  color,
+  .cond,
+  .by = NULL,
+  fill = NA,
+  linetype = "solid",
+  linewidth = 0.75,
+  expand = as_abs(0.5),
+  name = TRUE,
+  ...
+)
 
 layer_bb_data(
   color = alpha("green", 0.7),
   fill = NA,
+  linetype = "solid",
+  linewidth = 0.75,
   slices = NULL,
   name = TRUE,
   ...
 )
 
-layer_bb_plot(color = alpha("yellow", 0.7), fill = NA, ...)
+layer_bb_plot(
+  color = alpha("yellow", 0.7),
+  fill = NA,
+  linetype = "solid",
+  linewidth = 0.75,
+  name = TRUE,
+  ...
+)
 
-layer_bb_screen(color = alpha("blue", 0.7), fill = NA, slices = NULL, ...)
+layer_bb_screen(
+  color = alpha("blue", 0.7),
+  fill = NA,
+  linetype = "solid",
+  linewidth = 0.75,
+  slices = NULL,
+  name = TRUE,
+  ...
+)
 
-layer_bb_slice(color = alpha("red", 0.7), fill = NA, slices = NULL, ...)
+layer_bb_slice(
+  color = alpha("red", 0.7),
+  fill = NA,
+  linetype = "solid",
+  linewidth = 0.75,
+  slices = NULL,
+  name = TRUE,
+  ...
+)
 }
 \arguments{
 \item{color}{Color of the bounding-box outline.}
@@ -37,6 +72,15 @@ group by before applying the filtering logic of \code{.cond}.}
 
 \item{fill}{Fill of the bounding-box.}
 
+\item{linetype}{Defines the line pattern. Supported values:
+\itemize{
+\item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
+\item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
+\item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
+}}
+
+\item{linewidth}{Numeric scalar. Controlls the thickness of drawn lines.}
+
 \item{name}{Logical or character scalar. If character, the name with which
 the color is associated with in the color legend. If logical, \code{FALSE} prevents
 appearance in the legend and \code{TRUE} falls back to the naming default of the
@@ -44,7 +88,8 @@ function.}
 
 \item{...}{Additional arguments passed to \link{geom_rect}().}
 
-\item{slices}{Integer vector. The slices of interest.}
+\item{slices}{Optional numeric vector of slice indices to which the content
+of this layer is restricted. If \code{NULL}, the content is drawn for all slices.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When
@@ -52,11 +97,11 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Draw a rectangular bounding box around the extent of voxels.
+Draw a rectangular bounding box around the extent of voxels
+or \link[=vbl_doc_ref_bb]{2D reference bounding boxes}.
 }
 \details{
 \code{layer_bb()} computes and visualizes a 2D bounding box for voxels based on the
 minimal and maximal \code{col} and \code{row} coordinates where \code{.cond} evaluates to \code{TRUE}.
-The bounding box can be expanded by \code{buffer}, which adds a proportional
-margin to all sides. The graphical rendering is handled by \link{geom_rect}().
+In all cases, the graphical rendering is handled by \link{geom_rect}().
 }

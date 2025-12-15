@@ -6,30 +6,36 @@
 \usage{
 layer_outline(
   color,
-  alpha = 0.9,
+  .cond = NULL,
+  .by = NULL,
   linetype = "solid",
   linewidth = 1,
   use_dbscan = TRUE,
   concavity = 2.5,
   clip_overlap = TRUE,
-  .cond = NULL,
-  .by = NULL,
+  name = TRUE,
   ...
 )
 }
 \arguments{
 \item{color}{Character. Controls the color used for the lines.}
 
-\item{alpha}{Numeric. Controls the transparency of the lines.}
+\item{.cond}{A logical filter expression that determines the specific
+voxels for which this layer is drawn. The expression is evaluated via
+\link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
+into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
-\item{linetype}{Character. Line pattern for outlines. Supported values:
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}.}
+
+\item{linetype}{Defines the line pattern. Supported values:
 \itemize{
 \item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
 \item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
 \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
 }}
 
-\item{linewidth}{Numeric. Controlls the thickness of drawn lines.}
+\item{linewidth}{Numeric scalar. Controlls the thickness of drawn lines.}
 
 \item{use_dbscan}{Logical. If \code{TRUE}, for every slice \link[dbscan:dbscan]{DBSCAN}
 is used to identify spatial islands of voxels matching the condition which
@@ -39,17 +45,16 @@ are then outlined separately.}
 1 results in a relatively detailed shape, Infinity results in a convex hull. You can use values lower than 1,
 but they can produce pretty crazy shapes.}
 
-\item{clip_overlap}{Logical. Applies only to offset layouts. If TRUE,
+\item{clip_overlap}{Logical. Applies only to offset layouts. If \code{TRUE},
 content from each slice is clipped so that it cannot extend into adjacent
 slice regions.}
 
-\item{.cond}{A logical filter expression that determines the specific
-voxels for which this layer is drawn. The expression is evaluated via
-\link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
-into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
+\item{name}{Logical or character scalar. If character, the name with which
+the color is associated with in the color legend. If logical, \code{FALSE} prevents
+appearance in the legend and \code{TRUE} falls back to the naming default of the
+function.}
 
-\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
-group by before applying the filtering logic of \code{.cond}.}
+\item{alpha}{Numeric. Controls the transparency of the lines.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

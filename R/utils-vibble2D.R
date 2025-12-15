@@ -73,7 +73,7 @@ expand_bb2D <- function(bb2D, expand){
 
 }
 
-#' @rdname vbl_doc_limits_2D
+#' @rdname vbl_doc_ref_bb
 #' @export
 data_bb <- function(vbl2D, slice = NULL){
 
@@ -103,7 +103,7 @@ data_bb <- function(vbl2D, slice = NULL){
 
 }
 
-#' @rdname vbl_doc_limits_2D
+#' @rdname vbl_doc_ref_bb
 #' @export
 plot_bb <- function(vbl2D){
 
@@ -129,7 +129,7 @@ plot_bb <- function(vbl2D){
 
 }
 
-#' @rdname vbl_doc_limits_2D
+#' @rdname vbl_doc_ref_bb
 #' @export
 screen_bb <- function(vbl2D, slice = NULL){
 
@@ -159,28 +159,6 @@ screen_bb <- function(vbl2D, slice = NULL){
 
 }
 
-#' @title Slice utilities for 2D vibbles
-#' @description
-#' Helpers to query slice values and derive slice-wise spatial or layout
-#' indices in a \code{vbl2D} object.
-#'
-#' @inheritParams vbl_doc
-#'
-#' @return
-#' \itemize{
-#'   \item \code{slices()}: Unique slice values.
-#'   \item \code{slice_range()}: Minimum and maximum slice values.
-#'   \item \code{slice_offset_indices()}: Zero-based offset index for each slice.
-#'   \item \code{slice_offset_index()}: Zero-based offset index of a specific slice.
-#' }
-#'
-#' @export
-
-slices <- function(vbl2D){
-  sort(unique(vbl2D$slice))
-}
-
-
 #' @keywords internal
 .slice_bb0 <- function(vbl2D){
 
@@ -189,35 +167,459 @@ slices <- function(vbl2D){
 
 }
 
-#' @rdname vbl_doc_limits_2D
+#' @rdname vbl_doc_ref_bb
 #' @export
 slice_bb <- function(vbl2D, slice){
 
   stopifnot(is_vbl2D(vbl2D))
   stopifnot(slice %in% slices(vbl2D))
-  purrr::map(vbl2D[vbl2D$slice == slice, c("col", "row")], range)
+  purrr::map(vbl2D[vbl2D$slice == slice, c("col", "row")], range) %>%
+    expand_bb2D(bb2D = ., expand = vbl_opts("expand.refbb"))
+
+}
+
+#' @title Slice range and slice position utilities
+#' @name vbl_doc_slice_utils
+#' @description
+#' Utilities to query slice limits, observed slice ranges, and representative
+#' slice positions for voxel data.
+#'
+#' @details
+#' These functions operate on the slice axis of a vibble (`vbl`) or a plane-specific
+#' vibble2D (`vbl2D`) object.
+#'
+#' Two related but distinct concepts are exposed.
+#'
+#' \itemize{
+#'   \item{Slice limits: } The full valid slice limits of the registered image
+#'   space, independent of filtering.
+#'   \item{Observed slice range: } The slice range currently represented by rows
+#'   in the object, which changes after filtering.
+#' }
+#'
+#' @section Functions:
+#' \itemize{
+#'   \item{slice_limits(): } Returns the full slice limits of the image space using
+#'   `ccs_limits()`.
+#'   \item{slice_range(): } Returns the observed slice range as
+#'   `range(slices())`.
+#'   \item{slice_min(): } Returns the minimum observed slice.
+#'   \item{slice_max(): } Returns the maximum observed slice.
+#'   \item{slice_mid(): } Returns the median observed slice, coerced to integer.
+#' }
+#'
+#' For `vbl`, the slice axis is determined from `plane` via `plane_to_ccs()`.
+#' For `vbl2D`, the plane is taken from `plane(x)` and slices are read from
+#' `x$slice`.
+#'
+#' @param x A vibble (`vbl`) or vibble2D (`vbl2D`) object.
+#' @param plane Character scalar. Anatomical plane used to determine the slice
+#' axis for `vbl`. Valid options are *c('axi', 'cor', 'sag')*.
+#' @param ... Additional arguments, currently unused.
+#'
+#' @return
+#' \itemize{
+#'   \item{slice_limits(): } A limit object describing the valid slice coordinates
+#'   in the image space.
+#'   \item{slice_range(): } Integer vector of length two giving the observed slice
+#'   range.
+#'   \item{slice_min(), slice_max(), slice_mid(): } Integer scalars derived from
+#'   the observed slice range.
+#' }
+NULL
+
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_limits <- function(x, ...){
+
+  UseMethod("slice_limits")
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_limits.vbl <- function(x, plane = vbl_opts("plane"),...){
+
+  slice_axis <- plane_to_ccs(plane)
+  ccs_limits(x)[[slice_axis]]
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_limits.vbl2D <- function(x, ...){
+
+  slice_axis <- plane_to_ccs(plane(x))
+  ccs_limits(x)[[slice_axis]]
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_max <- function(x, ...){
+
+  UseMethod("slice_max")
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_max.vbl <- function(x, plane = vbl_opts("plane"),...){
+
+  max(slice_range(x, plane))
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_max.vbl2D <- function(x, ....){
+
+  max(slice_range(x))
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_mid <- function(x, ...){
+
+  UseMethod("slice_mid")
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_mid.vbl <- function(x, plane = vbl_opts("plane"),...){
+
+  as.integer(median(slices(x, plane)))
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_mid.vbl2D <- function(x, ...){
+
+  as.integer(median(slices(x)))
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_min <- function(x, ...){
+
+  UseMethod("slice_min")
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_min.vbl <- function(x, plane = vbl_opts("plane"),...){
+
+  min(slice_range(x, plane))
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_min.vbl2D <- function(x, ...){
+
+  min(slice_range(x))
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_range <- function(x, ...){
+
+  UseMethod("slice_range")
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_range.vbl <- function(x, plane = vbl_opts("plane"),...){
+
+  range(slices(x, plane = plane))
+
+}
+
+#' @rdname vbl_doc_slice_utils
+#' @export
+slice_range.vbl2D <- function(x, ...){
+
+  range(slices(x))
 
 }
 
 
-#' @rdname slices
-#' @export
-slice_range <- function(vbl2D){
-  range(slices(vbl2D))
-}
-
-#' @rdname slices
-#' @export
-slice_offset_indices <- function(vbl2D){
+#' @keywords internal
+.slice_offset_indices <- function(vbl2D){
   seq_along(slices(vbl2D)) - 1
 }
 
-#' @rdname slices
-#' @export
-slice_offset_index <- function(vbl2D, slice){
+#' @keywords internal
+.slice_offset_index <- function(vbl2D, slice){
   stopifnot(slice %in% slices(vbl2D))
   which(slice == slices(vbl2D)) - 1
 }
+
+
+
+#' @title Slice queries and slice selection sequences
+#' @name vbl_doc_slice_queries
+#' @description
+#' Utilities to query represented slices and to construct representative slice
+#' sequences for quick plotting.
+#'
+#' @details
+#' The `slice_*` family returns single-value or range summaries of slice position
+#' such as limits, range, min, max, or mid.
+#'
+#' The `slices_*` family returns integer vectors of slice indices intended for
+#' plotting and iteration. These functions produce slice sequences or selections
+#' that can be passed directly to `ggplane(..., slices = )`.
+#'
+#' For `vbl`, the slice axis is determined from `plane` via `plane_to_ccs()`.
+#' For `vbl2D`, slices are taken from `x$slice`.
+#'
+#' @section Functions:
+#' \itemize{
+#'   \item{slices(): } Returns the unique slice indices represented by the object.
+#'   \item{slices_seq(): } Returns a contiguous integer sequence `from:to` within
+#'   the observed slice range. If `from` or `to` are `NULL`, bounds default to
+#'   `slice_min()` and `slice_max()`.
+#'   \item{slices_cond(): } Returns a representative subset of slices where a
+#'   per-voxel condition `.cond` holds. The resulting slice indices are downsampled
+#'   to at most `n` values via `.downsample()`.
+#'   \item{slices_mid(): } Returns a representative subset of slices centered on
+#'   the median slice. `radius` can be an absolute integer radius or a proportion
+#'   of the observed slice range if `radius < 1`. The resulting slice indices are
+#'   downsampled to at most `n` values via `.downsample()`.
+#' }
+#'
+#' @param x A vibble (`vbl`) or vibble2D (`vbl2D`) object.
+#' @param plane Character scalar. Anatomical plane used to determine the slice
+#' axis for `vbl`. Valid options are *c('axi', 'cor', 'sag')*.
+#' @param from,to Optional numeric scalars. Lower and upper slice bounds for
+#' `slices_seq()`. If `NULL`, bounds default to `slice_min()` and `slice_max()`.
+#' @param .cond A logical expression evaluated per voxel row using data-masking.
+#' @param radius Numeric scalar. If `radius < 1`, it is interpreted as a fraction
+#' of the observed slice range. Otherwise it is interpreted as an absolute integer
+#' radius around the median slice.
+#' @param n Integer. Maximum number of slices returned by `slices_cond()` and
+#' `slices_mid()`.
+#' @param ... Additional arguments, currently unused.
+#'
+#' @return
+#' \itemize{
+#'   \item{slices(): } Integer vector of unique slice indices.
+#'   \item{slices_seq(): } Integer vector of contiguous slices.
+#'   \item{slices_cond(): } Integer vector of selected slices, downsampled to at
+#'   most `n`.
+#'   \item{slices_mid(): } Integer vector of selected slices, downsampled to at
+#'   most `n`.
+#' }
+#'
+#' @examples
+#' vbl <- example_vbl()
+#'
+#' # query represented slices
+#' slices(vbl, plane = "axi")
+#'
+#' # create a contiguous sequence within the observed range
+#' slices_seq(vbl, plane = "axi", from = 90, to = 110)
+#'
+#' # select slices by condition (then downsample)
+#' slices_cond(vbl, "axi", tumor, n = 6)
+#'
+#' # select slices around the mid slice
+#' slices_mid(vbl, "axi", radius = 0.2, n = 6)
+#'
+NULL
+
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_seq <- function(x, ...){
+
+  UseMethod("slice_seq")
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_seq.vbl <- function(x, plane = vbl_opts("plane"), from = NULL, to = NULL){
+
+  if(is.numeric(from)){
+
+    stopifnot(from >= slice_min(x, plane))
+
+  } else {
+
+    from <- slice_min(x, plane)
+
+  }
+
+  if(is.numeric(to)){
+
+    stopifnot(to <= slice_max(x, plane))
+
+  } else {
+
+    to <- slice_max(x, plane)
+
+  }
+
+  from:to
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_seq.vbl2D <- function(x, from = NULL, to = NULL){
+
+  if(is.numeric(from)){
+
+    stopifnot(from >= slice_min(x))
+
+  } else {
+
+    from <- slice_min(x)
+
+  }
+
+  if(is.numeric(to)){
+
+    stopifnot(to <= slice_max(x))
+
+  } else {
+
+    to <- slice_max(x)
+
+  }
+
+  from:to
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices <- function(x, ...){
+
+  UseMethod("slices")
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices.vbl <- function(x, plane = vbl_opts("plane"), ...){
+
+  unique(vbl[[plane_to_ccs(plane)]])
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices.vbl2D <- function(x, ...){
+
+  unique(x$slice)
+
+}
+
+
+slices_cond <- function(x, ...){
+
+  UseMethod("slices_cond")
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_cond.vbl <- function(x, plane = vbl_opts("plane"), .cond, n = 6){
+
+  slice_axis <- plane_to_ccs(plane)
+
+  .cond_quo <- rlang::enquo(.cond)
+
+  s <-
+    dplyr::filter(.data = x, !!.cond_quo, .by = {{ slice_axis }}) %>%
+    dplyr::pull(var = {{ slice_axis }}) %>%
+    sort()
+
+  .downsample(s, n = pmin(length(s), n))
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_cond.vbl2D <- function(x, .cond, n = 6){
+
+  .cond_quo <- rlang::enquo(.cond)
+
+  s <-
+    dplyr::filter(.data = x, !!.cond_quo, .by = "slice") %>%
+    dplyr::pull(var = "slice") %>%
+    sort()
+
+  .downsample(s, n = pmin(length(s), n))
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_mid <- function(x, ...){
+
+  UseMethod("slice_mid")
+
+}
+
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_mid.vbl <- function(x, plane = vbl_opts("plane"), radius = 0.2, n = 6){
+
+  stopifnot(radius > 0)
+
+  if(radius < 1){
+
+    radius <- as.integer(diff(slice_range(x, plane)) * radius)
+
+  }
+
+  mid <- slice_mid(x, plane)
+
+  mn <- mid - radius
+  mx <- mid + radius
+
+  s <- mn:mx
+
+  .downsample(s, n = pmin(length(s), n))
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_mid.vbl2D <- function(x, radius = 0.2, n = 6){
+
+  stopifnot(radius > 0)
+
+  if(radius < 1){
+
+    radius <- as.integer(diff(slice_range(x)) * radius)
+
+  }
+
+  mid <- slice_mid(x)
+
+  mn <- mid - radius
+  mx <- mid + radius
+
+  s <- mn:mx
+
+  .downsample(s, n = pmin(length(s), n))
+
+}
+
 
 
 
@@ -239,8 +641,7 @@ slice_offset_index <- function(vbl2D, slice){
 #' }
 #'
 #' Offsets are interpreted in slice index order, where slices are assigned
-#' zero-based offset indices via \code{slice_offset_index()}. For slice \eqn{n},
-#' the spatial shift is computed as:
+#' zero-based offset indices. For slice \eqn{n}, the spatial shift is computed as:
 #'
 #' \preformatted{
 #'   col_new = col + offset_col * n
@@ -296,7 +697,7 @@ offset_axes <- function(vbl2D){
 #' @keywords internal
 .offset_bb0 <- function(vbl2D, slice, bb0){
 
-  sidx <- slice_offset_index(vbl2D, slice = slice)
+  sidx <- .slice_offset_index(vbl2D, slice = slice)
 
   purrr::imap(
     .x = bb0,

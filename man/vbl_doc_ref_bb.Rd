@@ -5,8 +5,8 @@
 \alias{plot_bb}
 \alias{screen_bb}
 \alias{slice_bb}
-\alias{vbl_doc_limits_2D}
-\title{2D bounding boxes for slice plotting}
+\alias{vbl_doc_ref_bb}
+\title{2D reference bounding boxes}
 \usage{
 data_bb(vbl2D, slice = NULL)
 
@@ -22,8 +22,8 @@ slice_bb(vbl2D, slice)
 \item{slice}{Integer slice value.}
 }
 \description{
-This documentation defines the different \code{bb2D} limit concepts used in
-vibble 2D plotting workflows. 2D limits are used to crop data, to define the
+This documentation defines the different \link[=is_bb2D]{bounding boxes} used in
+ggvibble plotting workflows. 2D bounding boxes are used to crop data, to define the
 visible plotting area, and to anchor annotations consistently across slices,
 including offset layouts.
 }
@@ -42,17 +42,17 @@ native coordinates. Defined by \code{range(col)} and \code{range(row)} computed 
 all slices in the 2D vibble. Useful as a stable, data-driven
 reference window when no explicit limits are provided.
 
-In offset-layouts, \code{slice} can be used to get the data bounding box of a specific
-slice post-offset. If \code{NULL} in this case, the first slice is used.
+In offset-layouts: \code{slice} can be used to get the data bounding box of a specific
+slice post-offset. If \code{NULL}, the first slice is used.
 }
 
 \item{\code{screen_bb()}: }{ A single common bounding box applied to all slices in
 native coordinates. This is the user-imposed viewing window, typically derived
-from \code{bb} plus \code{expand} in \link{vibble2D}(). Useful to anchor annotations at consistent screen
+from \code{crop} plus \code{expand} in \link{vibble2D}(). Useful to anchor annotations at consistent screen
 positions across slices (e.g. always place a legend label at the top-left of the same window).
 
-In offset-layouts, \code{slice} can be used to get the screen bounding box of a specific
-slice post-offset. If \code{NULL} in this case, the first slice is used.
+In offset-layouts: \code{slice} can be used to get the screen bounding box of a specific
+slice post-offset. If \code{NULL}, the first slice is used.
 }
 
 \item{\code{plot_bb()}: }{ The final bounding box in plotting (post-offset)

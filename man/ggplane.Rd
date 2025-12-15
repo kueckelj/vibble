@@ -7,17 +7,18 @@
 ggplane(
   vbl,
   var,
-  plane,
   slices,
-  screen_bb = NULL,
+  plane = vbl_opts("plane"),
+  crop = NULL,
   expand = 0.1,
   offset_col = 0,
   offset_row = 0,
   zstack = "desc",
-  layout = NULL,
+  ncol = NULL,
+  nrow = NULL,
+  alpha = 1,
   clrp = vbl_opts("clrp"),
   clrsp = vbl_opts("clrsp"),
-  interpolate = vbl_opts("interpolate"),
   verbose = vbl_opts("verbose"),
   .cond = NULL,
   .by = NULL,
@@ -29,25 +30,25 @@ ggplane(
 
 \item{var}{Character scalar naming the variable to plot.}
 
-\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
-
 \item{slices}{Integer vector. Slice indices in the specified anatomical
 \code{plane} to be included in the plot.}
 
-\item{screen_bb}{\code{bb2D}, \code{limit}, or \code{NULL}. Bounding box defining the common
-\link[=vbl_doc_limits_2D]{screen window} applied to all slices in native (pre-offset) coordinates.
+\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+
+\item{crop}{Defines the \link[=vbl_doc_ref_bb]{data bounding box}
+applied to all slices in native (pre-offset) coordinates.
 
 \itemize{
-\item{\code{NULL}: }{ Screen window defaults to the global data extent.}
+\item{\code{NULL}: }{ Defaults to the global data extent.}
 \item{\code{limit}: }{ A single spatial \link[=is_limit]{limit} recycled for both \code{col} and \code{row}.}
 \item{\code{bb2D}: }{ A \link[=is_bb2D]{2D bounding box} with separate limits for \code{col} and \code{row}.}
 }
 
 When the supplied bounding box is smaller than the slice extents, only voxels
-inside this region are retained, giving \code{screen_bb} a filtering effect.}
+inside this region are retained, giving \code{crop} a filtering effect.}
 
 \item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits
-of \code{screen_bb} \strong{after} interpretation and potential filtering.}
+of \code{crop} \strong{after} interpretation and potential filtering to set the \link[=vbl_doc_ref_bb]{screen bounding box}.}
 
 \item{offset_col, offset_row}{Numeric scalars. Offsets applied per slice along
 the \code{col} and \code{row} axes, which can be specified as either \strong{absolute} or \strong{relative} values:
@@ -72,15 +73,13 @@ occluded by higher-index slices in overlapping offset layouts.}
 occluded by lower-index slices in overlapping offset layouts.}
 }}
 
-\item{layout}{Optional numeric vector of length two specifying \code{c(ncol, nrow)} for \code{facet_wrap()}
+\item{ncol, nrow}{Passed to \code{facet_wrap()} setting the facetting layout
 when neither of \code{offset_col} or \code{offset_row} differs from 0.}
 
 \item{clrp}{Character scalar specifying the categorical palette.
 Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
 
 \item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().}
-
-\item{interpolate}{Logical scalar indicating whether to interpolate raster tiles.}
 
 \item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
 console.}
@@ -99,8 +98,8 @@ group by before applying the filtering logic of \code{.cond}.}
 A \link{ggvibble} object.
 }
 \description{
-Build a 2D visualization of voxel data by selecting slices in a
-specified anatomical plane.
+Initializes a 2D visualization of voxel data by selecting slices in a
+specified anatomical plane that can be complemented with additional layers.
 }
 \details{
 \code{ggplane()} converts \code{vbl} to a \code{vbl2D} object via \link{vibble2D}().

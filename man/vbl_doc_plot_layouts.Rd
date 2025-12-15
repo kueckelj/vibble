@@ -2,7 +2,7 @@
 % Please edit documentation in R/vibble-doc.R
 \name{vbl_doc_plot_layouts}
 \alias{vbl_doc_plot_layouts}
-\title{This is documentation for plot layouts in ggplane.}
+\title{Plotting layouts}
 \description{
 This documentation defines the two layout modes used to display multiple
 slices in \code{ggplane()}: no-offset layouts and offset layouts.

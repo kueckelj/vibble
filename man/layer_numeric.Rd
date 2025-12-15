@@ -8,7 +8,6 @@ layer_numeric(
   var,
   clrsp,
   opacity = c(0.2, 0.45),
-  interpolate = vbl_opts("interpolate"),
   .cond = NULL,
   .by = NULL,
   ...
@@ -21,8 +20,6 @@ layer_numeric(
 
 \item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
 data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
-
-\item{interpolate}{Logical scalar indicating whether to interpolate raster tiles.}
 
 \item{.cond}{A logical filter expression that determines the specific
 voxels for which this layer is drawn. The expression is evaluated via

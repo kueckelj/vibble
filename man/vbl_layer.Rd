@@ -4,7 +4,7 @@
 \alias{vbl_layer}
 \title{Create a ggvibble layer object}
 \usage{
-vbl_layer(fun, class_add = NULL)
+vbl_layer(fun, class_add = NULL, ...)
 }
 \arguments{
 \item{fun}{A function that takes a \code{vbl2D} object and returns one or more

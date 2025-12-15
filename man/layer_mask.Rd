@@ -4,13 +4,10 @@
 \alias{layer_mask}
 \title{Add a masking layer}
 \usage{
-layer_mask(color, opacity = 0.25, .cond = NULL, .by = NULL, ...)
+layer_mask(color, .cond = NULL, .by = NULL, opacity = 0.25, name = TRUE, ...)
 }
 \arguments{
 \item{color}{Color used for the mask fill.}
-
-\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
-data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
 \item{.cond}{A logical filter expression that determines the specific
 voxels for which this layer is drawn. The expression is evaluated via
@@ -19,6 +16,14 @@ into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
+
+\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
+data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
+
+\item{name}{Logical or character scalar. If character, the name with which
+the color is associated with in the color legend. If logical, \code{FALSE} prevents
+appearance in the legend and \code{TRUE} falls back to the naming default of the
+function.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

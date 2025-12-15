@@ -196,13 +196,13 @@ vbl_layer <- function(fun, class_add = NULL, ...){
 
 
 #' @title Build a 2D ggplot representation of voxel data
-#' @description Build a 2D visualization of voxel data by selecting slices in a
-#' specified anatomical plane.
+#' @description Initializes a 2D visualization of voxel data by selecting slices in a
+#' specified anatomical plane that can be complemented with additional layers.
 #'
 #' @param var Character scalar naming the variable to plot.
 #' @param slices Integer vector. Slice indices in the specified anatomical
 #' `plane` to be included in the plot.
-#' @param layout Optional numeric vector of length two specifying `c(ncol, nrow)` for `facet_wrap()`
+#' @param ncol,nrow Passed to `facet_wrap()` setting the facetting layout
 #' when neither of `offset_col` or `offset_row` differs from 0.
 #' @param .cond Optional. An additional logical filter expression that determines the specific
 #' voxels plotted with `ggplane()` and passed to added \link[vbl_doc_vbl_layer]{layers}. <br>
@@ -223,20 +223,22 @@ vbl_layer <- function(fun, class_add = NULL, ...){
 #' Numeric variables are plotted with \link{scale_fill_numeric}() using `clrsp`. Non-numeric variables are
 #' plotted with \link{scale_fill_label}() using `clrp`. Note, that in `ggplane()`, logical mask variables
 #' are coerced to factors with levels `c("TRUE", "FALSE")` before plotting, for binary mask overlays see \link{layer_mask()}.
+#'
 #' @export
 ggplane <- function(vbl,
                     var,
-                    plane,
                     slices,
-                    screen_bb = NULL,
+                    plane = vbl_opts("plane"),
+                    crop = NULL,
                     expand = 0.1,
                     offset_col = 0,
                     offset_row = 0,
                     zstack = "desc",
-                    layout = NULL,
+                    ncol = NULL,
+                    nrow = NULL,
+                    alpha = 1,
                     clrp = vbl_opts("clrp"),
                     clrsp = vbl_opts("clrsp"),
-                    interpolate = vbl_opts("interpolate"),
                     verbose = vbl_opts("verbose"),
                     .cond = NULL,
                     .by = NULL,
@@ -254,7 +256,7 @@ ggplane <- function(vbl,
     vbl = vbl,
     plane = plane,
     slices = slices,
-    screen_bb = screen_bb,
+    crop = crop,
     offset_col = offset_col,
     offset_row = offset_row,
     zstack = zstack,
@@ -266,6 +268,8 @@ ggplane <- function(vbl,
   .by_quo <- rlang::enquo(.by)
   vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by_quo, layer = "ggplane()")
 
+  assign("vbl2D", vbl2D, envir = .GlobalEnv)
+
   structure(
     list(
       vbl2D = vbl2D,
@@ -273,10 +277,11 @@ ggplane <- function(vbl,
       slices = slices,
       base_args = list(
         var = var,
+        alpha = alpha,
         clrp = clrp,
         clrsp = clrsp,
-        interpolate = interpolate,
-        layout = layout,
+        ncol = ncol,
+        nrow = nrow,
         verbose = verbose,
         ...
       ),
@@ -290,19 +295,18 @@ ggplane <- function(vbl,
 #' @keywords internal
 .ggplane_impl <- function(vbl2D,
                           var,
-                          clrp = vbl_opts("clrp"),
-                          clrsp = vbl_opts("clrsp"),
-                          interpolate = vbl_opts("interpolate"),
-                          layout = NULL,
-                          verbose = verbose,
+                          alpha,
+                          clrp,
+                          clrsp,
+                          ncol,
+                          nrow,
+                          verbose,
                           ...){
-
-  stopifnot(is.numeric(vbl2D[[var]]))
 
   # handle multiple slices
   if(dplyr::n_distinct(vbl2D$slice) > 1 & !is_offset(vbl2D)){
 
-    layer_facet <- ggplot2::facet_wrap(facets = . ~ slice, ncol = layout[1], nrow = layout[2])
+    layer_facet <- ggplot2::facet_wrap(facets = . ~ slice, ncol = ncol, nrow = nrow)
 
   } else {
 
@@ -323,7 +327,7 @@ ggplane <- function(vbl,
 
     }
 
-    layer_colors <- scale_fill_categorical(clrp = clrp, ...)
+    layer_colors <- scale_fill_categorical(clrp = clrp, name = var, names = levels(vbl2D[[var]]), ...)
 
   }
 
@@ -334,12 +338,13 @@ ggplane <- function(vbl,
   ggplot2::ggplot(data = vbl2D) +
     ggplot2::geom_raster(
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      interpolate = interpolate
+      alpha = alpha,
+      interpolate = vbl_opts("interpolate")
     ) +
     layer_colors +
     layer_facet +
     ggplot2::scale_y_reverse() +
-    ggplot2::coord_equal(ratio = .ratio2D(vbl2D), xlim = col_lim, ylim = rev(row_lim), expand = vbl_opts("ggplot.expand")) +
+    ggplot2::coord_equal(ratio = .ratio2D(vbl2D), xlim = col_lim, ylim = rev(row_lim), expand = vbl_opts("expand.ggplot")) +
     ggplot2::theme_bw() +
     ggplot2::theme(
       legend.background = ggplot2::element_rect(fill = "black"),

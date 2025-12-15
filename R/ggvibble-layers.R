@@ -4,14 +4,11 @@
 # non-data ----------------------------------------------------------------
 
 #' @title Add a data-driven 2D bounding-box
-#' @description Draw a rectangular bounding box around the extent of voxels.
+#' @description Draw a rectangular bounding box around the extent of voxels
+#' or \link[=vbl_doc_ref_bb]{2D reference bounding boxes}.
 #'
 #' @param color Color of the bounding-box outline.
 #' @param fill Fill of the bounding-box.
-#' @param name Logical or character scalar. If character, the name with which
-#' the color is associated with in the color legend. If logical, `FALSE` prevents
-#' appearance in the legend and `TRUE` falls back to the naming default of the
-#' function.
 #'
 #' @param ... Additional arguments passed to \link{geom_rect}().
 #'
@@ -23,15 +20,16 @@
 #' @details
 #' `layer_bb()` computes and visualizes a 2D bounding box for voxels based on the
 #' minimal and maximal `col` and `row` coordinates where `.cond` evaluates to `TRUE`.
-#' The bounding box can be expanded by `buffer`, which adds a proportional
-#' margin to all sides. The graphical rendering is handled by \link{geom_rect}().
+#' In all cases, the graphical rendering is handled by \link{geom_rect}().
 #'
 #' @export
 layer_bb <- function(color,
                      .cond,
                      .by = NULL,
                      fill = NA,
-                     expand = FALSE,
+                     linetype = "solid",
+                     linewidth = 0.75,
+                     expand = as_abs(0.5),
                      name = TRUE,
                      ...){
 
@@ -57,6 +55,8 @@ layer_bb <- function(color,
         vbl2D = vbl2D,
         color = color,
         fill = fill,
+        linetype = linetype,
+        linewidth = linewidth,
         expand = expand,
         name = names(color_nm),
         ...
@@ -74,6 +74,8 @@ layer_bb <- function(color,
 .layer_bb_impl <- function(vbl2D,
                            color,
                            fill,
+                           linetype,
+                           linewidth,
                            expand,
                            name,
                            ...){
@@ -85,6 +87,8 @@ layer_bb <- function(color,
     name = name,
     color = color,
     fill = fill,
+    linetype = linetype,
+    linewidth = linewidth,
     ...
   )
 
@@ -94,8 +98,10 @@ layer_bb <- function(color,
 #' @export
 layer_bb_data <- function(color = alpha("green", 0.7),
                           fill = NA,
+                          linetype = "solid",
+                          linewidth = 0.75,
                           slices = NULL,
-                          name = "Data",
+                          name = TRUE,
                           ...){
 
   color_nm <- NULL
@@ -122,6 +128,8 @@ layer_bb_data <- function(color = alpha("green", 0.7),
         vbl2D = vbl2D,
         color = color,
         fill = fill,
+        linetype = linetype,
+        linewidth = linewidth,
         name = names(color_nm),
         ...
       )
@@ -137,6 +145,8 @@ layer_bb_data <- function(color = alpha("green", 0.7),
 .layer_bb_data_impl <- function(vbl2D,
                                 color,
                                 fill,
+                                linetype,
+                                linewidth,
                                 name,
                                 ...){
 
@@ -145,14 +155,14 @@ layer_bb_data <- function(color = alpha("green", 0.7),
       .x = slices(vbl2D),
       .f = function(slice){
 
-        ls <- data_bb(vbl2D, slice = slice)
+        dbb <- data_bb(vbl2D, slice = slice)
 
         tibble::tibble(
           slice = slice,
-          cmin = ls$col[1],
-          cmax = ls$col[2],
-          rmin = ls$row[1],
-          rmax = ls$row[2]
+          cmin = dbb$col[1],
+          cmax = dbb$col[2],
+          rmin = dbb$row[1],
+          rmax = dbb$row[2]
         )
 
       }
@@ -163,6 +173,8 @@ layer_bb_data <- function(color = alpha("green", 0.7),
     name = name,
     color = color,
     fill = fill,
+    linetype = linetype,
+    linewidth = linewidth,
     ...
   )
 
@@ -173,6 +185,8 @@ layer_bb_data <- function(color = alpha("green", 0.7),
 #' @export
 layer_bb_plot <- function(color = alpha("yellow", 0.7),
                           fill = NA,
+                          linetype = "solid",
+                          linewidth = 0.75,
                           name = TRUE,
                           ...){
 
@@ -194,6 +208,8 @@ layer_bb_plot <- function(color = alpha("yellow", 0.7),
         vbl2D = vbl2D,
         color = color,
         fill = fill,
+        linetype = linetype,
+        linewidth = linewidth,
         name = names(color_nm),
         ...
       )
@@ -209,16 +225,22 @@ layer_bb_plot <- function(color = alpha("yellow", 0.7),
 .layer_bb_plot_impl <- function(vbl2D,
                                 color,
                                 fill,
+                                linetype,
+                                linewidth,
                                 name,
                                 ...){
 
-  data <- as_bb2D_df(plot_bb(vbl2D))
+  data <-
+    plot_bb(vbl2D) %>%
+    as_bb2D_df()
 
   .layer_lst_bb(
     data = data,
     name = name,
     color = color,
     fill = fill,
+    linetype = linetype,
+    linewidth = linewidth,
     ...
   )
 
@@ -228,6 +250,8 @@ layer_bb_plot <- function(color = alpha("yellow", 0.7),
 #' @export
 layer_bb_screen <- function(color = alpha("blue", 0.7),
                             fill = NA,
+                            linetype = "solid",
+                            linewidth = 0.75,
                             slices = NULL,
                             name = TRUE,
                             ...){
@@ -256,7 +280,9 @@ layer_bb_screen <- function(color = alpha("blue", 0.7),
         vbl2D = vbl2D,
         color = color,
         fill = fill,
-        name = name,
+        linetype = linetype,
+        linewidth = linewidth,
+        name = names(color_nm),
         ...
       )
 
@@ -271,6 +297,8 @@ layer_bb_screen <- function(color = alpha("blue", 0.7),
 .layer_bb_screen_impl <- function(vbl2D,
                                   color,
                                   fill,
+                                  linetype,
+                                  linewidth,
                                   name,
                                   ...){
 
@@ -279,14 +307,14 @@ layer_bb_screen <- function(color = alpha("blue", 0.7),
       .x = slices(vbl2D),
       .f = function(slice){
 
-        ls <- screen_bb(vbl2D, slice = slice)
+        sbb <- screen_bb(vbl2D, slice = slice)
 
         tibble::tibble(
           slice = slice,
-          cmin = ls$col[1],
-          cmax = ls$col[2],
-          rmin = ls$row[1],
-          rmax = ls$row[2]
+          cmin = sbb$col[1],
+          cmax = sbb$col[2],
+          rmin = sbb$row[1],
+          rmax = sbb$row[2]
         )
 
       }
@@ -297,6 +325,8 @@ layer_bb_screen <- function(color = alpha("blue", 0.7),
     name = name,
     color = color,
     fill = fill,
+    linetype = linetype,
+    linewidth = linewidth,
     ...
   )
 
@@ -306,6 +336,8 @@ layer_bb_screen <- function(color = alpha("blue", 0.7),
 #' @export
 layer_bb_slice <- function(color = alpha("red", 0.7),
                            fill = NA,
+                           linetype = "solid",
+                           linewidth = 0.75,
                            slices = NULL,
                            name = TRUE,
                            ...){
@@ -335,6 +367,8 @@ layer_bb_slice <- function(color = alpha("red", 0.7),
         color = color,
         fill = fill,
         name = names(color_nm),
+        linetype = linetype,
+        linewidth = linewidth,
         ...
       )
 
@@ -349,16 +383,36 @@ layer_bb_slice <- function(color = alpha("red", 0.7),
 .layer_bb_slice_impl <- function(vbl2D,
                                  color,
                                  fill,
+                                 linetype,
+                                 linewidth,
                                  name,
                                  ...){
 
-  data <- bb2D_df(vbl2D, expand = FALSE)
+  data <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = function(slice){
+
+        sbb <- slice_bb(vbl2D, slice = slice)
+
+        tibble::tibble(
+          slice = slice,
+          cmin = sbb$col[1],
+          cmax = sbb$col[2],
+          rmin = sbb$row[1],
+          rmax = sbb$row[2]
+        )
+
+      }
+    )
 
   .layer_lst_bb(
     data = data,
     name = name,
     color = color,
     fill = fill,
+    linetype = linetype,
+    linewidth = linewidth,
     ...
     )
 
@@ -441,11 +495,12 @@ layer_categorical <- function(var,
 
   list(
     ggnewscale::new_scale_fill(),
-    ggplot2::geom_tile(
+    ggplot2::geom_raster(
       data = vbl2D,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
       alpha = alpha_use,
-      color = color_use
+      color = color_use,
+      interpolate = vbl_opts("interpolate")
     ),
     scale_fill_categorical(
       clrp = clrp,
@@ -534,12 +589,12 @@ layer_grid <- function(col = 0.1,
 
 #' @export
 .layer_grid_impl <- function(vbl2D,
-                             col = 0.1,
-                             row = 0.1,
-                             alpha = 0.2,
-                             color = "lightgrey",
-                             linewidth = 0.5,
-                             linetype = "solid"
+                             col,
+                             row,
+                             alpha,
+                             color,
+                             linewidth,
+                             linetype
                              ){
 
   style_lst <-
@@ -877,7 +932,8 @@ layer_mask <- function(color,
         ggplot2::geom_raster(
           data = dplyr::mutate(vbl2D, mask. = {{ name }}),
           mapping = ggplot2::aes(x = col, y = row, fill = mask.),
-          alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
+          alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+          interpolate = vbl_opts("interpolate")
         )
       )
 
@@ -889,7 +945,8 @@ layer_mask <- function(color,
           data = vbl2D,
           mapping = ggplot2::aes(x = col, y = row),
           alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
-          fill = color
+          fill = color,
+          interpolate = vbl_opts("interpolate")
         )
       )
 
@@ -913,7 +970,6 @@ layer_mask <- function(color,
 layer_numeric <- function(var,
                           clrsp,
                           opacity = c(0.2, 0.45),
-                          interpolate = vbl_opts("interpolate"),
                           .cond = NULL,
                           .by = NULL,
                           ...){
@@ -933,7 +989,6 @@ layer_numeric <- function(var,
         var = var,
         clrsp = clrsp,
         opacity = opacity_quo,
-        interpolate = interpolate,
         ...
       )
 
@@ -948,7 +1003,6 @@ layer_numeric <- function(var,
                                 var,
                                 clrsp,
                                 opacity = c(0.2, 0.45),
-                                interpolate = vbl_opts("interpolate"),
                                 ...){
 
   is_vartype(vbl2D, var = var, type = "numeric")
@@ -961,7 +1015,7 @@ layer_numeric <- function(var,
       data = vbl2D,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
       alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
-      interpolate = interpolate
+      interpolate = vbl_opts("interpolate")
     ),
     scale_fill_numeric(
       clrsp,
@@ -1197,15 +1251,15 @@ layer_outline <- function(color,
 #' @title Layer for displaying slice numbers
 #' @description Add slice numbers as text labels to a \link{ggplane()}-plot.
 #'
-#' @param anchor Character or numeric anchor specification defining the relative
-#'   position of labels within each slice's bounding box. See
-#'   \code{\link{img_anchors}} for valid presets.
-#' @param space One of \code{"slice"}, \code{"screen"}, or \code{"avg"}, indicating
-#'   which 2D limit should define the anchor position:
+#' @param anchor \link[=vbl_doc_img_anchor]{Image anchor} specification for
+#' positioning the slice labels. If, character one of *c('top', 'bottom', 'left', 'right')*.
+#' Absolute anchors are not allowed in offset-layouts.
+#' @param ref_bb Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
+#' to use when anchoring slice numbers via relative or character image anchors:
 #'   \itemize{
-#'     \item \code{"slice"} – use raw slice limits.
-#'     \item \code{"screen"} – use screen-space limits (after offsets).
-#'     \item \code{"avg"} – use the average of slice and screen limits.
+#'     \item \code{"data"}: uses global bounding boxes from \link{data_bb}().
+#'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
+#'     \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 #'   }
 #' @param align Optional. If \code{"col"} or \code{"row"}, enforce alignment of
 #'   label positions across slices along the chosen axis.
@@ -1217,31 +1271,29 @@ layer_outline <- function(color,
 #' @inherit vbl_doc_layer return
 #'
 #' @details
-#' Anchor coordinates may be supplied either as preset strings (e.g.
-#' \code{"top-right"}) or as relative coordinates in \eqn{[0,1]^2}. For each
-#' slice, the chosen limit specification (\code{to}) determines the bounding box
-#' in which the anchor is resolved. If \code{align} is used, the selected axis
+#' If \code{align} is used, the selected axis
 #' (\code{col} or \code{row}) is harmonized across all slices.
 #'
 #' @export
 
-layer_slice_number <- function(anchor,
-                               space = "avg",
-                               align = NULL,
-                               wrap = NULL,
-                               angle = 0,
-                               alpha = 0.8,
-                               color = "white",
-                               size = 3.5,
-                               ...){
+layer_slice_numbers <- function(anchor,
+                                ref_bb = "data",
+                                spacer = 0.025,
+                                align = NULL,
+                                wrap = "{slice}",
+                                angle = 0,
+                                alpha = 0.8,
+                                color = "white",
+                                size = 3.5,
+                                ...){
 
   vbl_layer(
     fun = function(vbl2D){
 
-      .layer_slice_number_impl(
+      .layer_slice_numbers_impl(
         vbl2D = vbl2D,
         anchor = anchor,
-        space = space,
+        ref_bb = ref_bb,
         align = align,
         wrap = wrap,
         angle = angle,
@@ -1258,33 +1310,36 @@ layer_slice_number <- function(anchor,
 }
 
 #' @keywords internal
-.layer_slice_number_impl <- function(vbl2D,
-                                     anchor,
-                                     space,
-                                     align,
-                                     wrap,
-                                     angle,
-                                     alpha,
-                                     color,
-                                     size,
-                                     ...){
+.layer_slice_numbers_impl <- function(vbl2D,
+                                      anchor,
+                                      ref_bb,
+                                      align,
+                                      wrap,
+                                      angle,
+                                      alpha,
+                                      color,
+                                      size,
+                                      ...){
 
   stopifnot(within_limits(angle, c(0, 360)))
-  stopifnot(is_img_anchor_chr(anchor) | is_img_anchor_rel(anchor))
+  stopifnot(is_img_anchor(anchor))
+  if(is_offset(vbl2D) && is_img_anchor_abs(vbl2D)){
 
-  # anchor instructions
-  if(is_img_anchor_chr(anchor)){
-
-    anchor_chr <- anchor
-    anchor_rel <- img_anchors[[anchor]]
-
-  } else {
-
-    anchor_rel <- anchor
+    stop("Need relative or character imgage anchors for `anchor`in offset-layouts.")
 
   }
 
-  # construct data.frame
+  ref_bb <- match.arg(ref_bb, choices = c("data", "screen", "slice"))
+
+  # anchor instructions
+  stopifnot(is_img_anchor_chr(anchor) | is_img_anchor_rel(anchor))
+
+  if(is_img_anchor_chr(anchor)){
+
+    anchor <- img_anchors[[anchor]]
+
+  }
+
   wrap <- ifelse(is.character(wrap), wrap[1], "{slice}")
 
   df <-
@@ -1292,24 +1347,21 @@ layer_slice_number <- function(anchor,
       .x = slices(vbl2D),
       .f = function(slice){
 
-        if(space == "slice"){
+        if(ref_bb == "data"){
 
-          bb2D <- slice_bb(vbl2D, slice)
+          bb2D <- data_bb(vbl2D, slice)
 
-        } else if(space == "screen"){
+        } else if(ref_bb == "screen"){
 
           bb2D <- screen_bb(vbl2D, slice)
 
-        } else if(space == "avg"){
+        } else if(ref_bb == "slice"){
 
-          bb2D <- avg_bb2D(
-            a = slice_bb(vbl2D, slice),
-            b = screen_bb(vbl2D, slice)
-          )
+          bb2D <- slice_bb(vbl2D, slice)
 
         }
 
-        as_img_anchor_abs(anchor_rel, bb2D = bb2D)
+        as_img_anchor_abs(anchor, bb2D = bb2D)
 
       }
     ) %>%
@@ -1360,28 +1412,40 @@ layer_slice_number <- function(anchor,
 
 #' @title Add orthogonal slice references
 #' @description
-#' Add reference lines and slice labels indicating the positions of slices from
+#' Add projection lines and slice labels indicating the positions of slices from
 #' another anatomical plane.
 #'
-#' @param plane_ref Character scalar specifying the anatomical plane of the
-#'   reference slices (\code{"sag"}, \code{"axi"}, or \code{"cor"}). Must differ
+#' @param slices Integer vector giving the slice indices to display as projection lines.
+#' @param plane Character scalar specifying the anatomical plane of the
+#'   projected slices (\code{"sag"}, \code{"axi"}, or \code{"cor"}). Must differ
 #'   from the plane used in \link{ggplane}().
-#' @param slices_ref Integer vector giving the slice indices (in
-#'   \code{plane_ref}) to display as reference lines.
-#' @param anchor Character scalar controlling the label anchor relative to the
-#'   reference line. Valid values depend on the orientation of the reference
-#'   plane and resolve to one of: \code{"top"}, \code{"bottom"},
-#'   \code{"left"}, \code{"right"}. If \code{NULL}, a default anchor is chosen
-#'   based on the intersecting axis.
-#' @param space Character scalar indicating which 2D limit space to use when
-#'   constructing reference lines:
+#' @param anchor Character \link[=vbl_doc_img_anchors]{image anchor} or `NULL`.
+#'
+#' \itemize{
+#'   \item{character: }{ One of `"top"`, `"bottom"`, `"left"`, `"right"`, depending on
+#'   the projected plane orientation.}
+#'   \item{`NULL`: }{ A default anchor is chosen based on the intersecting axis.}
+#' }
+#'
+#' @param ref_bb Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
+#' to use when constructing projected lines:
 #'   \itemize{
-#'     \item \code{"slice"} – use per-slice limits from \link{slice_bb}.
-#'     \item \code{"screen"} – use screen-space limits from \link{screen_bb} (after offsets).
+#'     \item \code{"data"}: uses global bounding boxes from \link{data_bb}().
+#'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
+#'     \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 #'   }
-#' @param spacer Numeric offset (in voxel units) applied to the label position
-#' away from the reference line along the perpendicular axis. Interpreted in absolutes.
-#' @param color Numeric vector of length one or two specifying alpha for
+#'
+#' @param spacer Numeric scalar. Distance used to shift slice labels away from
+#' the projected lines along the perpendicular axis. Two valid
+#'  \link[=vbl_doc_abs_rel]{input options}:
+#'
+#' \itemize{
+#'   \item{Absolute:}{ Applied directly in data coordinates.}
+#'   \item{Relative:}{ Interpreted as a fraction of the projected line length in
+#'   the plotting plane}.
+#' }
+#'
+#' @param alpha Numeric vector of length one or two specifying alpha for
 #'   the line and labels (recycled if length one).
 #' @param color Character vector of length one or two specifying colors for
 #'   the line and labels (recycled if length one).
@@ -1390,56 +1454,46 @@ layer_slice_number <- function(anchor,
 #' @param linetype Line type passed to \code{geom_segment()}.
 #' @param ... Additional arguments forwarded to \code{geom_text()}.
 #'
-#' @inherit vbl_doc_layer params return
-#' @inheritParams vbl_doc
+#' @inherit vbl_doc_layer return
 #'
-#' @details
-#' The function reverses slice offsets in the input \code{vbl2D}, computes
-#' orthogonal reference lines for all combinations of plotted slices and
-#' \code{slices_ref}, optionally applies a label anchor and spacing, and then
-#' reapplies the offset layout. Label alignment (\code{hjust}/\code{vjust}) is
-#' determined automatically from \code{anchor}.
-#'
-#' @seealso \code{\link{slice_bb}}, \code{\link{screen_bb}},
-#'   \code{\link{layer_slice_number}}
+#' @note
+#' Label alignment (\code{hjust}/\code{vjust}) is determined automatically from \code{anchor}.
 #'
 #' @export
 
-layer_slice_ref <- function(plane_ref,
-                            slices_ref,
-                            alpha = 0.9,
-                            color = "red",
-                            size = 4.5,
-                            linewidth = 0.5,
-                            linetype = "solid",
-                            anchor = NULL,
-                            space = "slice",
-                            spacer = 5,
-                            align = TRUE,
-                            ...){
+layer_slice_projections <- function(slices,
+                                    plane,
+                                    alpha = 0.9,
+                                    color = "red",
+                                    size = 4.5,
+                                    linewidth = 0.75,
+                                    linetype = "solid",
+                                    ref_bb = "data",
+                                    anchor = NULL,
+                                    spacer = 0.025,
+                                    ...){
 
   vbl_layer(
     fun = function(vbl2D){
 
-      if(plane_ref == plane(vbl2D)){
+      if(plane == plane(vbl2D)){
 
-        .glue_stop("`plane` input for `ggplane()` and `layer_slice_ref()` must not be identical.")
+        .glue_stop("`plane` input for `ggplane()` and `layer_slice_projections()` must not be identical.")
 
       }
 
-      .layer_slice_ref_impl(
+      .layer_slice_projections_impl(
         vbl2D = vbl2D,
-        plane_ref = plane_ref,
-        slices_ref = slices_ref,
+        plane_proj = plane,
+        slices_proj = slices,
         alpha = alpha,
         color = color,
         size = size,
         linetype = linetype,
         linewidth = linewidth,
         anchor = anchor,
-        space = space,
+        ref_bb = ref_bb,
         spacer = spacer,
-        align = align,
         ...
       )
 
@@ -1450,21 +1504,20 @@ layer_slice_ref <- function(plane_ref,
 }
 
 #' @keywords internal
-.layer_slice_ref_impl <- function(vbl2D,
-                                  plane_ref,
-                                  slices_ref,
-                                  alpha,
-                                  color,
-                                  size,
-                                  linewidth,
-                                  linetype,
-                                  anchor,
-                                  space,
-                                  spacer,
-                                  align,
-                                  ...){
+.layer_slice_projections_impl <- function(vbl2D,
+                                         plane_proj,
+                                         slices_proj,
+                                         alpha,
+                                         color,
+                                         size,
+                                         linewidth,
+                                         linetype,
+                                         anchor,
+                                         ref_bb,
+                                         spacer,
+                                         ...){
 
-  vbl2D_ref <- .reverse_offset(vbl2D)
+  vbl2D_proj <- reverse_offset(vbl2D)
 
   # sanity checks
   if(any(c("hjust", "vjust") %in% names(list(...)))){
@@ -1473,29 +1526,29 @@ layer_slice_ref <- function(plane_ref,
 
   }
 
-  space <- match.arg(space, choices = c("screen", "slice"))
+  ref_bb <- match.arg(ref_bb, choices = c("data", "screen", "slice"))
 
   alpha <- if(length(alpha) == 1){ rep(alpha, 2) } else { alpha }
   color <- if(length(color) == 1){ rep(color, 2) } else { color }
 
-  axis_ref <-
-    .req_axis_2D_ref(
+  axis_proj <-
+    .req_axis_2D_proj(
       plane = plane(vbl2D),
-      plane_ref = plane_ref
+      plane_proj = plane_proj
     )
 
   # text anchor validation
   if(is.null(anchor)){
 
-    anchor <- unname(c("col" = "top", "row" = "left")[axis_ref])
+    anchor <- unname(c("col" = "top", "row" = "left")[axis_proj])
 
   }
 
-  if(axis_ref == "col"){
+  if(axis_proj == "col"){
 
     anchor <- match.arg(anchor, choices = c("top", "bottom"))
 
-  } else if(axis_ref == "row"){
+  } else if(axis_proj == "row"){
 
     anchor <- match.arg(anchor, choices = c("left", "right"))
 
@@ -1515,22 +1568,26 @@ layer_slice_ref <- function(plane_ref,
       .f = function(slice){
 
         purrr::map_df(
-          .x = slices_ref,
+          .x = slices_proj,
           .f = function(slice_ref){
 
-            if(space == "screen"){
+            if(ref_bb == "data"){
 
-              lim0 <- screen_bb(vbl2D_ref, slice = slice)
+              bb0 <- data_bb(vbl2D_proj, slice = slice)
 
-            } else if(space == "slice") {
+            } else if(ref_bb == "screen"){
 
-              lim0 <- slice_bb(vbl2D_ref, slice)
+              bb0 <- screen_bb(vbl2D_proj, slice = slice)
+
+            } else if(ref_bb == "slice") {
+
+              bb0 <- slice_bb(vbl2D_proj, slice)
 
             }
 
-            lim0[[axis_ref]] <- rep(slice_ref, 2)
+            bb0[[axis_proj]] <- rep(slice_ref, 2)
 
-            lim_adj <- .offset_lim0(vbl2D, slice = slice, lim0 = lim0)
+            lim_adj <- .offset_bb0(vbl2D, slice = slice, bb0 = bb0)
 
             tibble::tibble(
               cmin = min(lim_adj$col),
@@ -1548,30 +1605,27 @@ layer_slice_ref <- function(plane_ref,
       }
     )
 
-  if(isTRUE(align)){
+  # text position
+  text_df <- line_df
 
-    p1 <- ifelse(grepl("min", end), "min", "max")
-    p2 <- ifelse(grepl("min", p1), "max", "min")
+  if(is_rel(spacer)){
 
-    start <- stringr::str_replace(end, pattern = p1, replacement = p2)
+    if(axis_proj == "col"){
 
-    line_df$dst <- abs(c(line_df[[start]] - line_df[[end]]))
+      spacer <- abs(text_df$rmin - text_df$rmax) * spacer
 
-    max_dst <- max(line_df$dst)
+    } else if(axis_proj == "row"){
 
-    sign_dir <- sign(line_df[[end]] - line_df[[start]])
+      spacer <- abs(text_df$cmin - text_df$cmax) * spacer
 
-    line_df[[end]] <- line_df[[start]] + sign_dir * max_dst
+    }
 
   }
 
-  # text position
-  text_df <- line_df[, c("slice_ref", "slice")]
+  if(axis_proj == "col"){
 
-  if(axis_ref == "col"){
-
-    text_df$x <- line_df$cmin # identical with cmax
-    text_df$y <- line_df[[end]]
+    text_df$x <- text_df$cmin # identical with cmax
+    text_df$y <- text_df[[end]]
 
     if(anchor == "top"){
 
@@ -1583,18 +1637,18 @@ layer_slice_ref <- function(plane_ref,
 
     }
 
-  } else if(axis_ref == "row"){
+  } else if(axis_proj == "row"){
 
-    text_df$x <- line_df[[end]]
-    text_df$y <- line_df$rmin # identical with rmax
+    text_df$x <- text_df[[end]]
+    text_df$y <- text_df$rmin # identical with rmax
 
     if(anchor == "left"){
 
-      text_df$y <- text_df$y - spacer
+      text_df$x <- text_df$x - spacer
 
     } else if(anchor == "right") {
 
-      text_df$y <- text_df$y + spacer
+      text_df$x <- text_df$x + spacer
 
     }
 
