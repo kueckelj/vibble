@@ -134,7 +134,7 @@ as_img_anchor_abs <- function(anchor, bb2D){
   if(is_img_anchor_rel(anchor)){
 
     out[[1]] <- min(bb2D$col) + (diff(bb2D$col) * anchor[[1]])
-    out[[2]] <- max(bb2D$row) - (diff(bb2D$row) * anchor[[2]])
+    out[[2]] <- min(bb2D$row) + (diff(bb2D$row) * anchor[[2]])
 
   } else if(is_img_anchor_abs(anchor)){
 
@@ -327,6 +327,25 @@ NULL
   outlines$split <- FALSE
 
   return(outlines)
+
+}
+
+#' @keywords internal
+.col_pos <- function(axis_proj, pos){
+
+  if(axis_proj == "row"){
+
+    dplyr::case_when(
+      grepl("left", pos) ~ "cmin",
+      grepl("right", pos) ~ "cmax",
+      TRUE ~ "cmid"
+    )
+
+  } else {
+
+    return("cmid") # equal to cmax or cmin
+
+  }
 
 }
 
@@ -562,6 +581,25 @@ NULL
 }
 
 #' @keywords internal
+.row_pos <- function(axis_proj, pos){
+
+  if(axis_proj == "col"){
+
+    dplyr::case_when(
+      grepl("top", pos) ~ "rmin",
+      grepl("bottom", pos) ~ "rmax",
+      TRUE ~ "rmid"
+    )
+
+  } else {
+
+    return("rmid") # equal to rmax or rmin
+
+  }
+
+}
+
+#' @keywords internal
 .split_outline <- function(outline, outline_ref){
 
   stopifnot(dplyr::n_distinct(outline$vertex) == nrow(outline))
@@ -615,5 +653,52 @@ NULL
   }
 
   return(outline)
+
+}
+
+#' @keywords internal
+.label_just <- function(pos, axis_proj, spacer){
+
+  just <- vector("numeric", length = 2)
+
+  if(axis_proj == "col"){
+
+    just[1] <-
+      dplyr::case_when(
+        grepl("left", pos) ~ 0.4 + spacer,
+        grepl("right", pos) ~ 0.6 - spacer,
+        TRUE ~ 0.5
+      )
+
+    just[2] <-
+      dplyr::case_when(
+        grepl("left|right", pos) & grepl("top", pos) ~ 1,
+        grepl("left|right", pos) & grepl("bottom", pos) ~ 0,
+        grepl("top", pos) ~ 0.5 - spacer,
+        grepl("bottom", pos) ~ 0.5 + spacer,
+        TRUE ~ 0.5
+      )
+
+  } else if(axis_proj == "row"){
+
+    just[1] <-
+      dplyr::case_when(
+        grepl("top|bottom", pos) & grepl("right", pos) ~ 1,
+        grepl("top|bottom", pos) & grepl("left", pos) ~ 0,
+        grepl("right", pos) ~ 0.6 - spacer,
+        grepl("left", pos) ~ 0.4 + spacer,
+        TRUE ~ 0.5
+      )
+
+    just[2] <-
+      dplyr::case_when(
+        grepl("top", pos) ~ 0.3 - spacer,
+        grepl("bottom", pos) ~ 0.7 + spacer,
+        TRUE ~ 0.5
+      )
+
+  }
+
+  return(just)
 
 }

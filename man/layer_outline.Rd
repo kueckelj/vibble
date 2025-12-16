@@ -2,14 +2,14 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_outline}
 \alias{layer_outline}
-\title{Add an outline layer}
+\title{Add outlines}
 \usage{
 layer_outline(
   color,
   .cond = NULL,
   .by = NULL,
   linetype = "solid",
-  linewidth = 1,
+  linewidth = 0.75,
   use_dbscan = TRUE,
   concavity = 2.5,
   clip_overlap = TRUE,
@@ -63,10 +63,12 @@ inserted into the plot.
 }
 \description{
 Overlay a \link{ggplane}() plot by outlining voxels
-that match a certain condition. Outlines are computed slice-wise.
+that match a certain condition.
 }
 \details{
 The condition of \code{.cond} determines which voxels are outlined. If no condition
 is provided (\code{.cond = NULL}) this layer outlines all voxels in every slice of the
 2D vibble passed to this layer by \code{ggplane()}.
+
+Outlines are \strong{always} computed slicewise.
 }

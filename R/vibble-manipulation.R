@@ -231,52 +231,69 @@ dbscan3D <- function(vbl,
 }
 
 
-#' @title Filter vibble by 3D bounding box
-#' @description Filter voxels that lie inside a 3D bounding box.
-#' Returns a subset of `vbl` restricted to the specified coordinate limits.
+#' @title Filter a vbl2D by a 2D bounding box.
 #'
-#' @inheritParams vbl_doc
+#' @description
+#' Filters a `vbl2D` object to rows whose `col` and `row` coordinates fall within
+#' a given 2D bounding box.
 #'
-#' @return A `vibble` (or tibble) containing only rows whose spatial coordinates fall within the limits given by `bb3D`.
+#' @param vbl2D A `vbl2D` object.
+#' @param bb2D A valid 2D bounding box as checked by `is_bb2D()`.
+#' @param null_ok Logical. Whether `NULL` limits in `bb2D` are treated as open
+#' bounds.
 #'
-#' @details The function checks that `bb3D` is a valid 3D bounding box via \link{is_bb3D}().
-#' It then filters rows where all three coordinates lie within the specified limits using \link{within_limits}`(..., null_ok = TRUE)`.
+#' @return
+#' A filtered `vbl2D` object.
 #'
-#' @note The \link{ccs_limits} remain untouched. While the output vibble contains
-#' only voxels within the bounding box they still remain in the same space.
-#'
-#' @seealso \link{is_bb3D}(), \link{ccs_limits}()
-#'
-#' @importFrom dplyr filter
-#'
-#' @examples
-#' # Example 1: Filter to a manually defined bounding box
-#' vbl <- example_vbl()
-#' bb3D <- list(
-#'   x = c(10, 50),
-#'   y = c(20, 60),
-#'   z = c( 5, 40)
-#' )
-#' vbl_sub <- filter_bb3D(vbl, bb3D)
-#'
-#' # Example 2: Use the bounding box of a mask region
-#' vbl <- example_vbl()
-#' bb_tumor <- bb3D(vbl, var = "tumor")
-#' vbl_tumor_area <- filter_bb3D(vbl, bb_tumor)
-#'
-#' @export
-filter_bb3D <- function(vbl, bb3D){
+#' @seealso
+#' is_vbl2D(),
+#' is_bb2D(),
+#' within_limits()
+filter_bb2D <- function(vbl2D, bb2D, null_ok = TRUE){
 
-  stopifnot(is_bb3D(bb3D))
+  stopif(is_offset(vbl2D))
+
+  .stop_if_not(is_vbl2D(vbl2D))
+  .stop_if_not(is_bb2D(bb2D))
 
   dplyr::filter(
-    .data = vbl,
-      within_limits(x, bb3D$x) &
-      within_limits(y, bb3D$y) &
-      within_limits(z, bb3D$z)
+    .data = vbl2D,
+    within_limits(col, l = bb2D$col, null_ok = null_ok) &
+    within_limits(row, l = bb2D$row, null_ok = null_ok)
   )
 
 }
+
+#' @title Filter a vbl by a 3D bounding box.
+#'
+#' @description
+#' Filters a `vbl` object to rows whose spatial coordinates fall within a given
+#' 3D bounding box.
+#'
+#' @param vbl A `vbl` object.
+#' @param bb3D A valid 3D bounding box as checked by `is_bb3D()`.
+#' @param null_ok Logical. Whether `NULL` limits in `bb3D` are treated as open
+#' bounds.
+#'
+#' @return
+#' A filtered `vbl` object.
+#'
+#' @seealso
+#' is_bb3D(),
+#' within_limits()
+filter_bb3D <- function(vbl, bb3D, null_ok = TRUE){
+
+  .stop_if_not(is_bb3D(bb3D))
+
+  dplyr::filter(
+    .data = vbl,
+    within_limits(x, l = bb3D$x, null_ok = null_ok) &
+      within_limits(y, l = bb3D$y, null_ok = null_ok) &
+      within_limits(z, l = bb3D$z, null_ok = null_ok)
+  )
+
+}
+
 
 #' @export
 filter_mask <- function(vbl, var){

@@ -491,7 +491,6 @@ layer_categorical <- function(var,
   cvec <- color_vector(clrp, names = levels(vbl2D[[var]]), clrp_adjust = clrp_adjust)
 
   alpha_use <- .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
-  color_use <- alpha(cvec[vbl2D[[var]]], alpha_use)
 
   list(
     ggnewscale::new_scale_fill(),
@@ -499,7 +498,6 @@ layer_categorical <- function(var,
       data = vbl2D,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
       alpha = alpha_use,
-      color = color_use,
       interpolate = vbl_opts("interpolate")
     ),
     scale_fill_categorical(
@@ -509,6 +507,77 @@ layer_categorical <- function(var,
       ...
     )
   )
+
+}
+
+
+
+#' @title Crop a ggplane plot to a filtered voxel extent
+#' @description
+#' Crops the plot extent to the bounding box of voxels selected by `.cond`.
+#'
+#' @param .cond A logical filter expression evaluated on `vbl2D` that determines
+#' the voxels used to define the cropped plot extent.
+#' @param expand Numeric. Expansion factor passed to `expand_bb2D()` to grow the
+#' cropped plot extent.
+#'
+#' @inherit vbl_doc_layer params return
+#'
+#' @details
+#' The layer filters `vbl2D` via `.cond` and then sets plot limits using
+#' `ggplot2::coord_equal()` based on the resulting voxel extent.
+#'
+#' @examples
+#' vbl <- example_vbl()
+#'
+#' ggplane(vbl, var = "t1", plane = "axi", slices = 100) +
+#'   layer_crop(brain, expand = 0.05)
+#'
+#' @export
+layer_crop <- function(.cond, ...){
+
+  .cond_quo <- rlang::enquo(.cond)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, layer = "layer_crop()")
+
+      .layer_crop_impl(
+        vbl2D = vbl2D,
+        ...
+      )
+
+    },
+    class_add = "layer_crop"
+  )
+
+}
+
+#' @keywords internal
+.layer_crop_impl <- function(vbl2D,
+                             ...){
+
+  plot_lim <-
+    list(
+      col = range(vbl2D$col),
+      row = range(vbl2D$row)
+    )
+
+  layer_lst <-
+    list(
+      ggplot2::coord_equal(
+        ratio = .ratio2D(vbl2D),
+        xlim = plot_lim$col,
+        ylim = rev(plot_lim$row),
+        expand = FALSE
+      ),
+      ...
+    )
+
+  layer_lst[[1]]$default <- TRUE
+
+  return(layer_lst)
 
 }
 
@@ -689,9 +758,9 @@ layer_labels <- function(var,
                          color = "white",
                          size = 4.5,
                          use_dbscan = TRUE,
+                         centroid = median,
                          abbrev = NULL,
                          repel = FALSE,
-                         centroid = function(x) median(x, TRUE),
                          .cond = NULL,
                          .by = NULL,
                          ...){
@@ -771,6 +840,8 @@ layer_labels <- function(var,
 
   if(is.character(exclude)){ labels <- labels[!labels %in% exclude] }
 
+
+
   data <-
     purrr::map_df(
       .x = slices(vbl2D),
@@ -789,39 +860,35 @@ layer_labels <- function(var,
               label_df <-
                 dbscan2D(
                   slice_df = label_df,
-                  var_out = "idx",
+                  var_out = "lbl.idx",
                   pref_out = "lbl.",
                   minPts = 6,
                   min_size = 0.33,
                   rm_outlier = TRUE
-                  )
+                )
 
             } else {
 
-              label_df$idx <- "1"
+              label_df$lbl.idx <- "1"
 
             }
 
-            dplyr::group_by(label_df, slice, idx, !!rlang::sym(var)) %>%
-              dplyr::mutate(
-                col_cent. = centroid[["col"]](col),
-                row_cent. = centroid[["row"]](row),
-                col_dist. = abs(col - col_cent.),
-                row_dist. = abs(row - row_cent.),
-                comb_dist. = col_dist. + row_dist.
-              ) %>%
-              dplyr::slice_min(order_by = comb_dist.)
+            dplyr::summarize(
+              .data = label_df,
+              .by = "lbl.idx",
+              col = centroid[["col"]](col),
+              row = centroid[["row"]](row),
+              {{var}} := {{ label }}
+            )
 
           }
-        )
+        ) %>%
+          dplyr::mutate(slice = {{ slice }})
 
       }
     )
 
   data[[var]] <- as.character(data[[var]])
-
-  assign("labels", labels, envir = .GlobalEnv)
-  assign("data", data, envir = .GlobalEnv)
 
   if(is.character(include) && .is_named(include)){
 
@@ -831,13 +898,13 @@ layer_labels <- function(var,
 
   }
 
-  if(is.function(abbrev)){
+  if(is.function(abbrev) | purrr::is_formula(abbrev)){
 
     data <-
       dplyr::mutate(
         .data = data,
         dplyr::across(
-          .cols = dplyr::all_of(var),
+          .cols = {{ var }},
           .fns = abbrev
         )
       )
@@ -957,6 +1024,52 @@ layer_mask <- function(color,
 }
 
 
+
+#' @title Add ggplot2 components via a ggvibble layer
+#'
+#' @description
+#' Collects ggplot2 objects supplied via `...` and injects them into the ggvibble
+#' plotting pipeline as a single ggvibble layer.
+#'
+#' @details
+#' `layer_misc()` provides a controlled interoperability mechanism with ggplot2.
+#' Objects passed via `...` are filtered to ggplot-compatible objects (class
+#' containing `"gg"`) and added during plot materialization.
+#'
+#' This avoids direct use of `+` with ggplot2 components, which can lead to
+#' ambiguous operator dispatch.
+#'
+#' @param ... ggplot2 objects such as themes, annotations, scales, or coordinates.
+#'
+#' @note `gg` objects that inherit *'Facet'* are not allowed and discarded.
+#'
+#' @inherit vbl_doc_layer return
+#'
+#' @export
+layer_misc <- function(...){
+
+  input <- list(...)
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      purrr::keep(
+        .x = input,
+        .p = ~ "gg" %in% class(.x)
+      ) %>%
+      purrr::discard(
+        .x = .,
+        .p = ~ "Facet" %in% class(.x)
+      )
+
+    },
+    class_add = "layer_misc"
+  )
+
+}
+
+
+
 #' @title Add a color layer for numeric variables
 #' @description Overlay a numeric variable on a \link{ggplane}() plot by mapping its
 #' values to a continuous fill scale.
@@ -1028,9 +1141,9 @@ layer_numeric <- function(var,
 
 
 
-#' @title Add an outline layer
+#' @title Add outlines
 #' @description Overlay a \link{ggplane}() plot by outlining voxels
-#' that match a certain condition. Outlines are computed slice-wise.
+#' that match a certain condition.
 #'
 #' @param alpha Numeric. Controls the transparency of the lines.
 #' @param color Character. Controls the color used for the lines.
@@ -1043,6 +1156,8 @@ layer_numeric <- function(var,
 #' is provided (`.cond = NULL`) this layer outlines all voxels in every slice of the
 #' 2D vibble passed to this layer by `ggplane()`.
 #'
+#' Outlines are **always** computed slicewise.
+#'
 #' @inherit vbl_doc_layer params return
 #' @inheritParams vbl_doc
 #'
@@ -1051,7 +1166,7 @@ layer_outline <- function(color,
                           .cond = NULL,
                           .by = NULL,
                           linetype = "solid",
-                          linewidth = 1,
+                          linewidth = 0.75,
                           use_dbscan = TRUE,
                           concavity = 2.5,
                           clip_overlap = TRUE,
@@ -1147,6 +1262,7 @@ layer_outline <- function(color,
           sm <- slices_main[i]
           sl <- slices_lead[i]
 
+          # outline main
           om <- dplyr::filter(outlines, slice == {{sm}})
 
           # BREAK, if no leading slice for the last main slice
@@ -1232,7 +1348,7 @@ layer_outline <- function(color,
         ggplot2::geom_polygon(
           data = data,
           mapping = ggplot2::aes(x = col, y = row, group = outline),
-          color = ggplot2::alpha(color, alpha),
+          color = color,
           linetype = linetype,
           linewidth = linewidth,
           fill = NA,
@@ -1248,11 +1364,11 @@ layer_outline <- function(color,
 }
 
 
-#' @title Layer for displaying slice numbers
+#' @title Add slice numbers
 #' @description Add slice numbers as text labels to a \link{ggplane()}-plot.
 #'
 #' @param anchor \link[=vbl_doc_img_anchor]{Image anchor} specification for
-#' positioning the slice labels. If, character one of *c('top', 'bottom', 'left', 'right')*.
+#' positioning the slice labels. If, character one of *c('center', 'top', 'bottom', 'left', 'right')*.
 #' Absolute anchors are not allowed in offset-layouts.
 #' @param ref_bb Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
 #' to use when anchoring slice numbers via relative or character image anchors:
@@ -1261,8 +1377,6 @@ layer_outline <- function(color,
 #'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
 #'     \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 #'   }
-#' @param align Optional. If \code{"col"} or \code{"row"}, enforce alignment of
-#'   label positions across slices along the chosen axis.
 #' @param wrap Optional template for label text. Defaults to \code{"{slice}"}.
 #' @param angle Rotation angle passed to \code{geom_text()}.
 #' @param alpha,color,size Passed to \code{geom_text()} to define the label aesthetics.
@@ -1276,10 +1390,8 @@ layer_outline <- function(color,
 #'
 #' @export
 
-layer_slice_numbers <- function(anchor,
-                                ref_bb = "data",
-                                spacer = 0.025,
-                                align = NULL,
+layer_slice_numbers <- function(anchor = waiver(),
+                                ref_bb = "screen",
                                 wrap = "{slice}",
                                 angle = 0,
                                 alpha = 0.8,
@@ -1294,7 +1406,6 @@ layer_slice_numbers <- function(anchor,
         vbl2D = vbl2D,
         anchor = anchor,
         ref_bb = ref_bb,
-        align = align,
         wrap = wrap,
         angle = angle,
         alpha = alpha,
@@ -1313,7 +1424,6 @@ layer_slice_numbers <- function(anchor,
 .layer_slice_numbers_impl <- function(vbl2D,
                                       anchor,
                                       ref_bb,
-                                      align,
                                       wrap,
                                       angle,
                                       alpha,
@@ -1322,17 +1432,37 @@ layer_slice_numbers <- function(anchor,
                                       ...){
 
   stopifnot(within_limits(angle, c(0, 360)))
-  stopifnot(is_img_anchor(anchor))
-  if(is_offset(vbl2D) && is_img_anchor_abs(vbl2D)){
 
-    stop("Need relative or character imgage anchors for `anchor`in offset-layouts.")
+  ref_bb <- .match_arg(ref_bb, choices = c("data", "screen", "slice"))
+
+  # anchor sanity checks and conversion to anchor as a relative image anchor
+  if(.is_waiver(anchor)){
+
+    anchor <-
+      dplyr::case_when(
+        !is_offset(vbl2D) ~ "top",
+        abs(offset_col(vbl2D)) > abs(offset_row(vbl2D)) ~ "top",
+        TRUE ~ "left"
+      )
+
+  } else {
+
+    if(is_offset(vbl2D) && is_img_anchor_abs(vbl2D)){
+
+      stop("Need relative or character imgage anchor for `anchor` in offset-layouts.")
+
+    }
+
+    if(is.character(anchor)){
+
+      anchor <- .match_arg(anchor, choices = names(img_anchors))
+
+    }
+
+    .stop_if_not(is_img_anchor(anchor))
 
   }
 
-  ref_bb <- match.arg(ref_bb, choices = c("data", "screen", "slice"))
-
-  # anchor instructions
-  stopifnot(is_img_anchor_chr(anchor) | is_img_anchor_rel(anchor))
 
   if(is_img_anchor_chr(anchor)){
 
@@ -1370,28 +1500,6 @@ layer_slice_numbers <- function(anchor,
       label = as.character(glue::glue(wrap))
     )
 
-  # ensure alignment of slice num positions across slices, if desired
-  if(is.character(align)){
-
-    align <- match.arg(align, choices = c("col", "row"))
-
-    idx <- which(align == c("col", "row"))
-    val <- anchor_rel[idx]
-
-    fn_use <-
-      ifelse(
-        test = val == 0.5,
-        yes = mean,
-        no = ifelse(test = val < 0.5,
-                    yes = ifelse(idx == 1, min, max),
-                    no = ifelse(idx == 2, min, max)
-        )
-      )
-
-    df[[align]] <- fn_use(df[[align]])
-
-  }
-
   # plot
   list(
     ggplot2::geom_text(
@@ -1415,85 +1523,91 @@ layer_slice_numbers <- function(anchor,
 #' Add projection lines and slice labels indicating the positions of slices from
 #' another anatomical plane.
 #'
-#' @param slices Integer vector giving the slice indices to display as projection lines.
-#' @param plane Character scalar specifying the anatomical plane of the
-#'   projected slices (\code{"sag"}, \code{"axi"}, or \code{"cor"}). Must differ
-#'   from the plane used in \link{ggplane}().
-#' @param anchor Character \link[=vbl_doc_img_anchors]{image anchor} or `NULL`.
-#'
-#' \itemize{
-#'   \item{character: }{ One of `"top"`, `"bottom"`, `"left"`, `"right"`, depending on
-#'   the projected plane orientation.}
-#'   \item{`NULL`: }{ A default anchor is chosen based on the intersecting axis.}
-#' }
-#'
+#' @param alpha Numeric vector of length one or two specifying alpha for
+#'   the line and labels (recycled if length one).
+#' @param color Character vector of length one or two specifying colors for
+#'   the line and labels (recycled if length one).
+#' @param plane_proj Character scalar specifying the anatomical plane of the
+#' projected slices. Must differ from the plane used in \link{ggplane}().
+#' @param slices_proj Integer vector giving the slice indices to display as projection lines.
 #' @param ref_bb Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
-#' to use when constructing projected lines:
+#' to use when spanning the projection lines and anchoring slice labels:
 #'   \itemize{
 #'     \item \code{"data"}: uses global bounding boxes from \link{data_bb}().
 #'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
 #'     \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 #'   }
+#' @param label_pos Character, logical, or `waiver()`. Controls where slice
+#'   projection labels are placed relative to the projection line. Allowed values
+#'   are the anchor names *c("top", "bottom", "left", "right", "top-left", "top-right",
+#'   "bottom-left", "bottom-right")*.
 #'
-#' @param spacer Numeric scalar. Distance used to shift slice labels away from
-#' the projected lines along the perpendicular axis. Two valid
-#'  \link[=vbl_doc_abs_rel]{input options}:
+#'   If `waiver()`, a default position is chosen based on the projection axis
+#'   (top for column projections, left for row projections).
 #'
-#' \itemize{
-#'   \item{Absolute:}{ Applied directly in data coordinates.}
-#'   \item{Relative:}{ Interpreted as a fraction of the projected line length in
-#'   the plotting plane}.
-#' }
+#'   If `FALSE`, labels are not drawn.
 #'
-#' @param alpha Numeric vector of length one or two specifying alpha for
-#'   the line and labels (recycled if length one).
-#' @param color Character vector of length one or two specifying colors for
-#'   the line and labels (recycled if length one).
-#' @param size Numeric text size passed to \code{geom_text()}.
+#' @param label_just Numeric vector of length two or `waiver()`. Horizontal and
+#'   vertical text justification passed to `geom_text()` as `hjust` and `vjust`.
+#'
+#'   If `waiver()`, justification is computed automatically from `label_pos`,
+#'   the projection axis, and `spacer`.
+#'   If supplied, must be a numeric vector *c(hjust, vjust)*.
 #' @param linewidth Numeric line width passed to \code{geom_segment()}.
 #' @param linetype Line type passed to \code{geom_segment()}.
+#' @param size Numeric text size passed to \code{geom_text()}.
+#' @param spacer Numeric scalar. Controls the offset used when computing default
+#'   text justification for slice projection labels.
+#'
+#'   The value is applied as a small additive or subtractive adjustment to the
+#'   automatically determined `hjust` and `vjust` values when `label_just =
+#'   waiver()`. Larger values move labels further away from the projection line.
 #' @param ... Additional arguments forwarded to \code{geom_text()}.
 #'
-#' @inherit vbl_doc_layer return
+#' @inherit vbl_doc_layer params return
 #'
-#' @note
-#' Label alignment (\code{hjust}/\code{vjust}) is determined automatically from \code{anchor}.
+#' @note Label alignment (\code{hjust}/\code{vjust}) is determined
+#' automatically from \code{anchor}.
 #'
 #' @export
 
-layer_slice_projections <- function(slices,
-                                    plane,
-                                    alpha = 0.9,
+layer_slice_projections <- function(slices_proj,
+                                    plane_proj,
                                     color = "red",
-                                    size = 4.5,
+                                    alpha = 1,
+                                    size = 3.5,
                                     linewidth = 0.75,
                                     linetype = "solid",
                                     ref_bb = "data",
-                                    anchor = NULL,
-                                    spacer = 0.025,
+                                    spacer = 0.75,
+                                    label_pos = waiver(),
+                                    label_just = waiver(),
+                                    slices = waiver(),
                                     ...){
 
   vbl_layer(
     fun = function(vbl2D){
 
-      if(plane == plane(vbl2D)){
+      if(plane_proj == plane(vbl2D)){
 
-        .glue_stop("`plane` input for `ggplane()` and `layer_slice_projections()` must not be identical.")
+        .glue_stop("`layer_slice_projections(plane_proj = '{plane_proj}')` is not possible with `ggplane(..., plane = '{plane(vbl2D)}').")
 
       }
 
       .layer_slice_projections_impl(
         vbl2D = vbl2D,
-        plane_proj = plane,
-        slices_proj = slices,
+        plane_proj = plane_proj,
+        slices_proj = slices_proj,
         alpha = alpha,
         color = color,
         size = size,
         linetype = linetype,
         linewidth = linewidth,
-        anchor = anchor,
         ref_bb = ref_bb,
+        label_pos = label_pos,
+        label_just = label_just,
         spacer = spacer,
+        slices = slices,
         ...
       )
 
@@ -1505,24 +1619,26 @@ layer_slice_projections <- function(slices,
 
 #' @keywords internal
 .layer_slice_projections_impl <- function(vbl2D,
-                                         plane_proj,
-                                         slices_proj,
-                                         alpha,
-                                         color,
-                                         size,
-                                         linewidth,
-                                         linetype,
-                                         anchor,
-                                         ref_bb,
-                                         spacer,
-                                         ...){
+                                          plane_proj,
+                                          slices_proj,
+                                          alpha,
+                                          color,
+                                          size,
+                                          linewidth,
+                                          linetype,
+                                          ref_bb,
+                                          label_pos,
+                                          label_just,
+                                          spacer,
+                                          slices,
+                                          ...){
 
   vbl2D_proj <- reverse_offset(vbl2D)
 
   # sanity checks
   if(any(c("hjust", "vjust") %in% names(list(...)))){
 
-    warning("`hjust` and `vjust` are automatically determined for `geom_text()`.")
+    warning("`hjust` and `vjust` are determined for `geom_text()` with `label_just`.")
 
   }
 
@@ -1537,39 +1653,27 @@ layer_slice_projections <- function(slices,
       plane_proj = plane_proj
     )
 
-  # text anchor validation
-  if(is.null(anchor)){
+  if(!is.numeric(slices)){
 
-    anchor <- unname(c("col" = "top", "row" = "left")[axis_proj])
+    slices <- slices(vbl2D)
 
-  }
+  } else {
 
-  if(axis_proj == "col"){
-
-    anchor <- match.arg(anchor, choices = c("top", "bottom"))
-
-  } else if(axis_proj == "row"){
-
-    anchor <- match.arg(anchor, choices = c("left", "right"))
+    stopifnot(all(slices %in% slices(vbl2D)))
 
   }
 
-  end <- unname(c(
-    "left" = "cmin",
-    "right" = "cmax",
-    "top" = "rmin",
-    "bottom" = "rmax"
-  )[anchor])
+  layer_lst <- list()
 
   # line positioning
   line_df <-
     purrr::map_df(
-      .x = slices(vbl2D),
+      .x = slices,
       .f = function(slice){
 
         purrr::map_df(
           .x = slices_proj,
-          .f = function(slice_ref){
+          .f = function(slice_proj){
 
             if(ref_bb == "data"){
 
@@ -1585,16 +1689,18 @@ layer_slice_projections <- function(slices,
 
             }
 
-            bb0[[axis_proj]] <- rep(slice_ref, 2)
+            bb0[[axis_proj]] <- rep(slice_proj, 2)
 
-            lim_adj <- .offset_bb0(vbl2D, slice = slice, bb0 = bb0)
+            bb <- .offset_bb0(vbl2D, slice = slice, bb0 = bb0)
 
             tibble::tibble(
-              cmin = min(lim_adj$col),
-              cmax = max(lim_adj$col),
-              rmin = min(lim_adj$row),
-              rmax = max(lim_adj$row),
-              slice_ref = slice_ref
+              cmin = min(bb$col),
+              cmax = max(bb$col),
+              cmid = ifelse(axis_proj=="row", mid(bb$col), unique(bb$col)),
+              rmin = min(bb$row),
+              rmax = max(bb$row),
+              rmid = ifelse(axis_proj=="col", mid(bb$row), unique(bb$row)),
+              slice_proj = slice_proj
             )
 
           }
@@ -1605,63 +1711,7 @@ layer_slice_projections <- function(slices,
       }
     )
 
-  # text position
-  text_df <- line_df
-
-  if(is_rel(spacer)){
-
-    if(axis_proj == "col"){
-
-      spacer <- abs(text_df$rmin - text_df$rmax) * spacer
-
-    } else if(axis_proj == "row"){
-
-      spacer <- abs(text_df$cmin - text_df$cmax) * spacer
-
-    }
-
-  }
-
-  if(axis_proj == "col"){
-
-    text_df$x <- text_df$cmin # identical with cmax
-    text_df$y <- text_df[[end]]
-
-    if(anchor == "top"){
-
-      text_df$y <- text_df$y - spacer
-
-    } else if(anchor == "bottom") {
-
-      text_df$y <- text_df$y + spacer
-
-    }
-
-  } else if(axis_proj == "row"){
-
-    text_df$x <- text_df[[end]]
-    text_df$y <- text_df$rmin # identical with rmax
-
-    if(anchor == "left"){
-
-      text_df$x <- text_df$x - spacer
-
-    } else if(anchor == "right") {
-
-      text_df$x <- text_df$x + spacer
-
-    }
-
-  }
-
-  text_just <- list(
-    "left" = c(1, 0.5),
-    "right" = c(0, 0.5),
-    "top" = c(0.5, 0),
-    "bottom" = c(0.5, 1)
-  )[[anchor]]
-
-  list(
+  layer_lst[[1]] <-
     ggplot2::geom_segment(
       data = line_df,
       mapping = ggplot2::aes(x = cmin, xend = cmax, y = rmin, yend = rmax),
@@ -1669,18 +1719,60 @@ layer_slice_projections <- function(slices,
       color = color[1],
       linetype = linetype,
       linewidth = linewidth
-    ),
+    )
+
+  # text positioning
+
+  # skip if FALSE
+  if(isFALSE(label_pos)) return(layer_lst)
+
+  # label positioning
+  if(.is_waiver(label_pos)){
+
+    label_pos <- ifelse(axis_proj == "col", "top", "left")
+
+  } else {
+
+    .stop_if_not(is.character(label_pos))
+    choices <- setdiff(names(img_anchors), "center")
+    label_pos <- .match_arg(label_pos, choices = choices)
+
+  }
+
+  col_pos <- .col_pos(axis_proj, label_pos)
+  row_pos <- .row_pos(axis_proj, label_pos)
+
+  text_df <-
+    dplyr::mutate(
+      .data = line_df,
+      col = !!rlang::sym(col_pos),
+      row = !!rlang::sym(row_pos)
+    )
+
+  # label justification
+  if(.is_waiver(label_just)){
+
+    label_just <- .label_just(label_pos, axis_proj, spacer)
+
+  } else {
+
+    stopifnot(is.numeric(label_just) && length(label_just) == 2)
+
+  }
+
+  layer_lst[[2]] <-
     ggplot2::geom_text(
       data = text_df,
-      mapping = ggplot2::aes(x = x, y = y, label = slice_ref),
+      mapping = ggplot2::aes(x = col, y = row, label = slice_proj),
       alpha = alpha[2],
       color = color[2],
       size = size,
-      hjust = text_just[1],
-      vjust = text_just[2],
+      hjust = label_just[1],
+      vjust = label_just[2],
       ...
     )
-  )
+
+  return(layer_lst)
 
 }
 

@@ -462,11 +462,11 @@ scale_fill_numeric <- function(clrsp, ...){
 
       ggplot2::scale_fill_gradient(low = "white", high = clrsp, ...)
 
-    } else if(clrsp %in% rownames(hcl_palettes(type = "sequential"))){
+    } else if(clrsp %in% rownames(colorspace::hcl_palettes(type = "sequential"))){
 
       colorspace::scale_fill_continuous_sequential(palette = clrsp, ...)
 
-    } else if(clrsp %in% rownames(hcl_palettes(type = "diverging"))){
+    } else if(clrsp %in% rownames(colorspace::hcl_palettes(type = "diverging"))){
 
       colorspace::scale_fill_continuous_diverging(palette = clrsp, ...)
 

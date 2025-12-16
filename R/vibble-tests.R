@@ -222,13 +222,103 @@ is_limit <- function(x){
 
 #' @rdname vbl_doc_offset_utils
 #' @export
-is_offset <- function(x){
+is_offset <- function(x, ...){
 
-  stopifnot(is_vbl2D(x))
+  UseMethod("is_offset")
+
+}
+
+#' @rdname vbl_doc_offset_utils
+#' @export
+is_offset.vbl2D <- function(x, ...){
 
   isTRUE(offset_col(x) != 0 | offset_row(x) != 0)
 
 }
+
+#' @rdname vbl_doc_offset_utils
+#' @export
+is_offset.ggvibble <- function(x, ...){
+
+  is_offset(x$vbl2D)
+
+}
+
+
+#' @title Check slice indices and slice sequences.
+#'
+#' @description
+#' Utilities to test whether objects represent valid slice indices or sequences
+#' of slice indices.
+#'
+#' @details
+#' These helpers distinguish between:
+#'
+#' \itemize{
+#'   \item{Single slice: } A numeric scalar that represents a non-zero integer slice index.
+#'   \item{Slice set: } A numeric vector consisting only of integer slice
+#'   indices.
+#'   \item{Slice seq: } A slice set that forms a contiguous, gap-free sequence spanning
+#'   from its minimum to its maximum value
+#' }
+#'
+#' @note
+#' Slices must not be strictly integers but must be unambiguously interpretable
+#' as integers.
+#'
+#' \preformatted{
+#'
+#' is_slice(as.integer(1))
+#' is_slice(as.double(1))
+#' is_slice(as.double(1.1))       # FALSE (decimal)
+#'
+#' is_slice_set(c(10, 11, 12))
+#' is_slice_set(c(10, 11, 12.0))
+#' is_slice_set(c(10, 11, 12.2))  # FALSE (last value is decimal)
+#'
+#' is_slice_seq(c(5, 6, 7, 8))
+#' is_slice_seq(c(5.0, 6.0, 7.0))
+#' is_slice_seq(c(5, 7, 8))       # FALSE (missing slice)
+#'
+#' }
+#'
+#' @param x An object to test.
+#'
+#' @return Logical scalar.
+#'
+#' @export
+is_slice <- function(x){
+
+  is.numeric(x) &&
+  length(x) == 1 &&
+  x > 0 &&
+  as.integer(x) == x
+
+}
+
+#' @rdname is_slice
+#' @export
+is_slice_set <- function(x){
+
+  is.numeric(x) &&
+  all(as.integer(x) == x) &&
+  all(x > 0)
+
+}
+
+#' @rdname is_slice
+#' @export
+is_slice_seq <- function(x){
+
+  if(!is_slice_set(x)) return(FALSE)
+
+  sr <- as.integer(seq_range(range(x)))
+  x <- as.integer(x) # can be interpreted as integer (is_slice_set)
+  identical(x, sr)
+
+}
+
+
 
 
 #' @title This is a title.

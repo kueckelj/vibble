@@ -6,11 +6,53 @@ NULL
 
 #' @keywords internal
 #' @importFrom ggplot2 alpha
+NULL
+
+#' @keywords internal
+#' @importFrom ggplot2 waiver
 
 #' @importFrom magrittr %>%
 #' @export
 magrittr::`%>%`
 
+#' @keywords internal
+.check_allow_write <- function(){
+
+  if(!isTRUE(vbl_opts("allow.write"))){
+
+    rlang::abort(
+      c(
+        "This operation requires permission to write files.",
+        "i" = "File system writes are disabled by default to avoid unintended side effects.",
+        "i" = "Set `vbl_opts('allow.write' = TRUE)` to explicitly allow writing files."
+      )
+    )
+
+  }
+
+  invisible(TRUE)
+
+}
+
+
+#' @keywords internal
+.check_patchwork_attached <- function(){
+
+  if(!.is_attached("patchwork")){
+
+    rlang::abort(
+      c(
+        "Cannot combine `ggvibble` objects with `+`.",
+        "i" = "The patchwork package must be attached for plot composition.",
+        "i" = "Use `library(patchwork)`."
+      )
+    )
+
+  }
+
+  invisible(TRUE)
+
+}
 
 #' @keywords internal
 .downsample <- function(x, n){
@@ -238,10 +280,29 @@ magrittr::`%>%`
 
 }
 
+#' @keywords internal
+.inform_leaving_ggvibble <- function(){
+
+  rlang::inform(
+    c(
+      "Adding a `gg` object to a `ggvibble` returns a ggplot object.",
+      "i" = "This works, but the result is no longer a `ggvibble` and will not use ggvibble's layer pipeline.",
+      "i" = "Mixing plotting frameworks via `+` is not recommended.",
+      "i" = "Preferred: convert explicitly with `p <- as_ggplot(x)` and continue with ggplot2/patchwork from there."
+    ),
+    .frequency = "reqularly",
+    .frequency_id = "leaving_ggvibble"
+  )
+
+}
 
 
+#' @keywords internal
+.is_attached <- function(pkg){
 
+  paste0("package:", pkg) %in% search()
 
+}
 
 #' @keywords internal
 .is_named <- function(x){
@@ -253,12 +314,41 @@ magrittr::`%>%`
 }
 
 #' @keywords internal
+.is_waiver <- function(x) inherits(x, "waiver")
+
+#' @keywords internal
 .keep_named <- function(x){
 
   x[purrr::map_lgl(.x = base::names(x), .f = ~ shiny::isTruthy(.x))]
 
 
 }
+
+#' @keywords internal
+.match_arg <- function(arg, choices, call = rlang::caller_env()){
+
+  arg_quo  <- rlang::enquo(arg)
+  arg_expr <- rlang::as_label(rlang::get_expr(arg_quo))
+
+  val <- rlang::eval_tidy(arg_quo)
+
+  if(!is.character(val) || length(val) != 1 || !val %in% choices){
+
+    msg <- sprintf(
+      "`%s` is '%s' but should be one of %s",
+      arg_expr,
+      val,
+      paste(sprintf("'%s'", choices), collapse = ", ")
+    )
+
+    rlang::abort(msg, call = call)
+
+  }
+
+  val
+
+}
+
 
 #' @title Reorder CCS-LIP according to orientation.
 #'
@@ -368,11 +458,66 @@ magrittr::`%>%`
 
 
 #' @keywords internal
+.stop_if_not <- function(test, call = rlang::caller_env()){
+
+  test_quo <- rlang::enquo(test)
+
+  res <- rlang::eval_tidy(test_quo)
+
+  if(isTRUE(res)){
+
+    return(invisible(TRUE))
+
+  }
+
+  # extract call like is_limit(xlim)
+  call_expr <- rlang::get_expr(test_quo)
+
+  if(!rlang::is_call(call_expr) || length(call_expr) != 2){
+
+    rlang::abort(
+      "Invalid test expression. Expected a call like is_xxx(obj).",
+      call = call
+    )
+
+  }
+
+  test_fn  <- rlang::as_label(call_expr[[1]])
+  obj_expr <- rlang::as_label(call_expr[[2]])
+
+  what <- sub("^is_|^is.", "", test_fn)
+  what <- stringr::str_replace_all(what, pattern = "_", replacement = " ")
+
+  msg <- sprintf(
+    "Input `%s` is not a valid %s. See `?%s` for more info.",
+    obj_expr,
+    what,
+    test_fn
+  )
+
+  rlang::abort(msg, call = call)
+
+}
+
+
+#' @keywords internal
 stopif <- function(cond) {
   if (isTRUE(cond)) {
     msg <- paste0(deparse(substitute(cond)), " is TRUE.")
     stop(msg, call. = FALSE)
   }
+}
+
+
+#' @keywords internal
+qassign <- function(x, env = .GlobalEnv){ # debugging
+
+  nm <- deparse(substitute(x))
+
+  assign(nm, x, envir = env)
+
+  invisible(x)
+
 }
 
 

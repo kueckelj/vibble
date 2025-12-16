@@ -12,9 +12,9 @@ layer_labels(
   color = "white",
   size = 4.5,
   use_dbscan = TRUE,
+  centroid = median,
   abbrev = NULL,
   repel = FALSE,
-  centroid = function(x) median(x, TRUE),
   .cond = NULL,
   .by = NULL,
   ...
@@ -38,14 +38,14 @@ labels are renamed according to *c('\if{html}{\out{<orig label>}}' = '\if{html}{
 using \code{dbscan2D()} before centroid computation; otherwise all voxels of a label
 form a single region.}
 
+\item{centroid}{The function with which to compute the centroid label position
+based on col and row. A named list of functions can be supplied, where names
+must be \emph{c('col', 'row')}.}
+
 \item{abbrev}{Optional function applied to label names for abbreviation.}
 
 \item{repel}{Logical. If \code{TRUE}, the text is rendered with \link{geom_text_repel}()
 else with \link{geom_text}().}
-
-\item{centroid}{The function with which to compute the centroid label position
-based on col and row. A named list of functions can be supplied, where names
-must be \emph{c('col', 'row')}.}
 
 \item{.cond}{A logical filter expression that determines the specific
 voxels for which this layer is drawn. The expression is evaluated via

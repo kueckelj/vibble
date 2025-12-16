@@ -2,46 +2,26 @@
 % Please edit documentation in R/vibble-manipulation.R
 \name{filter_bb3D}
 \alias{filter_bb3D}
-\title{Filter vibble by 3D bounding box}
+\title{Filter a vbl by a 3D bounding box.}
 \usage{
-filter_bb3D(vbl, bb3D)
+filter_bb3D(vbl, bb3D, null_ok = TRUE)
 }
 \arguments{
-\item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
+\item{vbl}{A \code{vbl} object.}
 
-\item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.}
+\item{bb3D}{A valid 3D bounding box as checked by \code{is_bb3D()}.}
+
+\item{null_ok}{Logical. Whether \code{NULL} limits in \code{bb3D} are treated as open
+bounds.}
 }
 \value{
-A \code{vibble} (or tibble) containing only rows whose spatial coordinates fall within the limits given by \code{bb3D}.
+A filtered \code{vbl} object.
 }
 \description{
-Filter voxels that lie inside a 3D bounding box.
-Returns a subset of \code{vbl} restricted to the specified coordinate limits.
-}
-\details{
-The function checks that \code{bb3D} is a valid 3D bounding box via \link{is_bb3D}().
-It then filters rows where all three coordinates lie within the specified limits using \link{within_limits}\verb{(..., null_ok = TRUE)}.
-}
-\note{
-The \link{ccs_limits} remain untouched. While the output vibble contains
-only voxels within the bounding box they still remain in the same space.
-}
-\examples{
-# Example 1: Filter to a manually defined bounding box
-vbl <- example_vbl()
-bb3D <- list(
-  x = c(10, 50),
-  y = c(20, 60),
-  z = c( 5, 40)
-)
-vbl_sub <- filter_bb3D(vbl, bb3D)
-
-# Example 2: Use the bounding box of a mask region
-vbl <- example_vbl()
-bb_tumor <- bb3D(vbl, var = "tumor")
-vbl_tumor_area <- filter_bb3D(vbl, bb_tumor)
-
+Filters a \code{vbl} object to rows whose spatial coordinates fall within a given
+3D bounding box.
 }
 \seealso{
-\link{is_bb3D}(), \link{ccs_limits}()
+is_bb3D(),
+within_limits()
 }

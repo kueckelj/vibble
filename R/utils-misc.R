@@ -1,4 +1,24 @@
 
+
+#' @title Compute the midpoint of a limit
+#'
+#' @description
+#' Computes the numeric midpoint of a valid limit object.
+#'
+#' @param limit A \link[=is_limit]{limit}.
+#'
+#' @return A numeric scalar giving the midpoint of `limit`.
+#'
+#' @export
+mid <- function(limit){
+
+  .stop_if_not(is_limit(limit))
+
+  min(limit) + diff(limit)/2
+
+}
+
+
 #' @title Generate slice sequences based on voxel-wise conditions
 #' @description Produces a sequence of slice indices for use in \link{ggplane}()
 #' and the `seq_*` family of helper functions.

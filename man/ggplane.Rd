@@ -13,10 +13,10 @@ ggplane(
   expand = 0.1,
   offset_col = 0,
   offset_row = 0,
-  zstack = "desc",
+  zstack = "asc",
   ncol = NULL,
   nrow = NULL,
-  alpha = 1,
+  opacity = 1,
   clrp = vbl_opts("clrp"),
   clrsp = vbl_opts("clrsp"),
   verbose = vbl_opts("verbose"),
@@ -33,7 +33,7 @@ ggplane(
 \item{slices}{Integer vector. Slice indices in the specified anatomical
 \code{plane} to be included in the plot.}
 
-\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+\item{plane}{Character scalar. Anatomical plane. Defaults to \code{vbl_opts("plane")}.}
 
 \item{crop}{Defines the \link[=vbl_doc_ref_bb]{data bounding box}
 applied to all slices in native (pre-offset) coordinates.
@@ -58,10 +58,7 @@ the \code{col} and \code{row} axes, which can be specified as either \strong{abs
 interpreted as absolute offsets in data coordinates.}
 \item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
 interpreted as offsets relative to the current plotting limits.}
-}
-
-If both, \code{offset_col} and \code{offset_row} are zero, each slice is displayed in its
-own panel using \code{facet_wrap()}, arranged according to \code{layout}.}
+}}
 
 \item{zstack}{Character scalar. Controls the stacking order of slices along
 the slice axis when multiple slices are displayed with an offset-layout.
@@ -73,8 +70,10 @@ occluded by higher-index slices in overlapping offset layouts.}
 occluded by lower-index slices in overlapping offset layouts.}
 }}
 
-\item{ncol, nrow}{Passed to \code{facet_wrap()} setting the facetting layout
-when neither of \code{offset_col} or \code{offset_row} differs from 0.}
+\item{ncol, nrow}{Passed to \link{facet_wrap()} in no-offset layouts.}
+
+\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
+data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
 \item{clrp}{Character scalar specifying the categorical palette.
 Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
@@ -84,29 +83,55 @@ Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")
 \item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
 console.}
 
-\item{.cond}{Optional. An additional logical filter expression that determines the specific
-voxels plotted with \code{ggplane()} and passed to added \link[vbl_doc_vbl_layer]{layers}. \if{html}{\out{<br>}}
-
-The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.}
+\item{.cond}{Optional. A logical filter expression evaluated on the constructed
+\code{vbl2D}. The expression is evaluated via
+\link[rlang:args_data_masking]{data-masking} semantics.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}
 
-\item{...}{Additional arguments forwarded to the scale functions controlling the fill aesthetic.}
+\item{...}{Additional arguments forwarded to the fill scale functions.}
 }
 \value{
 A \link{ggvibble} object.
 }
 \description{
 Initializes a 2D visualization of voxel data by selecting slices in a
-specified anatomical plane that can be complemented with additional layers.
+specified anatomical plane. Returns a \code{ggvibble} container that can be
+complemented with additional ggvibble layers.
 }
 \details{
-\code{ggplane()} converts \code{vbl} to a \code{vbl2D} object via \link{vibble2D}().
-It then stores plotting arguments and returns a \code{ggvibble} container. If multiple slices are present
-and the object is not offset, slices are arranged using \link{facet_wrap}() with the requested \code{layout}.
+\code{ggplane()} constructs a \code{ggvibble} in a small number of explicit steps.
 
-Numeric variables are plotted with \link{scale_fill_numeric}() using \code{clrsp}. Non-numeric variables are
-plotted with \link{scale_fill_label}() using \code{clrp}. Note, that in \code{ggplane()}, logical mask variables
-are coerced to factors with levels \code{c("TRUE", "FALSE")} before plotting, for binary mask overlays see \link{layer_mask()}.
+\itemize{
+\item{1. Build 2D representation: } Converts \code{vbl} to \code{vbl2D} via \link{vibble2D}()
+by selecting \code{plane} and \code{slices} and applying \code{crop} and \code{expand}.
+\item{2. Filter plotted voxels: } Applies \code{.cond} (and optional grouping via \code{.by})
+using \code{.filter_layer()} to determine which voxels are shown.
+\item{3. Order slices: } Optionally arranges \code{vbl2D} by slice index via \code{zstack}
+to control draw order when slices overlap in offset layouts.
+\item{4. Apply offsets: } Applies \code{offset_col} and \code{offset_row} via \code{apply_offset()}.
+If both offsets are zero and multiple slices are present, slices are displayed in
+separate panels using \code{facet_wrap(. ~ slice)}; otherwise slices are drawn in one
+shared panel.
+\item{5. Store plot specification: } Stores the resulting \code{vbl2D}, base plotting
+arguments, and an initially empty layer list in a \code{ggvibble} container.
+\item{6. Determine plot limits and expansion: } The plotting bounding box is
+derived from the spatial extent of the displayed voxels. Expansion is applied
+in absolute image-space units, choosing the smallest symmetric expansion across
+axes to preserve aspect ratio. Final limits are enforced via \code{coord_equal()}
+with \code{expand = FALSE}.
+}
+
+The final ggplot is created when the object is printed or plotted. The base plot
+uses \code{geom_raster()} in image space with \code{scale_y_reverse()} and \code{coord_equal()}.
+
+Numeric variables are mapped with \link{scale_fill_numeric}() (via \code{clrsp}).
+Non-numeric variables are mapped with \link{scale_fill_categorical}() (via \code{clrp}).
+Logical mask variables are coerced to a factor with levels \code{c("TRUE", "FALSE")}.
+For binary mask overlays, use \link{layer_mask}().
+}
+\seealso{
+Details about the \link[=vbl_doc_ggvibble]{ggvibble framework}
+and \link[=vbl_doc_ggvibble_operators]{ggplot2 compatibility}.
 }

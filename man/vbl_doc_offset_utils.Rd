@@ -8,6 +8,8 @@
 \alias{offset_row}
 \alias{offset_row<-}
 \alias{is_offset}
+\alias{is_offset.vbl2D}
+\alias{is_offset.ggvibble}
 \title{Offset utilities for 2D vibbles}
 \usage{
 offset_axes(vbl2D)
@@ -20,7 +22,11 @@ offset_row(vbl2D)
 
 offset_row(vbl2D) <- value
 
-is_offset(x)
+is_offset(x, ...)
+
+\method{is_offset}{vbl2D}(x, ...)
+
+\method{is_offset}{ggvibble}(x, ...)
 }
 \value{
 Offset accessors return integer values. \code{offset_axes()} returns a

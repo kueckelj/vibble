@@ -28,8 +28,8 @@
 #' @export
 expand_bb2D <- function(bb2D, expand){
 
-  stopifnot(is_expand(expand))
-  stopifnot(is_bb2D(bb2D))
+  .stop_if_not(is_expand(expand))
+  .stop_if_not(is_bb2D(bb2D))
 
   if(is_expand_abs(expand)){
 
@@ -50,18 +50,12 @@ expand_bb2D <- function(bb2D, expand){
 
 
 #' @keywords internal
-.comp_offset_col <- function(x, idx, offset){
+.comp_offset <- function(x, idx, offset){
 
-  # offset positive -> move to right
+  # offset positive
+  # -> move to right, if col
+  # -> move to bottom, if row
   x + idx * offset
-
-}
-
-#' @keywords internal
-.comp_offset_row <- function(x, idx, offset){
-
-  # offset positive -> move to top (image inverted y axis)
-  x - idx * offset
 
 }
 
@@ -69,8 +63,8 @@ expand_bb2D <- function(bb2D, expand){
 #' @keywords internal
 .data_bb0 <- function(vbl2D){
 
-  .vbl_attr(vbl2D, which = "data_bb")
-
+  .vbl_attr(vbl2D, which = "data_bb") %>%
+    expand_bb2D(bb2D = ., expand = vbl_opts("expand.data.bb"))
 }
 
 #' @rdname vbl_doc_ref_bb
@@ -133,7 +127,7 @@ plot_bb <- function(vbl2D){
 #' @export
 screen_bb <- function(vbl2D, slice = NULL){
 
-  stopifnot(is_vbl2D(vbl2D))
+  .stop_if_not(is_vbl2D(vbl2D))
 
   sbb <- .screen_bb0(vbl2D)
 
@@ -162,8 +156,11 @@ screen_bb <- function(vbl2D, slice = NULL){
 #' @keywords internal
 .slice_bb0 <- function(vbl2D){
 
-  slice <- slices(vbl2D)[1]
-  slice_bb(vbl2D, slice = slice)
+  sbb0 <-
+    slice_bb(vbl2D, slice = slices(vbl2D)[1]) %>%
+    expand_bb2D(bb2D = ., expand = vbl_opts("expand.slice.bb"))
+
+  return(sbb0)
 
 }
 
@@ -171,10 +168,14 @@ screen_bb <- function(vbl2D, slice = NULL){
 #' @export
 slice_bb <- function(vbl2D, slice){
 
-  stopifnot(is_vbl2D(vbl2D))
+  .stop_if_not(is_vbl2D(vbl2D))
   stopifnot(slice %in% slices(vbl2D))
-  purrr::map(vbl2D[vbl2D$slice == slice, c("col", "row")], range) %>%
+
+  sbb <-
+    purrr::map(vbl2D[vbl2D$slice == slice, c("col", "row")], range) %>%
     expand_bb2D(bb2D = ., expand = vbl_opts("expand.refbb"))
+
+  return(sbb)
 
 }
 
@@ -514,7 +515,7 @@ slices <- function(x, ...){
 #' @export
 slices.vbl <- function(x, plane = vbl_opts("plane"), ...){
 
-  unique(vbl[[plane_to_ccs(plane)]])
+  unique(x[[plane_to_ccs(plane)]])
 
 }
 
@@ -526,7 +527,17 @@ slices.vbl2D <- function(x, ...){
 
 }
 
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices.ggvibble <- function(x, ...){
 
+  slices(x$vbl2D)
+
+}
+
+
+#' @rdname vbl_doc_slice_queries
+#' @export
 slices_cond <- function(x, ...){
 
   UseMethod("slices_cond")
@@ -569,7 +580,7 @@ slices_cond.vbl2D <- function(x, .cond, n = 6){
 #' @export
 slices_mid <- function(x, ...){
 
-  UseMethod("slice_mid")
+  UseMethod("slices_mid")
 
 }
 
@@ -701,19 +712,7 @@ offset_axes <- function(vbl2D){
 
   purrr::imap(
     .x = bb0,
-    .f = function(lim, axis){
-
-      if(axis == "col"){
-
-        lim + offset_axes(vbl2D)[[axis]] * sidx
-
-      } else if(axis == "row"){
-
-        lim - offset_axes(vbl2D)[[axis]] * sidx
-
-      }
-
-    }
+    .f = ~ .x + offset_axes(vbl2D)[[.y]] * sidx
   )
 
 }
@@ -771,7 +770,7 @@ plane <- function(vbl2D){
 
   attr(vbl2D, which = "plane") <- value
 
-  vbl2D
+  return(vbl2D)
 
 }
 

@@ -2,13 +2,11 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_slice_numbers}
 \alias{layer_slice_numbers}
-\title{Layer for displaying slice numbers}
+\title{Add slice numbers}
 \usage{
 layer_slice_numbers(
-  anchor,
-  ref_bb = "data",
-  spacer = 0.025,
-  align = NULL,
+  anchor = waiver(),
+  ref_bb = "screen",
   wrap = "{slice}",
   angle = 0,
   alpha = 0.8,
@@ -19,7 +17,7 @@ layer_slice_numbers(
 }
 \arguments{
 \item{anchor}{\link[=vbl_doc_img_anchor]{Image anchor} specification for
-positioning the slice labels. If, character one of \emph{c('top', 'bottom', 'left', 'right')}.
+positioning the slice labels. If, character one of \emph{c('center', 'top', 'bottom', 'left', 'right')}.
 Absolute anchors are not allowed in offset-layouts.}
 
 \item{ref_bb}{Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
@@ -29,9 +27,6 @@ to use when anchoring slice numbers via relative or character image anchors:
 \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
 \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 }}
-
-\item{align}{Optional. If \code{"col"} or \code{"row"}, enforce alignment of
-label positions across slices along the chosen axis.}
 
 \item{wrap}{Optional template for label text. Defaults to \code{"{slice}"}.}
 

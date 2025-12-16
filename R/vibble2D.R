@@ -1,10 +1,9 @@
 #' @title Create a 2D vibble from 3D voxel data
 #' @description Convert a 3D `vbl` object into a 2D representation for a given
-#' anatomical plane and selected slices. Optionally apply filtering conditions
-#' and spatial offsets for visualization.
+#' anatomical plane and selected slices. Optionally apply filtering conditions.
 #'
 #' @param slices Optional. Integer vector of slice positions in the selected `plane`
-#' to keep. If `NULL`, all slices are retained.
+#' to keep. If `waiver()`, all slices are retained.
 #' @param crop Defines the \link[=vbl_doc_ref_bb]{data bounding box}
 #' applied to all slices in native (pre-offset) coordinates.
 #'
@@ -28,27 +27,13 @@
 #'
 #' @return A \link[=vbl_doc_vbl2D]{2D vibble}.
 #'
-#' @details The function derives the required axes using \link{req_axes_2D}() and
-#' renames the corresponding coordinate columns to `col`, `row`, and `slice`,
-#' and optionally filters by `slices`, `lim` and `.cond`.
-#'
-#' \itemize{
-#'   \item `col` and `row` store the 2D coordinates in voxel space.
-#'   \item `slice` stores the position along the third axis in the selected `plane`.
-#'   \item Attributes `"offset_dist"`, `"offset_dir"`, and `"plane"`
-#'   describe the applied spatial offset and the original plane.
-#' }
-#'
 #' @export
 
 vibble2D <- function(vbl,
                      plane,
-                     slices = NULL,
+                     slices = waiver(),
                      crop = NULL,
                      expand = FALSE,
-                     offset_col = 0,
-                     offset_row = 0,
-                     zstack = "asc",
                      .cond = NULL,
                      .by = NULL){
 
@@ -58,11 +43,13 @@ vibble2D <- function(vbl,
   req_axes <- req_axes_2D(plane = plane)
   slice_axis <- req_axes["slice"]
 
-  if(!is.numeric(slices)){
+  if(.is_waiver(slices)){
 
     slices <- unique(vbl[[slice_axis]])
 
   } else {
+
+    .stop_if_not(is_slice_set(slices))
 
     slices_missing <- slices[!slices %in% unique(vbl[[slice_axis]])]
     n_missing <- length(slices_missing)
@@ -83,7 +70,7 @@ vibble2D <- function(vbl,
   # 3D to 2D
   vbl2D <-
     dplyr::rename(vbl, !!!req_axes) %>%
-    dplyr::filter(slice %in% {{slices}}) %>%
+    dplyr::filter(slice %in% {{ slices }}) %>%
     dplyr::select(col, row, slice, dplyr::everything())
 
   offset_col(vbl2D) <- 0L
@@ -115,8 +102,6 @@ vibble2D <- function(vbl,
 
   }
 
-  crop <- expand_bb2D(bb2D = crop, expand = vbl_opts("expand.refbb"))
-
   # crop
   vbl2D <-
     dplyr::filter(
@@ -129,26 +114,6 @@ vibble2D <- function(vbl,
 
   # set screen
   screen_bb(vbl2D) <- expand_bb2D(bb2D = crop, expand = expand)
-
-  # apply offset
-  vbl2D <- apply_offset(vbl2D, offset_col = offset_col, offset_row = offset_row)
-
-  # manage z-stack
-  if(is.character(zstack)){
-
-    zstack <- match.arg(zstack, choices = c("asc", "desc"))
-
-    if(zstack == "asc"){
-
-      vbl2D <- dplyr::arrange(vbl2D, slice)
-
-    } else {
-
-      vbl2D <- dplyr::arrange(vbl2D, dplyr::desc(slice))
-
-    }
-
-  }
 
   return(vbl2D)
 

@@ -8,6 +8,8 @@
 \alias{slices}
 \alias{slices.vbl}
 \alias{slices.vbl2D}
+\alias{slices.ggvibble}
+\alias{slices_cond}
 \alias{slices_cond.vbl}
 \alias{slices_cond.vbl2D}
 \alias{slices_mid}
@@ -26,6 +28,10 @@ slices(x, ...)
 \method{slices}{vbl}(x, plane = vbl_opts("plane"), ...)
 
 \method{slices}{vbl2D}(x, ...)
+
+\method{slices}{ggvibble}(x, ...)
+
+slices_cond(x, ...)
 
 \method{slices_cond}{vbl}(x, plane = vbl_opts("plane"), .cond, n = 6)
 

@@ -20,10 +20,7 @@ the \code{col} and \code{row} axes, which can be specified as either \strong{abs
 interpreted as absolute offsets in data coordinates.}
 \item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
 interpreted as offsets relative to the current plotting limits.}
-}
-
-If both, \code{offset_col} and \code{offset_row} are zero, each slice is displayed in its
-own panel using \code{facet_wrap()}, arranged according to \code{layout}.}
+}}
 }
 \value{
 A modified \code{vbl2D} with updated coordinates and updated offset attributes.

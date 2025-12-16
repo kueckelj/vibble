@@ -83,7 +83,8 @@ p <-
 
 Similar to ggplot2, ggvibbles are rendered during printing. So \code{p} itself is
 a lightweight container with data and instructions that can be complemented
-with additional layers that built on the underlying data.
+with additional layers. These layers draw data and layout instructions from
+the \code{ggplane()} call.
 
 \preformatted{
 p_with_layers <- p +

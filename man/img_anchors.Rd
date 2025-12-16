@@ -5,7 +5,7 @@
 \alias{img_anchors}
 \title{Default image anchors}
 \format{
-An object of class \code{list} of length 4.
+An object of class \code{list} of length 9.
 }
 \usage{
 img_anchors

@@ -461,7 +461,8 @@ NULL
 #' @section Adding layers:
 #' Similar to ggplot2, ggvibbles are rendered during printing. So `p` itself is
 #' a lightweight container with data and instructions that can be complemented
-#' with additional layers that built on the underlying data.
+#' with additional layers. These layers draw data and layout instructions from
+#' the `ggplane()` call.
 #'
 #' \preformatted{
 #' p_with_layers <- p +
@@ -682,9 +683,6 @@ NULL
 #'   \item{Relative:}{ Numeric values, or values wrapped in `as_rel()`, are
 #'   interpreted as offsets relative to the current plotting limits.}
 #' }
-#'
-#' If both, `offset_col` and `offset_row` are zero, each slice is displayed in its
-#' own panel using `facet_wrap()`, arranged according to `layout`.
 #'
 #' @param opacity Controls voxel transparency. Accepts constants, ranges, or
 #' data-masked expressions. See \link[=vbl_doc_opacity]{Details}.

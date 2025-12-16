@@ -7,12 +7,9 @@
 vibble2D(
   vbl,
   plane,
-  slices = NULL,
+  slices = waiver(),
   crop = NULL,
   expand = FALSE,
-  offset_col = 0,
-  offset_row = 0,
-  zstack = "asc",
   .cond = NULL,
   .by = NULL
 )
@@ -23,7 +20,7 @@ vibble2D(
 \item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
 
 \item{slices}{Optional. Integer vector of slice positions in the selected \code{plane}
-to keep. If \code{NULL}, all slices are retained.}
+to keep. If \code{waiver()}, all slices are retained.}
 
 \item{crop}{Defines the \link[=vbl_doc_ref_bb]{data bounding box}
 applied to all slices in native (pre-offset) coordinates.
@@ -40,29 +37,6 @@ inside this region are retained, giving \code{crop} a filtering effect.}
 \item{expand}{An \link[=is_expand]{expand} specification applied to the col/row limits
 of \code{crop} \strong{after} interpretation and potential filtering to set the \link[=vbl_doc_ref_bb]{screen bounding box}.}
 
-\item{offset_col, offset_row}{Numeric scalars. Offsets applied per slice along
-the \code{col} and \code{row} axes, which can be specified as either \strong{absolute} or \strong{relative} values:
-
-\itemize{
-\item{Absolute:}{ Integers, or numeric values wrapped in \code{as_abs()}, are
-interpreted as absolute offsets in data coordinates.}
-\item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
-interpreted as offsets relative to the current plotting limits.}
-}
-
-If both, \code{offset_col} and \code{offset_row} are zero, each slice is displayed in its
-own panel using \code{facet_wrap()}, arranged according to \code{layout}.}
-
-\item{zstack}{Character scalar. Controls the stacking order of slices along
-the slice axis when multiple slices are displayed with an offset-layout.
-
-\itemize{
-\item{\code{"asc"}: }{ Slices with lower slice indices are drawn first and may be
-occluded by higher-index slices in overlapping offset layouts.}
-\item{\code{"desc"}: }{ Slices with higher slice indices are drawn first and may be
-occluded by lower-index slices in overlapping offset layouts.}
-}}
-
 \item{.cond}{An expression evaluated with \link[rlang:args_data_masking]{data-masking}
 to filter voxels. If \code{NULL}, all voxels are retained.}
 
@@ -74,18 +48,5 @@ A \link[=vbl_doc_vbl2D]{2D vibble}.
 }
 \description{
 Convert a 3D \code{vbl} object into a 2D representation for a given
-anatomical plane and selected slices. Optionally apply filtering conditions
-and spatial offsets for visualization.
-}
-\details{
-The function derives the required axes using \link{req_axes_2D}() and
-renames the corresponding coordinate columns to \code{col}, \code{row}, and \code{slice},
-and optionally filters by \code{slices}, \code{lim} and \code{.cond}.
-
-\itemize{
-\item \code{col} and \code{row} store the 2D coordinates in voxel space.
-\item \code{slice} stores the position along the third axis in the selected \code{plane}.
-\item Attributes \code{"offset_dist"}, \code{"offset_dir"}, and \code{"plane"}
-describe the applied spatial offset and the original plane.
-}
+anatomical plane and selected slices. Optionally apply filtering conditions.
 }

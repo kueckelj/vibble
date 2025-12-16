@@ -44,29 +44,33 @@ apply_offset <- function(vbl2D, offset_col, offset_row){
   offset_col <- as.integer(offset_col)
   offset_row <- as.integer(offset_row)
 
-  # save idx in case the var exists
-  vbl_names <- names(vbl2D)
+  if(any(c(offset_col, offset_row) != 0)){
 
-  # apply offset
-  idx_levels <- slices(vbl2D)
-  idx_levels <- paste0("slice", idx_levels)
+    # save idx in case the var exists
+    vbl_names <- names(vbl2D)
 
-  vbl2D <-
-    dplyr::mutate(
-      .data = vbl2D,
-      idx. = as.numeric(factor(paste0("slice", slice), levels = idx_levels))-1
-    ) %>%
-    dplyr::group_by(idx.) %>%
-    dplyr::mutate(
-      col = .comp_offset_col(x = col, idx = unique(idx.), offset = {{offset_col}}),
-      row = .comp_offset_row(x = row, idx = unique(idx.), offset = {{offset_row}})
-    ) %>%
-    dplyr::ungroup() %>%
-    dplyr::arrange(idx.) %>%
-    dplyr::select(-idx.)
+    # apply offset
+    idx_levels <- slices(vbl2D)
+    idx_levels <- paste0("slice", idx_levels)
 
-  offset_col(vbl2D) <- offset_col(vbl2D) + offset_col
-  offset_row(vbl2D) <- offset_row(vbl2D) + offset_row
+    vbl2D <-
+      dplyr::mutate(
+        .data = vbl2D,
+        idx. = as.numeric(factor(paste0("slice", slice), levels = idx_levels))-1
+      ) %>%
+      dplyr::group_by(idx.) %>%
+      dplyr::mutate(
+        col = .comp_offset(x = col, idx = unique(idx.), offset = {{offset_col}}),
+        row = .comp_offset(x = row, idx = unique(idx.), offset = {{offset_row}})
+      ) %>%
+      dplyr::ungroup() %>%
+      dplyr::arrange(idx.) %>%
+      dplyr::select(-idx.)
+
+    offset_col(vbl2D) <- offset_col(vbl2D) + offset_col
+    offset_row(vbl2D) <- offset_row(vbl2D) + offset_row
+
+  }
 
   return(vbl2D)
 
@@ -76,9 +80,43 @@ apply_offset <- function(vbl2D, offset_col, offset_row){
 #' @export
 reverse_offset <- function(vbl2D){
 
-  apply_offset(vbl2D, offset_col = -offset_col(vbl2D), offset_row = -offset_row(vbl2D))
+  apply_offset(
+    vbl2D = vbl2D,
+    offset_col = -offset_col(vbl2D),
+    offset_row = -offset_row(vbl2D)
+  )
 
 }
+
+
+
+
+#' @title Apply slice stacking order
+#'
+#' @description
+#' Orders a `vbl2D` object by slice index to control draw order in stacked plots.
+#'
+#' @inheritParams vbl_doc
+#'
+#' @return A reordered `vbl2D` object.
+apply_zstack <- function(vbl2D, zstack){
+
+  zstack <- .match_arg(zstack, choices = c("asc", "desc"))
+
+  if(zstack == "asc"){
+
+    vbl2D <- dplyr::arrange(vbl2D, slice)
+
+  } else {
+
+    vbl2D <- dplyr::arrange(vbl2D, dplyr::desc(slice))
+
+  }
+
+  return(vbl2D)
+
+}
+
 
 
 #' @title Convert bb2D to data frame

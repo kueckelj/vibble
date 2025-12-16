@@ -28,11 +28,4 @@ internally by all \verb{layer_*()} functions.
 The returned object is only a container; the actual layer generation happens
 when \code{+.ggvibble} evaluates \code{fun(vbl2D)} during plot building.
 }
-\examples{
-vbl_layer(function(v) ggplot2::geom_point(aes(x = col, y = row)))
-
-}
-\seealso{
-\link{ggplane}(), \link{layer_numeric}(), \link{layer_label}()
-}
 \keyword{internal}

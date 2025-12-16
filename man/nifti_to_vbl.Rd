@@ -42,7 +42,7 @@ console.}
 A \link{vibble}.
 }
 \description{
-Create a \link{vibble} from a NIfTI object or file path by melting the voxel
+Create a \link[=vbl_doc_vbl]{vibble} from a NIfTI object or file path by melting the voxel
 data into long format.
 }
 \details{

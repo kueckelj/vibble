@@ -2,10 +2,15 @@
 #' @title Default image anchors
 #' @export
 img_anchors <- list(
-  "top" = c(0.5, 1),
-  "bottom" = c(0.5, 0),
+  "center" = c(0.5, 0.5),
+  "top" = c(0.5, 0),
+  "bottom" = c(0.5, 1),
   "left" = c(0, 0.5),
-  "right" = c(1, 0.5)
+  "right" = c(1, 0.5),
+  "top-left" = c(0, 0),
+  "top-right" = c(1, 0),
+  "bottom-left" = c(1, 0),
+  "bottom-right" = c(0, 1)
 )
 
 

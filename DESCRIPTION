@@ -17,6 +17,7 @@ Imports:
     divest,
     dplyr,
     forcats,
+    fs,
     ggnewscale,
     ggplot2,
     ggrepel,
