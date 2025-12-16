@@ -18,6 +18,7 @@ Imports:
     dplyr,
     forcats,
     fs,
+    gganimate,
     ggnewscale,
     ggplot2,
     ggrepel,
