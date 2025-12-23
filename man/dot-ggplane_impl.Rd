@@ -4,18 +4,7 @@
 \alias{.ggplane_impl}
 \title{ggplane implementation}
 \usage{
-.ggplane_impl(
-  vbl2D,
-  var,
-  opacity,
-  clrp,
-  clrsp,
-  ncol,
-  nrow,
-  animate,
-  verbose,
-  ...
-)
+.ggplane_impl(vbl2D, var, ncol, nrow, animate, ...)
 }
 \arguments{
 \item{animate}{Logical. If \code{TRUE}, no facets are created. In \code{ggplane()}, this

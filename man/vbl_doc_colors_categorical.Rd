@@ -77,7 +77,7 @@ Palette resolution in \code{color_vector()}:
 }
 \item A base palette is chosen by:
 \itemize{
-\item \code{"default"}: \code{scales::hue_pal()(nc)},
+\item \code{"hue_pal"}: \code{scales::hue_pal()(nc)},
 \item viridis options: \code{viridis::viridis(n = nc, option = clrp)},
 \item RColorBrewer options: \code{RColorBrewer::brewer.pal(n = nc, name = clrp)},
 \item other: looking up \code{clrp_opts()[[clrp]]}.

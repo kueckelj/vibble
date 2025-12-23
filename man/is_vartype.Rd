@@ -4,7 +4,7 @@
 \alias{is_vartype}
 \title{This is a title.}
 \usage{
-is_vartype(vbl, var, type, fdb = base::stop)
+is_vartype(vbl, var, type, fdb = rlang::abort)
 }
 \arguments{
 \item{vbl}{A \link{vibble}.}

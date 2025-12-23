@@ -39,7 +39,7 @@
 #'     }
 #'   \item A base palette is chosen by:
 #'     \itemize{
-#'       \item `"default"`: `scales::hue_pal()(nc)`,
+#'       \item `"hue_pal"`: `scales::hue_pal()(nc)`,
 #'       \item viridis options: `viridis::viridis(n = nc, option = clrp)`,
 #'       \item RColorBrewer options: `RColorBrewer::brewer.pal(n = nc, name = clrp)`,
 #'       \item other: looking up `clrp_opts()[[clrp]]`.
@@ -161,7 +161,7 @@ color_palettes <- function(){
 #' @export
 color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
-  stopifnot(clrp %in% c("default", clrp_opts_vec()))
+  stopifnot(clrp %in% c("hue_pal", clrp_opts_vec()))
 
   if(is.character(names)){
 
@@ -171,7 +171,8 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
     if(clrp %in% c("default", color_opts_viridis)){
 
-      stop("If `clrp` among 'default' or viridis options, please specify either `names` or `nc`.")
+      msg <- "If `clrp` among 'default' or viridis options, please specify either `names` or `nc`."
+      rlang::abort(message = msg)
 
     } else {
 
@@ -181,7 +182,7 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
   }
 
-  if(clrp == "default"){
+  if(clrp == "hue_pal"){
 
     clr_vector <- scales::hue_pal()(nc)
 
@@ -206,7 +207,8 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
     if(n_names > n_colors){
 
-      warning(glue::glue("Chosen colorpalette '{clrp}' provides {n_colors} colors. Need {n_names} colors. Returning 'default' colorpalette."))
+      msg <- glue::glue("Colorpalette '{clrp}' has {n_colors} colors. Need {n_names} colors. Returning 'hue_pal' colorpalette.")
+      warning(msg)
 
       hues <- seq(15, 375, length = n_names + 1)
       clr_vector <- grDevices::hcl(h = hues, l = 65, c = 100)[1:n_names]
@@ -235,6 +237,7 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 
 
 #' @title Utilities for mapping colors to numeric variables
+#' @name vbl_doc_colors_numeric
 #' @description
 #' Available color spectra for numeric voxel variables.
 #' These helpers define and expose the full set of continuous color-spectrum
@@ -270,48 +273,6 @@ color_vector <- function(clrp, names = NULL, clrp_adjust = NULL, nc = NA){
 #'     sequential_multi_hue, diverging).
 #'   \item `clrsp_opts_vec()`: A sorted character vector of all valid spectrum names.
 #' }
-#'
-#' @examples
-#' # Grouped numeric spectra
-#' opts <- clrsp_opts()
-#' names(opts)
-#' opts$sequential_multi_hue
-#'
-#' # Flattened numeric spectrum options
-#' clrsp_opts_vec()
-#'
-#' # Examples for ggvibles:
-#' vbl <- example_vbl()
-#'
-#' # Example 1: base color name
-#' ggplane(vbl, plane = "axi", slice = 90, var = "raw_t1") +
-#'   layer_numeric(var = "score", clrsp = "red")
-#'
-#' # Example 2: sequential colorspace palette
-#' ggplane(vbl, plane = "axi", slice = 90, var = "raw_t1") +
-#'   layer_numeric(var = "score", clrsp = "Inferno")
-#'
-#' # Example 3: diverging colorspace palette
-#' ggplane(vbl, plane = "axi", slice = 90, var = "raw_t1") +
-#'   layer_numeric(var = "score", clrsp = "Purple-Green")
-#'
-#' # Example 4: viridis option
-#' ggplane(vbl, plane = "axi", slice = 90, var = "raw_t1") +
-#'   layer_numeric(var = "score", clrsp = "magma")
-#'
-#' # Example 5: two-color gradient
-#' ggplane(vbl, plane = "axi", slice = 90, var = "raw_t1") +
-#'   layer_numeric(var = "score", clrsp = c("navy", "yellow"))
-#'
-#' # Example 6: three-color gradient
-#' ggplane(vbl, plane = "axi", slice = 90, var = "raw_t1") +
-#'   layer_numeric(var = "score", clrsp = c("blue", "white", "red"))
-#'
-#' # Example 7: multi-color gradient
-#' ggplane(vbl, plane = "axi", slice = 90, var = "raw_t1") +
-#'   layer_numeric(var = "score", clrsp = c("black", "purple", "orange", "yellow"))
-#'
-#' @name vbl_doc_colors_numeric
 NULL
 
 
@@ -394,7 +355,9 @@ color_opts_viridis <- function(){
 #'
 #' @return A \code{ggplot2} discrete fill scale.
 #' @export
-scale_fill_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
+scale_fill_categorical <- function(clrp = vbl_def(), names = NULL, clrp_adjust = NULL, ...){
+
+  clrp <- ifelse(.is_vbl_def(clrp), vbl_opts("clrp"), clrp)
 
   values <- color_vector(clrp = clrp, names = names, clrp_adjust = clrp_adjust)
 
@@ -403,7 +366,9 @@ scale_fill_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
 }
 
 #' @keywords internal
-.scale_color_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
+.scale_color_categorical <- function(clrp = vbl_def(), names = NULL, clrp_adjust = NULL, ...){
+
+  clrp <- ifelse(.is_vbl_def(clrp), vbl_opts("clrp"), clrp)
 
   values <- color_vector(clrp = clrp, names = names, clrp_adjust = clrp_adjust)
 
@@ -452,7 +417,9 @@ scale_fill_categorical <- function(clrp, names, clrp_adjust = NULL, ...){
 #' @return A ggplot2 fill scale for numeric variables.
 #'
 #' @export
-scale_fill_numeric <- function(clrsp, ...){
+scale_fill_numeric <- function(clrsp = vbl_def(), ...){
+
+  clrsp <- if(.is_vbl_def(clrsp)){ vbl_opts("clrsp") } else { clrsp }
 
   stopifnot(is.character(clrsp) & length(clrsp) >= 1)
 

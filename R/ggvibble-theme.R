@@ -10,8 +10,8 @@ theme_clean <- function(){
     axis.ticks.y = ggplot2::element_blank(),
     axis.title.x = ggplot2::element_blank(),
     axis.title.y = ggplot2::element_blank(),
-    legend.position = "none",
-    plot.background = ggplot2::element_rect(fill = "white", color = "white"),
+    strip.background = ggplot2::element_blank(),
+    strip.text = ggplot2::element_blank()
   )
 
 }

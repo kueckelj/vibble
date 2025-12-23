@@ -7,27 +7,33 @@
 layer_numeric(
   var,
   clrsp,
-  opacity = c(0.2, 0.45),
+  opacity = 0.25,
+  slices = NULL,
   .cond = NULL,
-  .by = NULL,
+  .by = "slice",
   ...
 )
 }
 \arguments{
 \item{var}{Character. The name of a numeric column.}
 
-\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().}
+\item{clrsp}{Character scalar specifying the continuous color spectrum if \code{var} refers to a numeric
+variable. If not specified, draws from the global default \code{vbl_opts('clrsp')}. \link[=scale_fill_numeric]{Details}.}
 
-\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
+\item{opacity}{Controls voxel transparency in raster layers. Accepts constants, ranges, or
 data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
+\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
+restrict the layer to specific slices. If \code{NULL}, no restriction
+is applied.}
+
 \item{.cond}{A logical filter expression that determines the specific
-voxels for which this layer is drawn. The expression is evaluated via
+voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
-group by before applying the filtering logic of \code{.cond}.}
+group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
 
 \item{...}{Additional arguments passed to \link{scale_fill_numeric}().}
 }

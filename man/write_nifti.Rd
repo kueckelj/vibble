@@ -7,56 +7,46 @@
 write_nifti(
   vbl,
   var,
+  path_out,
   orientation = "RAS",
   missing = 0,
-  interp = NULL,
   datatype = NULL,
-  path_out = NULL,
-  path_lut = NULL,
+  path_native = NULL,
   path_target = NULL,
+  path_lut = NULL,
+  interp = NULL,
   path_fs = "/Applications/freesurfer/7.4.0",
   dir_temp = getwd(),
-  verbose = vbl_opts("verbose"),
+  verbose = vbl_def(),
   ...
 )
 }
 \arguments{
-\item{vbl}{A \link{vibble}.}
-
 \item{var}{Character scalar. Name of the variable in \code{vbl} to export as a NIfTI volume.}
+
+\item{path_out}{Character scalar. The file path to the output NIfTI file (\code{.nii.gz}).}
 
 \item{missing}{Numeric value used to fill voxel locations not present in \code{vbl} when
 reconstructing the array.}
 
-\item{interp}{Interpolation method for \code{mri_vol2vol}. One of \code{"cubic"}, \code{"linear"},
-\code{"nearest"}. If \code{NULL}, defaults to \code{"cubic"} for numeric variables and
-\code{"nearest"} for non-numeric variables.}
-
-\item{path_out}{Optional character path to the output NIfTI file (\code{.nii.gz}). If \code{NULL},
-no file is written.}
+\item{path_target}{Optional character path to a target NIfTI volume. If provided, the output
+volume is resampled into the target space using FreeSurfer \code{mri_vol2vol}.}
 
 \item{path_lut}{Optional character path for a LUT CSV associated with labeled variables.
 If \code{NULL} and the variable type is labeled, a default path is derived
 from \code{path_out} by replacing \code{.nii.gz} with \verb{_lut.csv}.}
 
-\item{path_target}{Optional character path to a target NIfTI volume. If provided, the output
-volume is resampled into the target space using FreeSurfer \code{mri_vol2vol}.}
+\item{interp}{Interpolation method for \code{mri_vol2vol}. One of \code{"cubic"}, \code{"linear"},
+\code{"nearest"}. If \code{NULL}, defaults to \code{"cubic"} for numeric variables and
+\code{"nearest"} for non-numeric variables.}
 
 \item{path_fs}{File system path to the FreeSurfer installation used to source
 \code{SetUpFreeSurfer.sh} and call \code{mri_vol2vol}.}
 
 \item{dir_temp}{Directory for temporary files used during resampling.}
-
-\item{verbose}{Logical. If \code{TRUE}, print messages about LUT handling, writing, and
-external command execution.}
-
-\item{...}{Additional arguments. Currently supports \code{path_ref}, a character path to
-an explicit reference NIfTI that is used instead of \code{attr(vbl, "nifti")}.}
 }
 \value{
-Invisibly returns the NIfTI object whose data array has been replaced. If
-\code{path_target} has been used to resample the NIfTI object the output
-is read in from \code{path_out} and is returned.
+Invisibly returns \code{TRUE} in case of successfull execution.
 }
 \description{
 Export a voxel-wise variable from a \link{vibble} as a NIfTI image using a
@@ -91,20 +81,4 @@ overridden via \code{interp}
 
 When \code{path_out} is not supplied, no file is written; only the modified NIfTI
 object is returned invisibly.
-}
-\examples{
-\dontrun{
-# Write a numeric variable back to the original reference space
-make_nifti(vbl, var = "t1_score", path_out = "t1_score.nii.gz")
-
-# Resample into a target space using mri_vol2vol
-make_nifti(
-  vbl,
-  var        = "risk",
-  path_out   = "risk_mni.nii.gz",
-  path_target = "MNI152_T1_1mm.nii.gz",
-  path_fs    = "/Applications/freesurfer/7.4.0"
-)
-}
-
 }

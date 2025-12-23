@@ -113,7 +113,7 @@ map_lut <- function(vbl, var, lut, ordered = FALSE, var_out = var, verbose = TRU
   # read lut if path is provided
   if(is.character(lut) && length(lut)==1){
 
-    glue_message("Reading LUT from '{lut}'.", verbose = verbose)
+    .glue_message("Reading LUT from '{lut}'.", verbose = verbose)
 
     lut <- read_lut(lut)
 
@@ -124,7 +124,7 @@ map_lut <- function(vbl, var, lut, ordered = FALSE, var_out = var, verbose = TRU
 
     if(!all(table(lut)==1)){
 
-      stop("If character, `lut` must contain unique values.")
+      rlang::abort("If character, `lut` must contain unique values.")
 
     }
 
@@ -138,13 +138,13 @@ map_lut <- function(vbl, var, lut, ordered = FALSE, var_out = var, verbose = TRU
 
     if(!is.numeric(lut[[1]]) || !all(lut[[1]] == as.integer(lut[[1]]))){
 
-      stop("If data.frame, first column of `lut` must be numeric and interpretable as integer.")
+      rlang::abort("If data.frame, first column of `lut` must be numeric and interpretable as integer.")
 
     }
 
     if(!dplyr::n_distinct(lut[[2]]) == nrow(lut)){
 
-      stop("If data.frame, second column of `lut` must contain unique values and must be interpretable as character.")
+      rlang::abort("If data.frame, second column of `lut` must contain unique values and must be interpretable as character.")
 
     }
 
@@ -155,17 +155,18 @@ map_lut <- function(vbl, var, lut, ordered = FALSE, var_out = var, verbose = TRU
 
   } else {
 
-    stop("`lut` must be a character vector or a data.frame.")
+    rlang::abort("`lut` must be a character vector or a data.frame.")
 
   }
 
   int_values <- unique(vbl[[var]])
   missing <- int_values[!int_values %in% lut[[1]]]
+  missing <- missing[missing != 0]
 
   if(length(missing) != 0){
 
     missing <- stringr::str_c(missing, collapse = ", ")
-    warning(glue::glue("Variable `{var}` contains values not found in `lut`: {missing}."))
+    rlang::warn(glue::glue("Variable `{var}` contains values not found in `lut`: {missing}."))
 
   }
 

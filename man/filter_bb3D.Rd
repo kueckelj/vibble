@@ -21,7 +21,3 @@ A filtered \code{vbl} object.
 Filters a \code{vbl} object to rows whose spatial coordinates fall within a given
 3D bounding box.
 }
-\seealso{
-is_bb3D(),
-within_limits()
-}

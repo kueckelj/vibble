@@ -1,5 +1,22 @@
 
 
+#' @title Use vibble default
+#'
+#' @description
+#' Sentinel value indicating that a parameter should use the global vibble
+#' default as defined via vbl_opts().
+#'
+#' @return
+#' An internal sentinel object.
+#'
+#' @export
+vbl_def <- function(){
+
+  structure(list(), class = "vbl_def")
+
+}
+
+
 #' @title Compute the midpoint of a limit
 #'
 #' @description

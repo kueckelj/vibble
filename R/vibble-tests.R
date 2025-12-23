@@ -1,5 +1,22 @@
 
 
+#' @rdname vbl_doc_plot_aesthetics
+#' @export
+is_alpha <- function(x){
+
+  is.numeric(x) && within_limits(x, l = c(0, 1))
+
+}
+
+#' @rdname vbl_doc_plot_aesthetics
+#' @export
+is_alpha_set <- function(x){
+
+  is.numeric(x) &&
+  all(purrr::map_lgl(x, .f = is_alpha))
+
+}
+
 #' @title Check if object is a 2D bounding box
 #' @description Test whether an object encodes a valid 2D bounding box.
 #' Returns `TRUE` if the structure and values fulfill the requirements.
@@ -80,6 +97,30 @@ is_bb3D <- function(x){
 
 }
 
+#' @rdname vbl_doc_plot_aesthetics
+#' @export
+is_color <- function(x){
+
+  is.character(x) &&
+    length(x) == 1 &&
+    all(!is.na(x)) &&
+    !inherits(
+      try(grDevices::col2rgb(x), silent = TRUE),
+      "try-error"
+    )
+
+}
+
+#' @rdname vbl_doc_plot_aesthetics
+#' @export
+is_color_set <- function(x){
+
+  is.character(x) &&
+    all(purrr::map_lgl(x, .f = is_color))
+
+}
+
+
 
 #' @title Identify voxel-value type candidates
 #' @description
@@ -124,11 +165,10 @@ is_label_candidate <- function(x){
 
 }
 
-
 #' @rdname voxel_type_candidates
 is_mask_candidate <- function(x){
 
-  is.numeric(x) && identical(sort(unique(x)), c(0, 1))
+  is.numeric(x) && all(x %in% c(0,1))
 
 }
 
@@ -150,7 +190,7 @@ is_numeric_candidate <- function(x){
 #' on variables \emph{after} they have been converted into vibble format.
 #' They verify the expected final R types of voxel-wise columns:
 #' \itemize{
-#'   \item `is_mask_var(x)` returns `TRUE` when `x` is a logical vector
+#'   \item `is_mask_var(x)` returns `TRUE` when `x` is a logical vector with at least one TRUE value
 #'   \item `is_categorical_var(x)` returns `TRUE` when `x` is a factor
 #'   \item `is_numeric_var(x)` returns `TRUE` when `x` is numeric
 #' }
@@ -177,7 +217,11 @@ NULL
 is_categorical_var <- is.factor
 
 #' @rdname var_type_checks
-is_mask_var <- is.logical
+is_mask_var <- function(x){
+
+  is.logical(x) && sum(x) != 0
+
+}
 
 #' @rdname var_type_checks
 is_numeric_var <- is.numeric
@@ -219,6 +263,31 @@ is_limit <- function(x){
 
 }
 
+#' @rdname vbl_doc_plot_aesthetics
+is_linetype <- function(x){
+
+  a <- is.numeric(x) && length(x) == 1 && x %in% c(0:6)
+
+  b <-
+    is.character(x) &&
+    length(x) == 1 &&
+    (
+      x %in% c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") ||
+      x %in% as.character() ||
+      grepl("^[0-9A-Fa-f]+$", x)
+    )
+
+  a|b
+
+}
+
+#' @rdname vbl_doc_plot_aesthetics
+#' @export
+is_linetype_set <- function(x){
+
+  all(purrr::map_lgl(x, .f = is_linetype))
+
+}
 
 #' @rdname vbl_doc_offset_utils
 #' @export
@@ -241,6 +310,42 @@ is_offset.vbl2D <- function(x, ...){
 is_offset.ggvibble <- function(x, ...){
 
   is_offset(x$vbl2D)
+
+}
+
+
+#' @title Check plane input
+#'
+#' @description Test whether input for recurring argument `plane`
+#' is valid.
+#'
+#' @param x An object to be tested
+#'
+#' @details Input is valid if it is a character scalar and one of
+#' *'sag', 'axi' or 'cor'*.
+#'
+#' @return A logical scalar.
+#'
+#' @export
+is_plane <- function(x){
+
+  is.character(x) && length(x) == 1 && x %in% vbl_planes
+
+}
+
+
+#' @rdname vbl_doc_plot_aesthetics
+#' @export
+is_size <- function(x){
+
+  is.numeric(x) && length(x) == 1
+
+}
+#' @rdname vbl_doc_plot_aesthetics
+#' @export
+is_size_set <- function(x){
+
+  is.numeric(x) && all(purrr::map_lgl(x, .f = is_size))
 
 }
 
@@ -367,7 +472,7 @@ is_slice_seq <- function(x){
 #' @seealso
 #' `var_type()`, `vbl_data_var_types`
 
-is_vartype <- function(vbl, var, type, fdb = base::stop){
+is_vartype <- function(vbl, var, type, fdb = rlang::abort){
 
   type_req <- match.arg(type, choices = vbl_data_var_types)
   var <- match.arg(var, choices = vars_data(vbl))
@@ -384,7 +489,7 @@ is_vartype <- function(vbl, var, type, fdb = base::stop){
 
     msg <- glue::glue("Input for `{var_arg}` should be a of type {type_req} but is of type {type_in}. (raised in {parent_fun}())")
 
-    fdb(msg, call. = FALSE)
+    fdb(msg)
 
   }
 

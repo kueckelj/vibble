@@ -63,6 +63,8 @@ render_animation <- function(p,
 
   }
 
+  .glue_message("Preparing animation. This can take a few seconds.", verbose = verbose)
+
   g <-
     as_ggplot(p, animate = TRUE) +
     ggplot2::labs(
@@ -76,7 +78,7 @@ render_animation <- function(p,
 
     renderer <- gganimate::gifski_renderer(filename)
 
-  } else if(filetype == "mp4"){
+  } else if(filetype == ".mp4"){
 
     renderer <- gganimate::av_renderer(filename)
 

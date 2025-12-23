@@ -1,4 +1,11 @@
 
+
+fallback_aes <- list(
+
+)
+
+
+
 #' @title Default image anchors
 #' @export
 img_anchors <- list(

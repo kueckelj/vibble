@@ -20,7 +20,7 @@ vars_numeric(vbl)
 
 vars_spatial(vbl)
 
-vars_type(vbl, type)
+vars_type(vbl, type = "all")
 }
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}

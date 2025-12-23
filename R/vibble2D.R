@@ -3,12 +3,12 @@
 #' anatomical plane and selected slices. Optionally apply filtering conditions.
 #'
 #' @param slices Optional. Integer vector of slice positions in the selected `plane`
-#' to keep. If `waiver()`, all slices are retained.
+#' to keep. If `NULL`, all slices are retained.
 #' @param crop Defines the \link[=vbl_doc_ref_bb]{data bounding box}
 #' applied to all slices in native (pre-offset) coordinates.
 #'
 #' \itemize{
-#'   \item{`NULL`: }{ Defaults to the global data extent.}
+#'   \item{`NULL`: }{ No cropping.}
 #'   \item{`limit`: }{ A single spatial \link[=is_limit]{limit} recycled for both `col` and `row`.}
 #'   \item{`bb2D`: }{ A \link[=is_bb2D]{2D bounding box} with separate limits for `col` and `row`.}
 #' }
@@ -31,7 +31,7 @@
 
 vibble2D <- function(vbl,
                      plane,
-                     slices = waiver(),
+                     slices = NULL,
                      crop = NULL,
                      expand = FALSE,
                      .cond = NULL,
@@ -43,35 +43,21 @@ vibble2D <- function(vbl,
   req_axes <- req_axes_2D(plane = plane)
   slice_axis <- req_axes["slice"]
 
-  if(.is_waiver(slices)){
-
-    slices <- unique(vbl[[slice_axis]])
-
-  } else {
-
-    .stop_if_not(is_slice_set(slices))
-
-    slices_missing <- slices[!slices %in% unique(vbl[[slice_axis]])]
-    n_missing <- length(slices_missing)
-
-    if(n_missing != 0){
-
-      slice_ref <- ifelse(n_missing == 1, "slice", "slices")
-      slices_missing <- stringr::str_c(slices_missing, collapse = "', '")
-      .glue_warning("No data for {slice_ref} '{slices_missing}' in plane {plane}. Ignoring.")
-
-    }
-
-  }
-
   # change class name HERE to allow x,y,z manipulation/renaming
   class(vbl) <- stringr::str_replace(class(vbl), "vbl", "vbl2D")
 
   # 3D to 2D
   vbl2D <-
     dplyr::rename(vbl, !!!req_axes) %>%
-    dplyr::filter(slice %in% {{ slices }}) %>%
     dplyr::select(col, row, slice, dplyr::everything())
+
+  if(!is.null(slices)){
+
+    .stop_if_not(is_slice_set(slices))
+
+    vbl2D <- dplyr::filter(vbl2D, slice %in% {{ slices }})
+
+  }
 
   offset_col(vbl2D) <- 0L
   offset_row(vbl2D) <- 0L
@@ -91,6 +77,8 @@ vibble2D <- function(vbl,
   if(is_limit(crop)){
 
     crop <- list(col = crop, row = crop)
+
+    .stop_if_not(is_bb2D(crop))
 
   } else if(is_bb2D(crop)){
 

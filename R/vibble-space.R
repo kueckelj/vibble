@@ -50,7 +50,7 @@ apply_offset <- function(vbl2D, offset_col, offset_row){
     vbl_names <- names(vbl2D)
 
     # apply offset
-    idx_levels <- slices(vbl2D)
+    idx_levels <- sort(slices(vbl2D))
     idx_levels <- paste0("slice", idx_levels)
 
     vbl2D <-

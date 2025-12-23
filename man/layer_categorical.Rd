@@ -6,11 +6,12 @@
 \usage{
 layer_categorical(
   var,
-  clrp = "default",
+  clrp = "hue_pal",
   clrp_adjust = NULL,
-  opacity = 0.45,
+  opacity = 0.25,
+  slices = NULL,
   .cond = NULL,
-  .by = NULL,
+  .by = "slice",
   ...
 )
 }
@@ -19,24 +20,27 @@ layer_categorical(
 If a logical (mask) variable is specified, it is treated as a categorical one
 with labels = c('TRUE', 'FALSE').}
 
-\item{clrp}{Character scalar specifying the categorical palette.
-Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
+\item{clrp}{Character scalar specifying the discrete color palette. \link[=scale_fill_categorical]{Details}.}
 
-\item{clrp_adjust}{Optional named vector of named hex colors used to override
-colors of specific labels (see \link{color_vector}()).}
+\item{clrp_adjust}{Optional named vector of hex colors used to override
+colors of specific labels: \verb{c(<label> = <color>, <label2> = <color2>)}}
 
-\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
+\item{opacity}{Controls voxel transparency in raster layers. Accepts constants, ranges, or
 data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
+\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
+restrict the layer to specific slices. If \code{NULL}, no restriction
+is applied.}
+
 \item{.cond}{A logical filter expression that determines the specific
-voxels for which this layer is drawn. The expression is evaluated via
+voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
-group by before applying the filtering logic of \code{.cond}.}
+group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
 
-\item{...}{Additional arguments passed to \link{scale_fill_manual}().}
+\item{...}{Additional arguments passed to \link{scale_fill_categorical}().}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

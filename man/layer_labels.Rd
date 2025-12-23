@@ -10,47 +10,56 @@ layer_labels(
   exclude = NULL,
   alpha = 0.9,
   color = "white",
-  size = 4.5,
+  size = 3.5,
   use_dbscan = TRUE,
   centroid = median,
   abbrev = NULL,
-  repel = FALSE,
+  repel = TRUE,
+  slices = NULL,
   .cond = NULL,
-  .by = NULL,
+  .by = "slice",
   ...
 )
 }
 \arguments{
-\item{var}{Character. Name of a categorical variable to annotate.}
+\item{var}{Character. Name of a categorical variable from which to draw the labels.}
 
 \item{include}{Optional character vector of labels to include. If named the
-labels are renamed according to *c('\if{html}{\out{<orig label>}}' = '\if{html}{\out{<displayed label>}}').}
+labels are renamed according to \verb{c(<orig label> = <displayed label>)}.}
 
 \item{exclude}{Optional character vector of labels to exclude.}
 
-\item{alpha}{Numeric transparency for label text.}
+\item{alpha}{Text alpha (transparency) passed to \code{geom_text()}.}
 
 \item{color}{Text color passed to \code{geom_text()}.}
 
 \item{size}{Text size passed to \code{geom_text()}.}
 
-\item{use_dbscan}{Logical. If TRUE, label voxels within each slice are clustered
-using \code{dbscan2D()} before centroid computation; otherwise all voxels of a label
-form a single region.}
+\item{use_dbscan}{Logical. If \code{TRUE} (default), label voxels within each slice
+are clustered using \code{dbscan2D()} before centroid computation; otherwise all
+voxels of a label form a single region.}
 
 \item{centroid}{The function with which to compute the centroid label position
 based on col and row. A named list of functions can be supplied, where names
 must be \emph{c('col', 'row')}.}
 
-\item{abbrev}{Optional function applied to label names for abbreviation.}
+\item{abbrev}{Optional function or formula applied to label names for abbreviation.
+Should take a and return a character scalar.}
 
-\item{repel}{Logical. If \code{TRUE}, the text is rendered with \link{geom_text_repel}()
-else with \link{geom_text}().}
+\item{repel}{Logical. If \code{TRUE}, the text is rendered with \link{geom_text_repel}(),
+which prevents label overlap. If \code{FALSE}, text ist rendered with \link{geom_text}().}
+
+\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
+restrict the layer to specific slices. If \code{NULL}, no restriction
+is applied.}
 
 \item{.cond}{A logical filter expression that determines the specific
-voxels for which this layer is drawn. The expression is evaluated via
+voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
+
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
 
 \item{...}{Additional arguments passed to \code{geom_text()} or \code{geom_text_repel()}.}
 }

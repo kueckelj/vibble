@@ -7,9 +7,9 @@
 \usage{
 \method{plot}{ggvibble}(
   x,
-  zstack = waiver(),
-  offset_col = waiver(),
-  offset_row = waiver(),
+  zstack = NULL,
+  offset_col = NULL,
+  offset_row = NULL,
   offset_reverse = FALSE,
   ...
 )
@@ -36,7 +36,7 @@ the \code{col} and \code{row} axes, which can be specified as either \strong{abs
 \item{Absolute:}{ Integers, or numeric values wrapped in \code{as_abs()}, are
 interpreted as absolute offsets in data coordinates.}
 \item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
-interpreted as offsets relative to the current plotting limits.}
+interpreted as offsets relative to the \link[=data_bb]{screen bounding box}.}
 }}
 
 \item{...}{Additional arguments, currently unused.}

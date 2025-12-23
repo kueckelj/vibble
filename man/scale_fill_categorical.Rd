@@ -4,14 +4,13 @@
 \alias{scale_fill_categorical}
 \title{Categorical fill scale for ggvibble plots}
 \usage{
-scale_fill_categorical(clrp, names, clrp_adjust = NULL, ...)
+scale_fill_categorical(clrp = vbl_def(), names = NULL, clrp_adjust = NULL, ...)
 }
 \arguments{
-\item{clrp}{Character scalar specifying the categorical palette.
-Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
+\item{clrp}{Character scalar specifying the discrete color palette. \link[=scale_fill_categorical]{Details}.}
 
-\item{clrp_adjust}{Optional named vector of named hex colors used to override
-colors of specific labels (see \link{color_vector}()).}
+\item{clrp_adjust}{Optional named vector of hex colors used to override
+colors of specific labels: \verb{c(<label> = <color>, <label2> = <color2>)}}
 
 \item{...}{Additional arguments passed to \link{scale_fill_manual()}.}
 }

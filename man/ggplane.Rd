@@ -6,9 +6,9 @@
 \usage{
 ggplane(
   vbl,
-  var,
-  slices,
-  plane = vbl_opts("plane"),
+  var = NULL,
+  slices = vbl_def(),
+  plane = vbl_def(),
   crop = NULL,
   expand = 0.1,
   offset_col = 0,
@@ -16,10 +16,6 @@ ggplane(
   zstack = "asc",
   ncol = NULL,
   nrow = NULL,
-  opacity = 1,
-  clrp = vbl_opts("clrp"),
-  clrsp = vbl_opts("clrsp"),
-  verbose = vbl_opts("verbose"),
   .cond = NULL,
   .by = NULL,
   ...
@@ -28,18 +24,20 @@ ggplane(
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
-\item{var}{Character scalar naming the variable to plot.}
+\item{var}{Character scalar. Name of the background variable to plot.
+If \code{NULL}, no background layer is drawn.}
 
 \item{slices}{Integer vector. Slice indices in the specified anatomical
-\code{plane} to be included in the plot.}
+\code{plane} to be included in the plot. Defaults to using \link{slices_mid}\verb{()}.}
 
-\item{plane}{Character scalar. Anatomical plane. Defaults to \code{vbl_opts("plane")}.}
+\item{plane}{Character scalar. The anatomical orientation, one of \emph{'sag', 'axi' or 'cor'}.
+Defaults to the \link[=vbl_doc_defaults]{global default plane}.}
 
 \item{crop}{Defines the \link[=vbl_doc_ref_bb]{data bounding box}
 applied to all slices in native (pre-offset) coordinates.
 
 \itemize{
-\item{\code{NULL}: }{ Defaults to the global data extent.}
+\item{\code{NULL}: }{ No cropping.}
 \item{\code{limit}: }{ A single spatial \link[=is_limit]{limit} recycled for both \code{col} and \code{row}.}
 \item{\code{bb2D}: }{ A \link[=is_bb2D]{2D bounding box} with separate limits for \code{col} and \code{row}.}
 }
@@ -57,7 +55,7 @@ the \code{col} and \code{row} axes, which can be specified as either \strong{abs
 \item{Absolute:}{ Integers, or numeric values wrapped in \code{as_abs()}, are
 interpreted as absolute offsets in data coordinates.}
 \item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
-interpreted as offsets relative to the current plotting limits.}
+interpreted as offsets relative to the \link[=data_bb]{screen bounding box}.}
 }}
 
 \item{zstack}{Character scalar. Controls the stacking order of slices along
@@ -72,20 +70,8 @@ occluded by lower-index slices in overlapping offset layouts.}
 
 \item{ncol, nrow}{Passed to \link{facet_wrap()} in no-offset layouts.}
 
-\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
-data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
-
-\item{clrp}{Character scalar specifying the categorical palette.
-Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
-
-\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().}
-
-\item{verbose}{Logical. If \code{TRUE}, informative messages are printed in the
-console.}
-
 \item{.cond}{Optional. A logical filter expression evaluated on the constructed
-\code{vbl2D}. The expression is evaluated via
-\link[rlang:args_data_masking]{data-masking} semantics.}
+\code{vbl2D}. The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}.}

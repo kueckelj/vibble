@@ -7,7 +7,7 @@
 vibble2D(
   vbl,
   plane,
-  slices = waiver(),
+  slices = NULL,
   crop = NULL,
   expand = FALSE,
   .cond = NULL,
@@ -17,16 +17,17 @@ vibble2D(
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
-\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+\item{plane}{Character scalar. The anatomical orientation, one of \emph{'sag', 'axi' or 'cor'}.
+Defaults to the \link[=vbl_doc_defaults]{global default plane}.}
 
 \item{slices}{Optional. Integer vector of slice positions in the selected \code{plane}
-to keep. If \code{waiver()}, all slices are retained.}
+to keep. If \code{NULL}, all slices are retained.}
 
 \item{crop}{Defines the \link[=vbl_doc_ref_bb]{data bounding box}
 applied to all slices in native (pre-offset) coordinates.
 
 \itemize{
-\item{\code{NULL}: }{ Defaults to the global data extent.}
+\item{\code{NULL}: }{ No cropping.}
 \item{\code{limit}: }{ A single spatial \link[=is_limit]{limit} recycled for both \code{col} and \code{row}.}
 \item{\code{bb2D}: }{ A \link[=is_bb2D]{2D bounding box} with separate limits for \code{col} and \code{row}.}
 }

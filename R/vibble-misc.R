@@ -202,23 +202,30 @@ vars_spatial <- function(vbl){
 }
 
 #' @rdname vars_vibble
-#' @importFrom purrr keep
 #' @export
-vars_type <- function(vbl, type){
+vars_type <- function(vbl, type = "all"){
 
-  type <- match.arg(type, choices = vbl_data_var_types)
+  type <- match.arg(type, choices = c(vbl_data_var_types, "data", "all"))
 
-  if(type == "label"){
+  if(type == "categorical"){
 
-    names(keep(.x = vbl[,vars_data(vbl)], .p = is_label_var))
+    names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_categorical_var))
 
   } else if(type == "mask"){
 
-    names(keep(.x = vbl[,vars_data(vbl)], .p = is_mask_var))
+    names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_mask_var))
 
   } else if(type == "numeric"){
 
-    names(keep(.x = vbl[,vars_data(vbl)], .p = is_numeric_var))
+    names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_numeric_var))
+
+  } else if(type == "data"){
+
+    vars_data(vbl)
+
+  } else {
+
+    names(vbl)
 
   }
 

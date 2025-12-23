@@ -4,7 +4,7 @@
 \alias{layer_crop}
 \title{Crop a ggplane plot to a filtered voxel extent}
 \usage{
-layer_crop(.cond, ...)
+layer_crop(.cond, expand = FALSE, ...)
 }
 \arguments{
 \item{.cond}{A logical filter expression evaluated on \code{vbl2D} that determines

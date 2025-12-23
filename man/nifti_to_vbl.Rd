@@ -7,10 +7,10 @@
 nifti_to_vbl(
   x,
   var = "value",
-  lut = NULL,
+  lut = vbl_def(),
   ordered = FALSE,
   add_id = FALSE,
-  rm0 = TRUE,
+  rm0 = FALSE,
   verbose = vbl_opts("verbose"),
   ...
 )

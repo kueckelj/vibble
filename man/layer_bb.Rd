@@ -9,66 +9,64 @@
 \title{Add a data-driven 2D bounding-box}
 \usage{
 layer_bb(
-  color,
-  .cond,
-  .by = NULL,
+  .cond = NULL,
+  color = "red",
   fill = NA,
   linetype = "solid",
   linewidth = 0.75,
   expand = as_abs(0.5),
-  name = TRUE,
+  label = TRUE,
+  slices = NULL,
+  .by = "slice",
   ...
 )
 
 layer_bb_data(
-  color = alpha("green", 0.7),
+  color = "#F28E2B",
   fill = NA,
   linetype = "solid",
   linewidth = 0.75,
+  label = TRUE,
   slices = NULL,
-  name = TRUE,
   ...
 )
 
 layer_bb_plot(
-  color = alpha("yellow", 0.7),
+  color = "#4CB36B",
   fill = NA,
   linetype = "solid",
   linewidth = 0.75,
-  name = TRUE,
+  label = TRUE,
   ...
 )
 
 layer_bb_screen(
-  color = alpha("blue", 0.7),
+  color = "#4DA3D9",
   fill = NA,
   linetype = "solid",
   linewidth = 0.75,
+  label = TRUE,
   slices = NULL,
-  name = TRUE,
   ...
 )
 
 layer_bb_slice(
-  color = alpha("red", 0.7),
+  color = "#8F7BD4",
   fill = NA,
   linetype = "solid",
   linewidth = 0.75,
+  label = TRUE,
   slices = NULL,
-  name = TRUE,
   ...
 )
 }
 \arguments{
-\item{color}{Color of the bounding-box outline.}
-
 \item{.cond}{A logical filter expression that determines the specific
-voxels for which this layer is drawn. The expression is evaluated via
+voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
-\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
-group by before applying the filtering logic of \code{.cond}.}
+\item{color}{Color of the bounding-box outline.}
 
 \item{fill}{Fill of the bounding-box.}
 
@@ -81,15 +79,23 @@ group by before applying the filtering logic of \code{.cond}.}
 
 \item{linewidth}{Numeric scalar. Controlls the thickness of drawn lines.}
 
-\item{name}{Logical or character scalar. If character, the name with which
-the color is associated with in the color legend. If logical, \code{FALSE} prevents
-appearance in the legend and \code{TRUE} falls back to the naming default of the
-function.}
+\item{label}{Logical or character scalar. Controls the legend label with which
+the color of this layer is associated with in the legend.
+
+\itemize{
+\item{Character: } Uses the provided value as the label.
+\item{\code{TRUE}: } Uses the function’s default to create the label.
+\item{\code{FALSE}: } Does not include the color in the legend.
+}}
+
+\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
+restrict the layer to specific slices. If \code{NULL}, no restriction
+is applied.}
+
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
 
 \item{...}{Additional arguments passed to \link{geom_rect}().}
-
-\item{slices}{Optional numeric vector of slice indices to which the content
-of this layer is restricted. If \code{NULL}, the content is drawn for all slices.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When
@@ -104,4 +110,6 @@ or \link[=vbl_doc_ref_bb]{2D reference bounding boxes}.
 \code{layer_bb()} computes and visualizes a 2D bounding box for voxels based on the
 minimal and maximal \code{col} and \code{row} coordinates where \code{.cond} evaluates to \code{TRUE}.
 In all cases, the graphical rendering is handled by \link{geom_rect}().
+
+Bounding boxes are \strong{always} computed slicewise.
 }

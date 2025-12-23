@@ -8,9 +8,6 @@ NULL
 #' @importFrom ggplot2 alpha
 NULL
 
-#' @keywords internal
-#' @importFrom ggplot2 waiver
-
 #' @importFrom magrittr %>%
 #' @export
 magrittr::`%>%`
@@ -34,6 +31,12 @@ magrittr::`%>%`
 
 }
 
+#' @keywords internal
+.calling_function_name <- function(n = 1){
+
+  as.character(sys.call(-n)[[1]])
+
+}
 
 #' @keywords internal
 .check_patchwork_attached <- function(){
@@ -51,6 +54,179 @@ magrittr::`%>%`
   }
 
   invisible(TRUE)
+
+}
+
+#' @keywords internal
+.str_collapse <- function(x, last = "' or '"){
+
+  glue::glue_collapse(x, sep = "', '", last = last)
+
+}
+
+#' @keywords internal
+.check_input_slices <- function(x, ...){
+
+  UseMethod(".check_input_slices")
+
+}
+
+#' @keywords internal
+.check_input_slices.vbl2D <- function(x, slices, layer_str = "this layer()"){
+
+  if(!is.null(slices)){
+
+    .stop_if_not(is_slice_set(slices))
+
+    slices_missing <- slices[!slices %in% slices(x)]
+    n_missing <- length(slices_missing)
+
+    if(n_missing != 0){
+
+      fill <- ifelse(n_missing == 1, "slice", "slices")
+      slices_quo <- rlang::enquo(slices)
+      slices_text <- rlang::quo_text(slices_quo)
+      slices_d <- glue::glue_collapse(sort(slices(x)), sep = ", ", last = " and ")
+      slices_m <- glue::glue_collapse(slices_missing, sep = ", ", last = " and ")
+
+      rlang::abort(
+        message = c(
+          glue::glue("In `slices = {slices_text}`, no data for {fill} {slices_m} in {layer_str}."),
+          i = glue::glue("The ggplane() to which this layer was added contains data for slices: {slices_d}")
+          )
+      )
+
+    }
+
+    x <- dplyr::filter(x, slice %in% {{ slices }})
+
+  }
+
+  return(x)
+
+}
+
+
+
+#' @keywords keyword
+.check_input_var <- function(x, var, type = "all", call = rlang::caller_fn()){
+
+  opts <- vars_type(x, type = type)
+
+  if(!var %in% opts){
+
+    ref <- class(x)[1]
+
+    if(length(opts) == 0){
+
+      info <- glue::glue("There are no variables of type {type} in this {ref}.")
+
+    } else {
+
+      info <- glue::glue("Valid input options are '{.str_collapse(opts)}'.")
+
+    }
+
+    rlang::abort(
+      c(
+        glue::glue("Input var = '{var}' is invalid. '{var}' not found among {type} variables in this {ref}."),
+        i = info
+        )
+    )
+
+  }
+
+  return(var)
+
+}
+
+
+#' @keywords internal
+.default_alpha <- function(alpha, key){
+
+  if(.is_vbl_def(alpha)){
+
+    alpha <- vbl_opts(key)
+
+  } else {
+
+    .stop_if_not(is_size(alpha))
+
+  }
+
+  return(alpha)
+
+}
+
+#' @keywords internal
+.default_color <- function(color, key){
+
+  if(.is_vbl_def(color)){
+
+    color <- vbl_opts(key)
+
+  } else {
+
+    .stop_if_not(is_color(color))
+
+  }
+
+  return(color)
+
+}
+
+#' @keywords internal
+.default_alpha_set <- function(alpha, key, ln = Inf){
+
+  stopifnot(length(alpha) <= ln)
+
+  if(.is_vbl_def(alpha)){
+
+    alpha <- vbl_opts(key)
+
+  } else {
+
+    .stop_if_not(is_alpha_set(alpha))
+
+  }
+
+  return(alpha)
+
+}
+
+#' @keywords internal
+.default_color_set <- function(color, key, ln = Inf){
+
+  stopifnot(length(color) <= ln)
+
+  if(.is_vbl_def(color)){
+
+    color <- vbl_opts(key)
+
+  } else {
+
+    .stop_if_not(is_color_set(color))
+
+  }
+
+  return(color)
+
+}
+
+#' @keywords internal
+.default_size <- function(size, key){
+
+  if(.is_vbl_def(size)){
+
+    size <- vbl_opts(key)
+
+  } else {
+
+    .stop_if_not(is_size(size))
+
+  }
+
+  return(size)
 
 }
 
@@ -127,10 +303,9 @@ magrittr::`%>%`
     .envir <- rlang::caller_env()
     msg <- glue::glue(..., .envir = .envir)
 
-    warning(msg, call. = FALSE)
+    rlang::warn(message = msg)
 
   }
-
 
 }
 
@@ -142,7 +317,7 @@ magrittr::`%>%`
   .envir <- rlang::caller_env()
   msg <- glue::glue(..., .envir = .envir)
 
-  stop(msg, call. = FALSE)
+  rlang::abort(message = msg)
 
 }
 
@@ -280,22 +455,6 @@ magrittr::`%>%`
 
 }
 
-#' @keywords internal
-.inform_leaving_ggvibble <- function(){
-
-  rlang::inform(
-    c(
-      "Adding a `gg` object to a `ggvibble` returns a ggplot object.",
-      "i" = "This works, but the result is no longer a `ggvibble` and will not use ggvibble's layer pipeline.",
-      "i" = "Mixing plotting frameworks via `+` is not recommended.",
-      "i" = "Preferred: convert explicitly with `p <- as_ggplot(x)` and continue with ggplot2/patchwork from there."
-    ),
-    .frequency = "reqularly",
-    .frequency_id = "leaving_ggvibble"
-  )
-
-}
-
 
 #' @keywords internal
 .is_attached <- function(pkg){
@@ -314,7 +473,7 @@ magrittr::`%>%`
 }
 
 #' @keywords internal
-.is_waiver <- function(x) inherits(x, "waiver")
+.is_vbl_def <- function(x) inherits(x, "vbl_def")
 
 #' @keywords internal
 .keep_named <- function(x){
@@ -367,7 +526,7 @@ magrittr::`%>%`
   all(names(x) %in% vbl_ccs_axes)
 
   ccs_map <- ccs_orientation_mapping
-  pointers <- split_orientation(orientation)
+  pointers <- .split_orientation(orientation)
 
   order_out <- vector(mode = "character", length = 3)
   for(i in 1:3){
@@ -382,6 +541,170 @@ magrittr::`%>%`
   x[order_out]
 
 }
+
+#' @title Resolve parameters with vbl_def()
+#' @name vbl_doc_resolve_def
+#' @description
+#' Resolving parameters that can have vbl_def() as default, which
+#' draws from vbl_opts(). Functions should check whether the resolving
+#' works and return an informative error message if not.
+NULL
+
+#' @rdname vbl_doc_resolve_def
+#' @keywords internal
+.resolve_label_spacer <- function(label_spacer){
+
+  if(.is_vbl_def(label_spacer)){
+
+    label_spacer <- vbl_opts("label.spacer")
+
+    if(!is.numeric(label_spacer) | length(label_spacer) != 1){
+
+      rlang::abort(
+        c(glue::glue("Could not resolve `label_spacer` with global options."),
+          i = glue("`label_spacer = {rlang::quo_text(label_spacer)}`, but should resolve to a numeric scalar."),
+          i = glue::glue("Set your desired default(e.g. label_spacer = 0.75) globally with `vbl_opts('label_spacer' = 4)`"),
+          i = "Alternatively, specify explicitly in the function call with `label_spacer = 0.75`."
+        )
+      )
+
+    }
+
+  } else {
+
+    .stop_if_not(is.numeric(label_spacer) && length(label_spacer) == 1)
+
+  }
+
+  return(label_spacer)
+
+}
+
+#' @rdname vbl_doc_resolve_def
+#' @keywords internal
+.resolve_legend_label <- function(label, color, default){
+
+  .stop_if_not(length(label) == 1)
+
+  if(isTRUE(label)){
+
+    legend_label <- purrr::set_names(color, default)
+
+  } else if(is.character(label)){
+
+    legend_label <- purrr::set_names(color, label[1])
+
+  } else {
+
+    legend_label <- NULL
+
+  }
+
+  return(legend_label)
+
+}
+
+#' @rdname vbl_doc_resolve_def
+#' @keywords internal
+.resolve_n <- function(n, opt){
+
+  if(.is_vbl_def(n)){
+
+    opt_string <- paste0("n.", opt)
+
+    n <- vbl_opts(opt_string)
+
+    if(length(n) != 1 | any(n != as.integer(n))){
+
+      n_quo <- rlang::enquo(n)
+
+      rlang::abort(
+        c(glue::glue("Could not resolve `n` with global options."),
+          i = glue("`n = {rlang::quo_text(n_quo)}`, but should resolve to a numeric scalar unambiguously interpretable as an integer."),
+          i = glue::glue("Set your desired default(e.g. n = 4) globally with `vbl_opts({opt_string} = 4)`"),
+          i = "Alternatively, specify explicitly in the function call with `n = 4`."
+        )
+      )
+
+    }
+
+  } else {
+
+    .stop_if_not(length(n) == 1 && n == as.integer(n))
+
+  }
+
+  return(n)
+
+}
+
+#' @rdname vbl_doc_resolve_def
+#' @keywords internal
+.resolve_plane <- function(plane){
+
+  if(.is_vbl_def(plane)){
+
+    plane <- vbl_opts("plane")
+
+    if(!plane %in% vbl_planes){
+
+      plane_quo = rlang::enquo(plane)
+
+      rlang::abort(
+        message = c(
+          "Could not resolve `plane` with global options.",
+          i = glue::glue("`plane = {rlang::quo_text(plane_quo)}`, but should be one of 'sag', 'axi' or 'cor'."),
+          i = "Set your desired default plane (e.g. plane = 'axi') in global options with `vbl_opts(plane = 'axi')`.",
+          i = "Alternatively, specify explicitly in the function call with `plane = 'axi'`."
+        )
+      )
+
+    }
+
+  } else {
+
+    .stop_if_not(is_plane(plane))
+
+  }
+
+  return(plane)
+
+}
+
+#' @rdname vbl_doc_resolve_def
+#' @keywords internal
+.resolve_verbose <- function(verbose){
+
+  if(.is_vbl_def(verbose)){
+
+    verbose <- vbl_opts("verbose")
+
+    if(length(verbose) != 1 || !verbose %in% c(TRUE, FALSE)){
+
+      verbose_quo <- rlang::enquo(verbose)
+
+      rlang::abort(
+        message = c(
+          "Could not resolve `verbose` with global options.",
+          i = glue::glue("`verbose = {rlang::quo_text(verbose_quo)}`, but should be a logical scalar: either TRUE or FALSE."),
+          i = "Set your desired default plane (e.g. verbose = TRUE) in global options with `vbl_opts(verbose = TRUE)`.",
+          i = "Alternatively, specify explicitly in the function call with `verbose = TRUE`."
+        )
+      )
+
+    }
+
+  } else {
+
+    verbose <- isTRUE(verbose)
+
+  }
+
+  return(verbose)
+}
+
+
+
 
 
 #' @keywords internal
@@ -473,29 +796,35 @@ magrittr::`%>%`
   # extract call like is_limit(xlim)
   call_expr <- rlang::get_expr(test_quo)
 
-  if(!rlang::is_call(call_expr) || length(call_expr) != 2){
+  if(rlang::is_call(call_expr) && length(call_expr) == 2){
+
+    test_fn  <- rlang::as_label(call_expr[[1]])
+    obj_expr <- rlang::as_label(call_expr[[2]])
+
+    what <- sub("^is_|^is.", "", test_fn)
+    what <- stringr::str_replace_all(what, pattern = "_", replacement = " ")
 
     rlang::abort(
-      "Invalid test expression. Expected a call like is_xxx(obj).",
+      message = c(
+        glue::glue("Input `{obj_expr}` is not a valid {what}."),
+        i = glue::glue("See `?{test_fn}` for more information.")
+      ),
+      call = call
+      )
+
+  } else {
+
+    text <- rlang::quo_text(test_quo)
+
+    rlang::abort(
+      message = c(
+        "Invalid argument specification.",
+        i = glue::glue("`{text}` is not TRUE.")
+      ),
       call = call
     )
 
   }
-
-  test_fn  <- rlang::as_label(call_expr[[1]])
-  obj_expr <- rlang::as_label(call_expr[[2]])
-
-  what <- sub("^is_|^is.", "", test_fn)
-  what <- stringr::str_replace_all(what, pattern = "_", replacement = " ")
-
-  msg <- sprintf(
-    "Input `%s` is not a valid %s. See `?%s` for more info.",
-    obj_expr,
-    what,
-    test_fn
-  )
-
-  rlang::abort(msg, call = call)
 
 }
 

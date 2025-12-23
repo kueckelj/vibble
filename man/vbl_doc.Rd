@@ -11,13 +11,13 @@ group by before applying the filtering logic of \code{.cond}.}
 
 \item{bb3D}{A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.}
 
-\item{clrp}{Character scalar specifying the categorical palette.
-Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.}
+\item{clrp}{Character scalar specifying the discrete color palette. \link[=scale_fill_categorical]{Details}.}
 
-\item{clrp_adjust}{Optional named vector of named hex colors used to override
-colors of specific labels (see \link{color_vector}()).}
+\item{clrp_adjust}{Optional named vector of hex colors used to override
+colors of specific labels: \verb{c(<label> = <color>, <label2> = <color2>)}}
 
-\item{clrsp}{Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().}
+\item{clrsp}{Character scalar specifying the continuous color spectrum if \code{var} refers to a numeric
+variable. If not specified, draws from the global default \code{vbl_opts('clrsp')}. \link[=scale_fill_numeric]{Details}.}
 
 \item{concavity}{Numeric. A relative measure of concavity. Passed to \link[concaveman:concaveman]{concaveman()}.
 1 results in a relatively detailed shape, Infinity results in a convex hull. You can use values lower than 1,
@@ -35,13 +35,14 @@ the \code{col} and \code{row} axes, which can be specified as either \strong{abs
 \item{Absolute:}{ Integers, or numeric values wrapped in \code{as_abs()}, are
 interpreted as absolute offsets in data coordinates.}
 \item{Relative:}{ Numeric values, or values wrapped in \code{as_rel()}, are
-interpreted as offsets relative to the current plotting limits.}
+interpreted as offsets relative to the \link[=data_bb]{screen bounding box}.}
 }}
 
-\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
+\item{opacity}{Controls voxel transparency in raster layers. Accepts constants, ranges, or
 data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
-\item{plane}{Character scalar. The anatomical orientation. Valid options are \emph{c('sag', 'axi', 'cor')}.}
+\item{plane}{Character scalar. The anatomical orientation, one of \emph{'sag', 'axi' or 'cor'}.
+Defaults to the \link[=vbl_doc_defaults]{global default plane}.}
 
 \item{rm0}{Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
 vibble.}

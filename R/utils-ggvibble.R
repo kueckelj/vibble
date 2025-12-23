@@ -429,21 +429,47 @@ NULL
 
 
 #' @keywords internal
-.filter_layer <- function(vbl2D, .cond, .by = NULL, layer = "layer()"){
+.filter_layer <- function(vbl2D, .cond_quo, .by = NULL, layer_str = "layer()"){
 
   # cond is expected to be a quosure (possibly representing NULL)
-  if(!rlang::quo_is_null(.cond)){
+  if(!rlang::quo_is_null(.cond_quo)){
 
-    vbl2D <- dplyr::filter(vbl2D, !!.cond, .by = {{ .by }})
+    expr_text <- rlang::quo_text(.cond_quo)
 
-  }
+    # returns either data.frame or character (error message)
+    vbl2D <-
+      tryCatch({
 
-  if(nrow(vbl2D) == 0){
+        dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by }})
 
-    expr_text <- rlang::quo_text(.cond)
-    msg <- glue::glue("No voxels remain in {layer} after filtering with `{expr_text}`.")
+        }, error = function(error){
 
-    stop(msg, call. = FALSE)
+          error$message
+
+        })
+
+    # sanity checks
+    if(is.character(vbl2D)){ # -> failed
+
+      msg <-
+        c(
+          glue::glue("Filtering with .cond = {expr_text} in {layer_str} failed."),
+          i = glue::glue("Error: {vbl2D}"),
+          i = "Check the filtering expression for correct spelling of variable names."
+        )
+
+      rlang::abort(msg)
+
+    } else if(nrow(vbl2D) == 0){ # ->
+
+      msg <-
+        c(
+          glue::glue("No voxels remain in {layer}() after filtering with `{expr_text}`.")
+        )
+
+      rlang::abort(msg)
+
+    }
 
   }
 

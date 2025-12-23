@@ -540,6 +540,65 @@ NULL
 #' @keywords internal
 NULL
 
+#' @title Check plot aesthetic specifications
+#' @name vbl_doc_plot_aesthetics
+#' @description
+#' Utilities to test whether objects represent valid alpha (transparency), color,
+#' or size specifications, either as single values or as sets.
+#'
+#' @param x An object to be tested.
+#'
+#' @return
+#' A logical scalar.
+#'
+#' @section alpha:
+#' Valid alpha (transparency) values are numeric scalars within 0:1.
+#'
+#' \preformatted{
+#' is_alpha(0.6)
+#' is_alpha_set(c(0.2, 0.6, 1))
+#' }
+#'
+#' @section color:
+#' Valid colors are character scalars interpretable by R’s graphics system.
+#'
+#' \preformatted{
+#' is_color("tomato")
+#' is_color("not_a_color") # FALSE
+#' is_color_set(c("steelblue", "#4DA3D9"))
+#' is_color_set(c("steelblue", "not_a_color")) # FALSE
+#' }
+#'
+#' @section size and linewidth:
+#' Valid size and linewidth values are numeric scalars.
+#'
+#' \preformatted{
+#' is_size(1.2)
+#' is_size(TRUE) # FALSE
+#' is_size_set(c(0.5, 1, 2))
+#' is_size_set(c(0.5, "a", 2)) # FALSE
+#' }
+#'
+#' @section linetype:
+#' \itemize{
+#'   \item{Named types: } *c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")*
+#'   \item{Numeric codes: } *c("0", "1", "2", "3", "4", "5", "6")*
+#'   \item{Custom: } Hexadecimal dash patterns (e.g. *"12"*, *"1F"*, *"F0F0"*).
+#' }
+#'
+#' \preformatted{
+#' is_linetype("dashed")
+#' is_linetype("invalid") # FALSE
+#' is_linetype_set(c("solid", "2", "F0F0"))
+#' is_linetype_set(c("solid", "invalid")) # FALSE
+#' }
+#'
+#' @section Scalar vs set:
+#' Scalar validators (e.g. `is_alpha()`) test a single value, while set validators
+#' (e.g. `is_alpha_set()`) test vectors where each element must satisfy the
+#' corresponding scalar validator.
+NULL
+
 
 #' @title 2D reference bounding boxes
 #' @name vbl_doc_ref_bb
@@ -653,6 +712,93 @@ NULL
 NULL
 
 
+#' @title Slice queries
+#' @name vbl_doc_slice_queries
+#' @description
+#' Query available slice indices and select slices by condition or around the mid slice.
+#'
+#' @param n Integer scalar. Target number of slices to return after downsampling.
+#' @param radius Numeric scalar controlling the slice window around the mid slice.
+#' @param .cond A logical filter expression evaluated with data-masking semantics.
+#' @param ... Passed to methods.
+#' @inheritParams vbl_doc
+#'
+#' @return
+#' Integer vector of slice indices.
+#'
+#' @details
+#' \link{slices}() returns the unique slice indices present in the input.
+#' \link{slices_cond}() returns slices for which `.cond` evaluates to `TRUE` for at least one voxel in that slice.
+#' \link{slices_mid}() returns a window of slices around the mid slice and optionally downsamples to `n`.
+#'
+#' For `radius < 1`, the radius is interpreted as a fraction of the full slice range.
+#' For `radius >= 1`, the radius is interpreted as a number of slices.
+#'
+#' @note
+#' \link{slices_cond}() groups by the slice axis and then extracts the slice values from the filtered data.
+#'
+#' @seealso
+#' \link{slices_range}(),
+#' \link{slices_min}(),
+#' \link{slices_mid1}(),
+#' \link{slices_max}().
+#'
+#' @importFrom dplyr filter pull
+#' @importFrom rlang enquo
+#'
+#' @examples
+#' vbl <- example_vbl()
+#'
+#' # all available slices in a plane
+#' slices(vbl, plane = "axial")
+#'
+#' # select slices where at least one voxel matches a condition
+#' slices_cond(vbl, t1ce > 0.5, n = 12, plane = "axial")
+#'
+#' # select slices around the mid slice
+#' slices_mid(vbl, n = 9, plane = "axial", radius = 0.2)
+NULL
+
+#' @title Slice utilities
+#' @name vbl_doc_slice_utils
+#' @description
+#' Convenience helpers to extract slice limits and simple range summaries for a given anatomical plane.
+#'
+#' @param x An object for which a method has been defined.
+#' @param ... Passed to methods.
+#'
+#' @inheritParams vbl_doc
+#'
+#' @return
+#' Depending on the function.
+#'
+#' \itemize{
+#'   \item{\link{slices_limits}() returns a single `limits` object.}
+#'   \item{\link{slices_range}() returns an integer vector of length 2.}
+#'   \item{\link{slices_min}(), \link{slices_max}(), and \link{slices_mid1}() return an integer scalar.}
+#' }
+#'
+#' @seealso
+#' \link{slices}(),
+#' \link{slices_cond}(),
+#' \link{slices_mid}().
+#'
+#' @importFrom stats median
+#'
+#' @examples
+#' vbl <- example_vbl()
+#'
+#' # per-plane slice summaries
+#' slices_range(vbl, plane = "axial")
+#' slices_min(vbl, plane = "axial")
+#' slices_mid1(vbl, plane = "axial")
+#' slices_max(vbl, plane = "axial")
+#'
+#' # slice limits for a plane
+#' slices_limits(vbl, plane = "axial")
+NULL
+
+
 # params ------------------------------------------------------------------
 
 #' @title Dummy documentation for recurring parameters & sections
@@ -660,14 +806,13 @@ NULL
 #'
 #' @param .by A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 #' group by before applying the filtering logic of `.cond`.
-#'
 #' @param bb2D A named list that defines a \link[=is_bb2D]{2D bounding box} with \link[=is_limit]{limits} for col and row.
 #' @param bb3D A named list that defines a \link[=is_bb3D]{3D bounding box} with \link[=is_limit]{limits} for x, y, z.
-#' @param clrp Character scalar specifying the categorical palette.
-#' Must be one of \code{\link{clrp_opts_vec}()}. Defaults to \code{vbl_opts("clrp")}.
-#' @param clrp_adjust Optional named vector of named hex colors used to override
-#' colors of specific labels (see \link{color_vector}()).
-#' @param clrsp Character scalar specifying the numeric color palette used in \link{scale_fill_numeric}().
+#' @param clrp Character scalar specifying the discrete color palette. \link[=scale_fill_categorical]{Details}.
+#' @param clrp_adjust Optional named vector of hex colors used to override
+#' colors of specific labels: `c(<label> = <color>, <label2> = <color2>)`
+#' @param clrsp Character scalar specifying the continuous color spectrum if `var` refers to a numeric
+#' variable. If not specified, draws from the global default `vbl_opts('clrsp')`. \link[=scale_fill_numeric]{Details}.
 #' @param concavity Numeric. A relative measure of concavity. Passed to \link[concaveman:concaveman]{concaveman()}.
 #' 1 results in a relatively detailed shape, Infinity results in a convex hull. You can use values lower than 1,
 #' but they can produce pretty crazy shapes.
@@ -681,12 +826,13 @@ NULL
 #'   \item{Absolute:}{ Integers, or numeric values wrapped in `as_abs()`, are
 #'   interpreted as absolute offsets in data coordinates.}
 #'   \item{Relative:}{ Numeric values, or values wrapped in `as_rel()`, are
-#'   interpreted as offsets relative to the current plotting limits.}
+#'   interpreted as offsets relative to the \link[=data_bb]{screen bounding box}.}
 #' }
 #'
-#' @param opacity Controls voxel transparency. Accepts constants, ranges, or
+#' @param opacity Controls voxel transparency in raster layers. Accepts constants, ranges, or
 #' data-masked expressions. See \link[=vbl_doc_opacity]{Details}.
-#' @param plane Character scalar. The anatomical orientation. Valid options are *c('sag', 'axi', 'cor')*.
+#' @param plane Character scalar. The anatomical orientation, one of *'sag', 'axi' or 'cor'*.
+#' Defaults to the \link[=vbl_doc_defaults]{global default plane}.
 #' @param rm0 Logical. If \code{TRUE}, remove voxels with value 0 from the resulting
 #' vibble.
 #' @param slice Integer value. The slice of interest.
@@ -736,8 +882,10 @@ NULL
 #' @title Dummy documentation for vibble layers
 #' @name vbl_doc_layer
 #'
+#' @param .by A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+#' group by before applying the filtering logic of `.cond`. Defaults to *'slice'*.
 #' @param .cond A logical filter expression that determines the specific
-#' voxels for which this layer is drawn. The expression is evaluated via
+#' voxels included in the content of this layer. The expression is evaluated via
 #' \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 #' into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.
 #' @param clip_overlap Logical. Applies only to offset layouts. If `TRUE`,
@@ -750,12 +898,18 @@ NULL
 #'   \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
 #' }
 #' @param linewidth Numeric scalar. Controlls the thickness of drawn lines.
-#' @param name Logical or character scalar. If character, the name with which
-#' the color is associated with in the color legend. If logical, `FALSE` prevents
-#' appearance in the legend and `TRUE` falls back to the naming default of the
-#' function.
-#' @param slices Optional numeric vector of slice indices to which the content
-#' of this layer is restricted. If `NULL`, the content is drawn for all slices.
+#' @param label Logical or character scalar. Controls the legend label with which
+#' the color of this layer is associated with in the legend.
+#'
+#' \itemize{
+#'   \item{Character: } Uses the provided value as the label.
+#'   \item{`TRUE`: } Uses the function’s default to create the label.
+#'   \item{`FALSE`: } Does not include the color in the legend.
+#' }
+#'
+#' @param slices Optional numeric \link[=is_slice]{slice indices} used to
+#' restrict the layer to specific slices. If \code{NULL}, no restriction
+#' is applied.
 #'
 #' @return A `ggvibble_layer` object containing the supplied function. When
 #' added to a `ggvibble`, the function is executed and its returned layers are

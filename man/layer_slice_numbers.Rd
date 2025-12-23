@@ -5,11 +5,11 @@
 \title{Add slice numbers}
 \usage{
 layer_slice_numbers(
-  anchor = waiver(),
+  anchor = vbl_def(),
   ref_bb = "screen",
   wrap = "{slice}",
   angle = 0,
-  alpha = 0.8,
+  alpha = 0.9,
   color = "white",
   size = 3.5,
   ...
@@ -43,8 +43,4 @@ inserted into the plot.
 }
 \description{
 Add slice numbers as text labels to a \link{ggplane()}-plot.
-}
-\details{
-If \code{align} is used, the selected axis
-(\code{col} or \code{row}) is harmonized across all slices.
 }

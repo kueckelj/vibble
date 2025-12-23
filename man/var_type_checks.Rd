@@ -9,7 +9,7 @@
 \usage{
 is_categorical_var(x)
 
-is_mask_var()
+is_mask_var(x)
 
 is_numeric_var()
 }
@@ -28,7 +28,7 @@ Unlike the candidate checks used on raw NIfTI data, these functions operate
 on variables \emph{after} they have been converted into vibble format.
 They verify the expected final R types of voxel-wise columns:
 \itemize{
-\item \code{is_mask_var(x)} returns \code{TRUE} when \code{x} is a logical vector
+\item \code{is_mask_var(x)} returns \code{TRUE} when \code{x} is a logical vector with at least one TRUE value
 \item \code{is_categorical_var(x)} returns \code{TRUE} when \code{x} is a factor
 \item \code{is_numeric_var(x)} returns \code{TRUE} when \code{x} is numeric
 }

@@ -4,26 +4,43 @@
 \alias{layer_mask}
 \title{Add a masking layer}
 \usage{
-layer_mask(color, .cond = NULL, .by = NULL, opacity = 0.25, name = TRUE, ...)
+layer_mask(
+  .cond = NULL,
+  color = "red",
+  opacity = 0.25,
+  label = TRUE,
+  slices = NULL,
+  .by = "slice",
+  ...
+)
 }
 \arguments{
-\item{color}{Color used for the mask fill.}
-
 \item{.cond}{A logical filter expression that determines the specific
-voxels for which this layer is drawn. The expression is evaluated via
+voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
-\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
-group by before applying the filtering logic of \code{.cond}.}
+\item{color}{Character scalar. The \link[=is_color]{color} used for
+the mask.}
 
-\item{opacity}{Controls voxel transparency. Accepts constants, ranges, or
+\item{opacity}{Controls voxel transparency in raster layers. Accepts constants, ranges, or
 data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
-\item{name}{Logical or character scalar. If character, the name with which
-the color is associated with in the color legend. If logical, \code{FALSE} prevents
-appearance in the legend and \code{TRUE} falls back to the naming default of the
-function.}
+\item{label}{Logical or character scalar. Controls the legend label with which
+the color of this layer is associated with in the legend.
+
+\itemize{
+\item{Character: } Uses the provided value as the label.
+\item{\code{TRUE}: } Uses the function’s default to create the label.
+\item{\code{FALSE}: } Does not include the color in the legend.
+}}
+
+\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
+restrict the layer to specific slices. If \code{NULL}, no restriction
+is applied.}
+
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When
@@ -35,7 +52,7 @@ Overlay a logical mask on a \link{ggplane}() plot by filling
 voxels.
 }
 \details{
-The condition of \code{.cond} determines for which voxels are included in the mask.
+The condition of \code{.cond} determines which voxels are included in the mask.
 If no condition is provided (\code{.cond = NULL}) this layer masks every voxel in
-every slice of the 2D vibble passed to this layer by \code{ggplane()}.
+every slice of the 2D vibble passed to it by \code{ggplane()}.
 }

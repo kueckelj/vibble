@@ -4,7 +4,7 @@
 \alias{scale_fill_numeric}
 \title{Numeric fill scale for ggvibble plots}
 \usage{
-scale_fill_numeric(clrsp, ...)
+scale_fill_numeric(clrsp = vbl_def(), ...)
 }
 \arguments{
 \item{clrsp}{Character vector specifying the color mapping:

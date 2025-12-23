@@ -33,7 +33,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
   # build ggvibble
   g <-
-    ggplot2::ggplot(data = vbl2D, mapping = ggplot2::aes(x = col, y = row)) +
+    ggplot2::ggplot(data = vbl2D) +
     do.call(
       what = .ggplane_impl,
       args = c(list(vbl2D = vbl2D), p$base_args)
@@ -65,16 +65,16 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
     # 2. masks
     if(length(layers_mask) != 0){
 
-      color_naming <-
-        purrr::map(layers_mask, "color_nm") %>%
+      legend_labels <-
+        purrr::map(layers_mask, "legend_label") %>%
         purrr::flatten_chr()
 
-      if(length(color_naming) != 0){
+      if(length(legend_labels) != 0){
 
         g <-
           g +
           ggnewscale::new_scale_fill() +
-          ggplot2::scale_fill_manual(values = color_naming, name = vbl_opts("legend.name.mask"))
+          ggplot2::scale_fill_manual(values = legend_labels, name = vbl_opts("legend.name.mask"))
 
       }
 
@@ -89,16 +89,16 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
     # 3. bbs
     if(length(layers_bb) != 0){
 
-      color_naming <-
-        purrr::map(layers_bb, "color_nm") %>%
+      legend_labels <-
+        purrr::map(layers_bb, "legend_label") %>%
         purrr::flatten_chr()
 
-      if(length(color_naming) != 0){
+      if(length(legend_labels) != 0){
 
         g <-
           g +
           ggnewscale::new_scale_color() +
-          ggplot2::scale_color_manual(values = color_naming, name = vbl_opts("legend.name.bb"))
+          ggplot2::scale_color_manual(values = legend_labels, name = vbl_opts("legend.name.bb"))
 
       }
 
@@ -113,16 +113,16 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
     # 4. outlines
     if(length(layers_outline) != 0){
 
-      color_naming <-
-        purrr::map(layers_outline, "color_nm") %>%
+      legend_labels <-
+        purrr::map(layers_outline, "legend_label") %>%
         purrr::flatten_chr()
 
-      if(length(color_naming) != 0){
+      if(length(legend_labels) != 0){
 
         g <-
           g +
           ggnewscale::new_scale_color() +
-          ggplot2::scale_color_manual(values = color_naming, name = vbl_opts("legend.name.outline"))
+          ggplot2::scale_color_manual(values = legend_labels, name = vbl_opts("legend.name.outline"))
 
       }
 
@@ -189,35 +189,39 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 #'
 #' @export
 plot.ggvibble <- function(x,
-                          zstack = waiver(),
-                          offset_col = waiver(),
-                          offset_row = waiver(),
+                          zstack = NULL,
+                          offset_col = NULL,
+                          offset_row = NULL,
                           offset_reverse = FALSE,
                           ...){
 
+  # quick offset before plotting, if offset_reverse is not desired
   if(!isTRUE(offset_reverse)){
 
     # offset = 0 -> nothing happens
     x$vbl2D <-
       apply_offset(
         vbl2D = x$vbl2D,
-        offset_col = ifelse(.is_waiver(offset_col), 0, offset_col),
-        offset_row = ifelse(.is_waiver(offset_row), 0, offset_row)
+        offset_col = ifelse(is.null(offset_col), 0, offset_col),
+        offset_row = ifelse(is.null(offset_row), 0, offset_row)
       )
 
   }
 
+  # quick offset reversing before plotting
   if(isTRUE(offset_reverse)){
 
     x$vbl2D <- reverse_offset(x$vbl2D)
 
   }
 
-  if(!.is_waiver(zstack)){
+  # quick zstack changing before plotting
+  if(is.character(zstack)){
 
     x$vbl2D <- apply_zstack(vbl2D, zstack = zstack)
 
   }
+
 
   g <- as_ggplot(x)
 
@@ -455,14 +459,13 @@ Ops.ggvibble <- function(x, y){
 #' specified anatomical plane. Returns a `ggvibble` container that can be
 #' complemented with additional ggvibble layers.
 #'
-#' @param var Character scalar naming the variable to plot.
+#' @param var Character scalar. Name of the background variable to plot.
+#' If \code{NULL}, no background layer is drawn.
 #' @param slices Integer vector. Slice indices in the specified anatomical
-#' `plane` to be included in the plot.
-#' @param plane Character scalar. Anatomical plane. Defaults to `vbl_opts("plane")`.
+#' `plane` to be included in the plot. Defaults to using \link{slices_mid}`()`.
 #' @param ncol,nrow Passed to \link{facet_wrap()} in no-offset layouts.
 #' @param .cond Optional. A logical filter expression evaluated on the constructed
-#' `vbl2D`. The expression is evaluated via
-#' \link[rlang:args_data_masking]{data-masking} semantics.
+#' `vbl2D`. The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.
 #' @param ... Additional arguments forwarded to the fill scale functions.
 #' @inheritParams vibble2D
 #' @inheritParams vbl_doc
@@ -505,9 +508,9 @@ Ops.ggvibble <- function(x, y){
 #'
 #' @export
 ggplane <- function(vbl,
-                    var,
-                    slices,
-                    plane = vbl_opts("plane"),
+                    var = NULL,
+                    slices = vbl_def(),
+                    plane = vbl_def(),
                     crop = NULL,
                     expand = 0.1,
                     offset_col = 0,
@@ -515,15 +518,23 @@ ggplane <- function(vbl,
                     zstack = "asc",
                     ncol = NULL,
                     nrow = NULL,
-                    opacity = 1,
-                    clrp = vbl_opts("clrp"),
-                    clrsp = vbl_opts("clrsp"),
-                    verbose = vbl_opts("verbose"),
                     .cond = NULL,
                     .by = NULL,
                     ...){
 
   .stop_if_not(is_vbl(vbl))
+
+  plane <- .resolve_plane(plane = plane)
+
+  if(.is_vbl_def(slices)){
+
+    slices <- slices_mid(vbl, plane = plane)
+
+  } else {
+
+    .stop_if_not(is_slice_set(slices))
+
+  }
 
   # construct vbl2D
   vbl2D <- vibble2D(
@@ -538,11 +549,11 @@ ggplane <- function(vbl,
   .cond_quo <- rlang::enquo(.cond)
   vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = "ggplane()")
 
-  # manage z-stack
-  vbl2D <- apply_zstack(vbl2D, zstack = zstack)
-
   # apply offset
   vbl2D <- apply_offset(vbl2D, offset_col = offset_col, offset_row = offset_row)
+
+  # manage z-stack
+  vbl2D <- apply_zstack(vbl2D, zstack = zstack)
 
   assign("vbl2D", vbl2D, envir = .GlobalEnv)
 
@@ -553,13 +564,9 @@ ggplane <- function(vbl,
       slices = slices(vbl2D),
       base_args = list(
         var = var,
-        opacity = opacity,
-        clrp = clrp,
-        clrsp = clrsp,
         ncol = ncol,
         nrow = nrow,
         animate = FALSE,
-        verbose = verbose,
         ...
       ),
       layers = list()
@@ -577,13 +584,9 @@ ggplane <- function(vbl,
 #' @keywords internal
 .ggplane_impl <- function(vbl2D,
                           var,
-                          opacity,
-                          clrp,
-                          clrsp,
                           ncol,
                           nrow,
                           animate,
-                          verbose,
                           ...){
 
   # handle multiple slices
@@ -598,19 +601,36 @@ ggplane <- function(vbl,
   }
 
   # layer colors
-  if(is_numeric_var(vbl2D[[var]])){
+  if(is.character(var)){
 
-    layer_colors <- scale_fill_numeric(clrsp = clrsp, limits = .get_var_limits(vbl2D, var, verbose), ...)
+    layer_raster <-
+      ggplot2::geom_raster(
+        data = vbl2D,
+        mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
+        alpha = 1,
+        interpolate = vbl_opts("interpolate")
+      )
 
-  } else {
+    if(is_numeric_var(vbl2D[[var]])){
 
-    if(is_mask_var(vbl2D[[var]])){
+      layer_colors <- scale_fill_numeric(limits = .get_var_limits(vbl2D, var), ...)
 
-      vbl2D[[var]] <- factor(as.character(vbl2D[[var]]), levels = c("TRUE", "FALSE"))
+    } else {
+
+      if(is_mask_var(vbl2D[[var]])){
+
+        vbl2D[[var]] <- factor(as.character(vbl2D[[var]]), levels = c("TRUE", "FALSE"))
+
+      }
+
+      layer_colors <- scale_fill_categorical(name = var, names = levels(vbl2D[[var]]), ...)
 
     }
 
-    layer_colors <- scale_fill_categorical(clrp = clrp, name = var, names = levels(vbl2D[[var]]), ...)
+  } else {
+
+    layer_raster <- NULL
+    layer_colors <- NULL
 
   }
 
@@ -639,16 +659,16 @@ ggplane <- function(vbl,
 
   # construct plot
   list(
-    ggplot2::geom_raster(
-      data = vbl2D,
-      mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      alpha = .eval_tidy_opacity(vbl2D, opacity, var),
-      interpolate = vbl_opts("interpolate")
-    ),
+      layer_raster,
       layer_colors,
       layer_facet,
       ggplot2::scale_y_reverse(),
-      ggplot2::coord_equal(ratio = .ratio2D(vbl2D), xlim = col_lim, ylim = rev(row_lim), expand = FALSE),
+      ggplot2::coord_equal(
+        ratio = .ratio2D(vbl2D),
+        xlim = col_lim,
+        ylim = rev(row_lim),
+        expand = FALSE
+        ),
       ggplot2::theme_bw(),
       ggplot2::theme(
         legend.background = ggplot2::element_rect(fill = "black"),

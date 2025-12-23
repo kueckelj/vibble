@@ -9,14 +9,14 @@ layer_grid(
   row = 0.1,
   alpha = 0.25,
   color = "lightgrey",
-  linewidth = 0.5,
+  linewidth = 0.25,
   linetype = "solid"
 )
 }
 \arguments{
-\item{col, row}{Numeric or \code{NULL}. Controls vertical grid lines:
+\item{col}{Numeric or \code{NULL}. Controls vertical grid lines:
 \itemize{
-\item \code{length(col) > 1}: values are used directly as x-intercepts.
+\item \code{length(col) > 1}: values are used directly as col-intercepts.
 \item \code{length(col) == 1} and \code{col < 1}: interpreted as a proportion of
 the maximal \code{col} limit. Grid lines are placed symmetrically around the
 center (half the maximum) with that spacing.
@@ -26,23 +26,17 @@ the center.
 \item \code{NULL} or length 0: no vertical grid lines are drawn.
 }}
 
-\item{alpha, line_color, linewidth, linetype}{Aesthetic settings for grid appearance.
-Each can be supplied either as a single value or as a vector of length 2:
+\item{row}{Numeric or \code{NULL}. Controls horizontal grid lines. See \code{col} for
+details.}
+
+\item{alpha, color, linewidth, linetype}{\link[=vbl_doc_plot_aesthetics]{Aesthetic settings}
+for grid appearance. Each can be supplied either as a single value or as a vector of
+length 2:
 \itemize{
 \item \strong{Length 1}: The value is applied to both axes (vertical and
 horizontal grid lines).
-
 \item \strong{Length 2}: The first element is applied to vertical grid
-lines (controlled by \code{col}) and the second element to horizontal grid
-lines (controlled by \code{row}).
-}
-
-Input specifics:
-\itemize{
-\item \strong{alpha}: Numeric transparency in \verb{[0,1]}.
-\item \strong{color}: Any valid color specification.
-\item \strong{linewidth}: Positive numeric line width.
-\item \strong{linetype}: Any valid line type (e.g., \code{"solid"}, \code{"dashed"}).
+lines and the second element to horizontal grid lines.
 }}
 }
 \value{
@@ -53,14 +47,4 @@ inserted into the plot.
 \description{
 Draw vertical and/or horizontal grid lines at regular positions
 across slices of a \code{vbl2D} object.
-}
-\details{
-\code{layer_grid()} computes grid-line positions using \link{grid_intercepts}()
-based on the \code{col} and \code{row} settings and the coordinate limits stored in
-\code{var_smr}. For each slice, vertical lines are created via \link{geom_vline}()
-and horizontal lines via \link{geom_hline}(), using axis-specific aesthetics
-derived from \code{alpha}, \code{color}, \code{linewidth}, and \code{linetype}.
-
-This layer is primarily intended for visual guidance and debugging and can
-be combined with numeric, mask, or label layers in the \code{ggplane()} framework.
 }

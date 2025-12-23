@@ -22,34 +22,32 @@
 #' minimal and maximal `col` and `row` coordinates where `.cond` evaluates to `TRUE`.
 #' In all cases, the graphical rendering is handled by \link{geom_rect}().
 #'
+#' Bounding boxes are **always** computed slicewise.
+#'
 #' @export
-layer_bb <- function(color,
-                     .cond,
-                     .by = NULL,
+layer_bb <- function(.cond = NULL,
+                     color = "red",
                      fill = NA,
                      linetype = "solid",
                      linewidth = 0.75,
                      expand = as_abs(0.5),
-                     name = TRUE,
+                     label = TRUE,
+                     slices = NULL,
+                     .by = "slice",
                      ...){
 
   .cond_quo <- rlang::enquo(.cond)
 
-  color_nm <- NULL
-  if(isTRUE(name)){
-
-    color_nm <- purrr::set_names(color, rlang::quo_text(.cond_quo))
-
-  } else if(is.character(name)){
-
-    color_nm <- purrr::set_names(color, name)
-
-  }
+  # resolve label
+  legend_label <- .resolve_legend_label(label, color, rlang::quo_text(.cond_quo))
 
   vbl_layer(
     fun = function(vbl2D){
 
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = "layer_bb()")
+      layer_str <- glue::glue("layer_bb(..., color = '{color}')")
+
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_bb_impl(
         vbl2D = vbl2D,
@@ -58,12 +56,12 @@ layer_bb <- function(color,
         linetype = linetype,
         linewidth = linewidth,
         expand = expand,
-        name = names(color_nm),
+        name = names(legend_label),
         ...
       )
 
     },
-    color_nm = color_nm,
+    legend_label = legend_label,
     class_add = "layer_bb"
   )
 
@@ -96,33 +94,20 @@ layer_bb <- function(color,
 
 #' @rdname layer_bb
 #' @export
-layer_bb_data <- function(color = alpha("green", 0.7),
+layer_bb_data <- function(color = "#F28E2B",
                           fill = NA,
                           linetype = "solid",
                           linewidth = 0.75,
+                          label = TRUE,
                           slices = NULL,
-                          name = TRUE,
                           ...){
 
-  color_nm <- NULL
-  if(isTRUE(name)){
-
-    color_nm <- purrr::set_names(color, "Data")
-
-  } else if(is.character(name)){
-
-    color_nm <- purrr::set_names(color, name)
-
-  }
+  legend_label <- .resolve_legend_label(label, color, "Data")
 
   vbl_layer(
     fun = function(vbl2D){
 
-      if(is.numeric(slices)){
-
-        vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
-
-      }
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer = "layer_bb_data()")
 
       .layer_bb_data_impl(
         vbl2D = vbl2D,
@@ -130,12 +115,12 @@ layer_bb_data <- function(color = alpha("green", 0.7),
         fill = fill,
         linetype = linetype,
         linewidth = linewidth,
-        name = names(color_nm),
+        name = names(legend_label),
         ...
       )
 
     },
-    color_nm = color_nm,
+    legend_label = legend_label,
     class_add = "layer_bb"
   )
 
@@ -183,23 +168,15 @@ layer_bb_data <- function(color = alpha("green", 0.7),
 
 #' @rdname layer_bb
 #' @export
-layer_bb_plot <- function(color = alpha("yellow", 0.7),
+layer_bb_plot <- function(color = "#4CB36B",
                           fill = NA,
                           linetype = "solid",
                           linewidth = 0.75,
-                          name = TRUE,
+                          label = TRUE,
                           ...){
 
-  color_nm <- NULL
-  if(isTRUE(name)){
-
-    color_nm <- purrr::set_names(color, "Plot")
-
-  } else if(is.character(name)){
-
-    color_nm <- purrr::set_names(color, name)
-
-  }
+  # resolve label
+  legend_label <- .resolve_legend_label(label, color, "Plot")
 
   vbl_layer(
     fun = function(vbl2D){
@@ -248,33 +225,20 @@ layer_bb_plot <- function(color = alpha("yellow", 0.7),
 
 #' @rdname layer_bb
 #' @export
-layer_bb_screen <- function(color = alpha("blue", 0.7),
+layer_bb_screen <- function(color = "#4DA3D9",
                             fill = NA,
                             linetype = "solid",
                             linewidth = 0.75,
+                            label = TRUE,
                             slices = NULL,
-                            name = TRUE,
                             ...){
 
-  color_nm <- NULL
-  if(isTRUE(name)){
-
-    color_nm <- purrr::set_names(color, "Screen")
-
-  } else if(is.character(name)){
-
-    color_nm <- purrr::set_names(color, name)
-
-  }
+  legend_label <- .resolve_legend_label(label, color, "Screen")
 
   vbl_layer(
     fun = function(vbl2D){
 
-      if(is.numeric(slices)){
-
-        vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
-
-      }
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer = "layer_bb_screen()")
 
       .layer_bb_screen_impl(
         vbl2D = vbl2D,
@@ -282,12 +246,12 @@ layer_bb_screen <- function(color = alpha("blue", 0.7),
         fill = fill,
         linetype = linetype,
         linewidth = linewidth,
-        name = names(color_nm),
+        name = names(legend_label),
         ...
       )
 
     },
-    color_nm = color_nm,
+    legend_label = legend_label,
     class_add = "layer_bb"
   )
 
@@ -334,46 +298,33 @@ layer_bb_screen <- function(color = alpha("blue", 0.7),
 
 #' @rdname layer_bb
 #' @export
-layer_bb_slice <- function(color = alpha("red", 0.7),
+layer_bb_slice <- function(color = "#8F7BD4",
                            fill = NA,
                            linetype = "solid",
                            linewidth = 0.75,
+                           label = TRUE,
                            slices = NULL,
-                           name = TRUE,
                            ...){
 
-  color_nm <- NULL
-  if(isTRUE(name)){
-
-    color_nm <- purrr::set_names(color, "Slice")
-
-  } else if(is.character(name)){
-
-    color_nm <- purrr::set_names(color, name)
-
-  }
+  legend_label <- .resolve_legend_label(label, color, "Slice")
 
   vbl_layer(
     fun = function(vbl2D){
 
-      if(is.numeric(slices)){
-
-        vbl2D <- dplyr::filter(vbl2D, slice %in% slices)
-
-      }
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer = "layer_bb_slice()")
 
       .layer_bb_slice_impl(
         vbl2D = vbl2D,
         color = color,
         fill = fill,
-        name = names(color_nm),
+        name = names(legend_label),
         linetype = linetype,
         linewidth = linewidth,
         ...
       )
 
     },
-    color_nm = color_nm,
+    legend_label = legend_label,
     class_add = "layer_bb"
   )
 
@@ -426,7 +377,7 @@ layer_bb_slice <- function(color = alpha("red", 0.7),
 #' @param var Character. The name of a factor-variable with categorical labels.
 #' If a logical (mask) variable is specified, it is treated as a categorical one
 #' with labels = c('TRUE', 'FALSE').
-#' @param ... Additional arguments passed to \link{scale_fill_manual}().
+#' @param ... Additional arguments passed to \link{scale_fill_categorical}().
 #'
 #' @inherit vbl_doc_layer params return
 #'
@@ -434,11 +385,12 @@ layer_bb_slice <- function(color = alpha("red", 0.7),
 #' @inheritParams vbl_doc
 #' @export
 layer_categorical <- function(var,
-                              clrp = "default",
+                              clrp = "hue_pal",
                               clrp_adjust = NULL,
-                              opacity = 0.45,
+                              opacity = 0.25,
+                              slices = NULL,
                               .cond = NULL,
-                              .by = NULL,
+                              .by = "slice",
                               ...){
 
   opacity_quo <- rlang::enquo(opacity)
@@ -447,8 +399,10 @@ layer_categorical <- function(var,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_categorical(var = '{var}', ...")
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+      layer_str <- glue::glue("layer_categorical(var = '{var}', ...")
+
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_categorical_impl(
         vbl2D = vbl2D,
@@ -469,9 +423,9 @@ layer_categorical <- function(var,
 #' @keywords internal
 .layer_categorical_impl <- function(vbl2D,
                                     var,
-                                    clrp = "default",
-                                    clrp_adjust = NULL,
-                                    opacity = 0.45,
+                                    clrp,
+                                    clrp_adjust,
+                                    opacity,
                                     ...){
 
   if(is_mask_var(vbl2D[[var]])){
@@ -480,15 +434,13 @@ layer_categorical <- function(var,
 
   }
 
-  is_vartype(vbl2D, var = var, type = "categorical")
+  var <- .check_input_var(vbl2D, var = var, type = "categorical")
 
   vbl2D <- vbl2D[!is.na(vbl2D[[var]]), ]
 
   if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
 
   if(is.character(vbl2D[[var]])){ vbl2D[[var]] <- as.factor(vbl2D[[var]]) }
-
-  cvec <- color_vector(clrp, names = levels(vbl2D[[var]]), clrp_adjust = clrp_adjust)
 
   alpha_use <- .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
 
@@ -534,17 +486,18 @@ layer_categorical <- function(var,
 #'   layer_crop(brain, expand = 0.05)
 #'
 #' @export
-layer_crop <- function(.cond, ...){
+layer_crop <- function(.cond, expand = FALSE, ...){
 
   .cond_quo <- rlang::enquo(.cond)
 
   vbl_layer(
     fun = function(vbl2D){
 
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, layer = "layer_crop()")
+      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, layer = "layer_crop()")
 
       .layer_crop_impl(
         vbl2D = vbl2D,
+        expand = expand,
         ...
       )
 
@@ -555,14 +508,14 @@ layer_crop <- function(.cond, ...){
 }
 
 #' @keywords internal
-.layer_crop_impl <- function(vbl2D,
-                             ...){
+.layer_crop_impl <- function(vbl2D, expand, ...){
 
   plot_lim <-
     list(
       col = range(vbl2D$col),
       row = range(vbl2D$row)
-    )
+    ) %>%
+    expand_bb2D(expand = expand)
 
   layer_lst <-
     list(
@@ -586,9 +539,9 @@ layer_crop <- function(.cond, ...){
 #' @description Draw vertical and/or horizontal grid lines at regular positions
 #' across slices of a `vbl2D` object.
 #'
-#' @param col,row Numeric or `NULL`. Controls vertical grid lines:
+#' @param col Numeric or `NULL`. Controls vertical grid lines:
 #' \itemize{
-#'   \item `length(col) > 1`: values are used directly as x-intercepts.
+#'   \item `length(col) > 1`: values are used directly as col-intercepts.
 #'   \item `length(col) == 1` and `col < 1`: interpreted as a proportion of
 #'   the maximal `col` limit. Grid lines are placed symmetrically around the
 #'   center (half the maximum) with that spacing.
@@ -597,45 +550,32 @@ layer_crop <- function(.cond, ...){
 #'   the center.
 #'   \item `NULL` or length 0: no vertical grid lines are drawn.
 #' }
-#' @param alpha,line_color,linewidth,linetype Aesthetic settings for grid appearance.
-#' Each can be supplied either as a single value or as a vector of length 2:
+#'
+#' @param row Numeric or `NULL`. Controls horizontal grid lines. See `col` for
+#' details.
+#' @param alpha,color,linewidth,linetype \link[=vbl_doc_plot_aesthetics]{Aesthetic settings}
+#' for grid appearance. Each can be supplied either as a single value or as a vector of
+#' length 2:
 #' \itemize{
 #'   \item \strong{Length 1}: The value is applied to both axes (vertical and
 #'   horizontal grid lines).
-#'
 #'   \item \strong{Length 2}: The first element is applied to vertical grid
-#'   lines (controlled by `col`) and the second element to horizontal grid
-#'   lines (controlled by `row`).
-#' }
-#'
-#' Input specifics:
-#' \itemize{
-#'   \item \strong{alpha}: Numeric transparency in `[0,1]`.
-#'   \item \strong{color}: Any valid color specification.
-#'   \item \strong{linewidth}: Positive numeric line width.
-#'   \item \strong{linetype}: Any valid line type (e.g., `"solid"`, `"dashed"`).
+#'   lines and the second element to horizontal grid lines.
 #' }
 #'
 #' @inherit vbl_doc_layer return
-#'
-#' @details
-#' `layer_grid()` computes grid-line positions using \link{grid_intercepts}()
-#' based on the `col` and `row` settings and the coordinate limits stored in
-#' `var_smr`. For each slice, vertical lines are created via \link{geom_vline}()
-#' and horizontal lines via \link{geom_hline}(), using axis-specific aesthetics
-#' derived from `alpha`, `color`, `linewidth`, and `linetype`.
-#'
-#' This layer is primarily intended for visual guidance and debugging and can
-#' be combined with numeric, mask, or label layers in the `ggplane()` framework.
 #'
 #' @export
 layer_grid <- function(col = 0.1,
                        row = 0.1,
                        alpha = 0.25,
                        color = "lightgrey",
-                       linewidth = 0.5,
+                       linewidth = 0.25,
                        linetype = "solid"
                        ){
+
+  alpha <- .default_alpha(alpha, key = "alpha.grid")
+  color <- .default_color(color, key = "clr.grid")
 
   vbl_layer(
     fun = function(vbl2D){
@@ -658,17 +598,18 @@ layer_grid <- function(col = 0.1,
 
 #' @export
 .layer_grid_impl <- function(vbl2D,
+                             ref_bb,
                              col,
                              row,
                              alpha,
                              color,
-                             linewidth,
-                             linetype
+                             linetype,
+                             linewidth
                              ){
 
   style_lst <-
-    list(alpha = alpha, color = color, linewidth = linewidth, linetype = linetype) %>%
-    purrr::map(.f = ~ if(length(.x) ==1 ){ rep(.x, 2) } else { .x } )
+    list(alpha = alpha, color = color, linetype = linetype, linewidth = linewidth) %>%
+    purrr::map(.f = ~ if(length(.x) == 1){ rep(.x, 2) } else { .x } )
 
   data <-
     tidyr::expand_grid(
@@ -718,22 +659,23 @@ layer_grid <- function(col = 0.1,
 #' Computes slice-wise centroid positions of categorical label regions and adds
 #' text annotations for each label.
 #'
-#' @param var Character. Name of a categorical variable to annotate.
+#' @param var Character. Name of a categorical variable from which to draw the labels.
 #' @param include Optional character vector of labels to include. If named the
-#' labels are renamed according to *c('<orig label>' = '<displayed label>').
+#' labels are renamed according to `c(<orig label> = <displayed label>)`.
 #' @param exclude Optional character vector of labels to exclude.
-#' @param alpha Numeric transparency for label text.
+#' @param alpha Text alpha (transparency) passed to `geom_text()`.
 #' @param color Text color passed to `geom_text()`.
 #' @param size Text size passed to `geom_text()`.
-#' @param use_dbscan Logical. If TRUE, label voxels within each slice are clustered
-#' using `dbscan2D()` before centroid computation; otherwise all voxels of a label
-#' form a single region.
+#' @param use_dbscan Logical. If `TRUE` (default), label voxels within each slice
+#' are clustered using `dbscan2D()` before centroid computation; otherwise all
+#' voxels of a label form a single region.
 #' @param centroid The function with which to compute the centroid label position
 #' based on col and row. A named list of functions can be supplied, where names
 #' must be *c('col', 'row')*.
-#' @param abbrev Optional function applied to label names for abbreviation.
-#' @param repel Logical. If `TRUE`, the text is rendered with \link{geom_text_repel}()
-#' else with \link{geom_text}().
+#' @param abbrev Optional function or formula applied to label names for abbreviation.
+#' Should take a and return a character scalar.
+#' @param repel Logical. If `TRUE`, the text is rendered with \link{geom_text_repel}(),
+#' which prevents label overlap. If `FALSE`, text ist rendered with \link{geom_text}().
 #' @param ... Additional arguments passed to `geom_text()` or `geom_text_repel()`.
 #'
 #' @inherit vbl_doc_layer params return
@@ -756,13 +698,14 @@ layer_labels <- function(var,
                          exclude = NULL,
                          alpha = 0.9,
                          color = "white",
-                         size = 4.5,
+                         size = 3.5,
                          use_dbscan = TRUE,
                          centroid = median,
                          abbrev = NULL,
-                         repel = FALSE,
+                         repel = TRUE,
+                         slices = NULL,
                          .cond = NULL,
-                         .by = NULL,
+                         .by = "slice",
                          ...){
 
   .cond_quo <- rlang::enquo(.cond)
@@ -770,8 +713,10 @@ layer_labels <- function(var,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_labels(var = '{var}', ...")
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+      layer_str <- glue::glue("layer_labels(var = '{var}', ...")
+
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_labels_impl(
         vbl2D = vbl2D,
@@ -808,6 +753,8 @@ layer_labels <- function(var,
                                repel,
                                ...){
 
+  var <- .check_input_var(vbl2D, var = var, type = "categorical")
+
   if(!is.list(centroid)){
 
     stopifnot(is.function(centroid))
@@ -840,8 +787,6 @@ layer_labels <- function(var,
 
   if(is.character(exclude)){ labels <- labels[!labels %in% exclude] }
 
-
-
   data <-
     purrr::map_df(
       .x = slices(vbl2D),
@@ -853,7 +798,7 @@ layer_labels <- function(var,
           .x = labels[labels %in% slice_df[[var]]],
           .f = function(label){
 
-            label_df <- slice_df[slice_df[[var]] == label,]
+            label_df <- dplyr::filter(slice_df, !!rlang::sym(var) == {{ label }})
 
             if(isTRUE(use_dbscan)){
 
@@ -930,54 +875,49 @@ layer_labels <- function(var,
 #' @description Overlay a logical mask on a \link{ggplane}() plot by filling
 #' voxels.
 #'
-#' @param color Color used for the mask fill.
+#' @param color Character scalar. The \link[=is_color]{color} used for
+#' the mask.
 #'
 #' @details
-#' The condition of `.cond` determines for which voxels are included in the mask.
+#' The condition of `.cond` determines which voxels are included in the mask.
 #' If no condition is provided (`.cond = NULL`) this layer masks every voxel in
-#' every slice of the 2D vibble passed to this layer by `ggplane()`.
+#' every slice of the 2D vibble passed to it by `ggplane()`.
 #'
 #' @inherit vbl_doc_layer params return
 #' @inheritParams vbl_doc
 #'
 #' @export
-layer_mask <- function(color,
-                       .cond = NULL,
-                       .by = NULL,
+layer_mask <- function(.cond = NULL,
+                       color = "red",
                        opacity = 0.25,
-                       name = TRUE,
+                       label = TRUE,
+                       slices = NULL,
+                       .by = "slice",
                        ...){
 
-  opacity_quo <- rlang::enquo(opacity)
   .cond_quo <- rlang::enquo(.cond)
+  opacity_quo <- rlang::enquo(opacity)
 
-  color_nm <- NULL
-  if(isTRUE(name)){
-
-    color_nm <- purrr::set_names(color, rlang::quo_text(.cond_quo))
-
-  } else if(is.character(name)){
-
-    color_nm <- purrr::set_names(color, name)
-
-  }
+  legend_label <- .resolve_legend_label(label, color, rlang::quo_text(.cond_quo))
 
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_mask(color = '{color}', ...)")
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+      layer_str <- glue::glue("layer_mask(..., color = '{color}')")
+
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_mask_impl(
         vbl2D = vbl2D,
         color = color,
         opacity = opacity_quo,
-        name = names(color_nm),
+        name = names(legend_label),
         ...
       )
 
     },
-    color_nm = color_nm,
+    legend_label = legend_label,
     class_add = "layer_mask"
   )
 
@@ -1082,9 +1022,10 @@ layer_misc <- function(...){
 #' @export
 layer_numeric <- function(var,
                           clrsp,
-                          opacity = c(0.2, 0.45),
+                          opacity = 0.25,
+                          slices = NULL,
                           .cond = NULL,
-                          .by = NULL,
+                          .by = "slice",
                           ...){
 
   .cond_quo <- rlang::enquo(.cond)
@@ -1093,9 +1034,10 @@ layer_numeric <- function(var,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer <- glue::glue("layer_numeric(var = '{var}', ...)")
+      layer_str <- glue::glue("layer_numeric(var = '{var}', ...)")
 
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_numeric_impl(
         vbl2D = vbl2D,
@@ -1115,10 +1057,10 @@ layer_numeric <- function(var,
 .layer_numeric_impl <- function(vbl2D,
                                 var,
                                 clrsp,
-                                opacity = c(0.2, 0.45),
+                                opacity,
                                 ...){
 
-  is_vartype(vbl2D, var = var, type = "numeric")
+  var <- .check_input_var(vbl2D, var = var, type = "numeric")
 
   if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
 
@@ -1139,14 +1081,11 @@ layer_numeric <- function(var,
 
 }
 
-
-
 #' @title Add outlines
 #' @description Overlay a \link{ggplane}() plot by outlining voxels
 #' that match a certain condition.
 #'
 #' @param alpha Numeric. Controls the transparency of the lines.
-#' @param color Character. Controls the color used for the lines.
 #' @param use_dbscan Logical. If `TRUE`, for every slice \link[dbscan:dbscan]{DBSCAN}
 #' is used to identify spatial islands of voxels matching the condition which
 #' are then outlined separately.
@@ -1162,33 +1101,26 @@ layer_numeric <- function(var,
 #' @inheritParams vbl_doc
 #'
 #' @export
-layer_outline <- function(color,
-                          .cond = NULL,
-                          .by = NULL,
+layer_outline <- function(.cond = NULL,
+                          color = "gold",
                           linetype = "solid",
                           linewidth = 0.75,
                           use_dbscan = TRUE,
-                          concavity = 2.5,
+                          concavity = 1,
                           clip_overlap = TRUE,
-                          name = TRUE,
+                          label = TRUE,
+                          slices = NULL,
+                          .by = "slice",
                           ...){
 
   .cond_quo <- rlang::enquo(.cond)
 
-  color_nm <- NULL
-  if(isTRUE(name)){
-
-    color_nm <- purrr::set_names(color, rlang::quo_text(.cond_quo))
-
-  } else if(is.character(name)){
-
-    color_nm <- purrr::set_names(color, name)
-
-  }
+  legend_label <- .resolve_legend_label(label, color, rlang::quo_text(.cond_quo))
 
   vbl_layer(
     fun = function(vbl2D){
 
+      # compute full outlines before subsetting!
       outlines_slice <- NULL
       if(is_offset(vbl2D)){
 
@@ -1196,14 +1128,16 @@ layer_outline <- function(color,
           .comp_outlines(
             vbl2D = vbl2D,
             var = NULL,
-            concavity = concavity,
+            concavity = 2,
             use_dbscan = FALSE
           )
 
       }
 
-      layer <- glue::glue("layer_outline(color = '{color}', ...)")
-      vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = layer)
+      layer_str <- glue::glue("layer_outline(color = '{color}', ...)")
+
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_outline_impl(
         vbl2D = vbl2D,
@@ -1214,12 +1148,12 @@ layer_outline <- function(color,
         concavity = concavity,
         clip_overlap = clip_overlap,
         outlines_slice = outlines_slice,
-        name = names(color_nm),
+        name = names(legend_label),
         ...
       )
 
     },
-    color_nm = color_nm,
+    legend_label = legend_label,
     class = "layer_outline"
   )
 
@@ -1384,17 +1318,13 @@ layer_outline <- function(color,
 #'
 #' @inherit vbl_doc_layer return
 #'
-#' @details
-#' If \code{align} is used, the selected axis
-#' (\code{col} or \code{row}) is harmonized across all slices.
-#'
 #' @export
 
-layer_slice_numbers <- function(anchor = waiver(),
+layer_slice_numbers <- function(anchor = vbl_def(),
                                 ref_bb = "screen",
                                 wrap = "{slice}",
                                 angle = 0,
-                                alpha = 0.8,
+                                alpha = 0.9,
                                 color = "white",
                                 size = 3.5,
                                 ...){
@@ -1436,7 +1366,7 @@ layer_slice_numbers <- function(anchor = waiver(),
   ref_bb <- .match_arg(ref_bb, choices = c("data", "screen", "slice"))
 
   # anchor sanity checks and conversion to anchor as a relative image anchor
-  if(.is_waiver(anchor)){
+  if(.is_vbl_def(anchor)){
 
     anchor <-
       dplyr::case_when(
@@ -1500,7 +1430,6 @@ layer_slice_numbers <- function(anchor = waiver(),
       label = as.character(glue::glue(wrap))
     )
 
-  # plot
   list(
     ggplot2::geom_text(
       data = df,
@@ -1514,8 +1443,6 @@ layer_slice_numbers <- function(anchor = waiver(),
   )
 
 }
-
-
 
 
 #' @title Add orthogonal slice references
@@ -1537,52 +1464,50 @@ layer_slice_numbers <- function(anchor = waiver(),
 #'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
 #'     \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 #'   }
-#' @param label_pos Character, logical, or `waiver()`. Controls where slice
-#'   projection labels are placed relative to the projection line. Allowed values
-#'   are the anchor names *c("top", "bottom", "left", "right", "top-left", "top-right",
-#'   "bottom-left", "bottom-right")*.
+#' @param label_pos Character, logical, or `vbl_def()`. Position of slice projection
+#'   labels relative to the projection line.
 #'
-#'   If `waiver()`, a default position is chosen based on the projection axis
-#'   (top for column projections, left for row projections).
+#'   \itemize{
+#'     \item{character: } One of *c("top", "bottom", "left", "right",
+#'       "top-left", "top-right", "bottom-left", "bottom-right")*.
+#'     \item{`vbl_def()`: } Internal default based on the projection axis.
+#'     \item{`FALSE`: } Do not draw labels.
+#'   }
 #'
-#'   If `FALSE`, labels are not drawn.
+#' @param label_just Numeric vector of length two or `vbl_def()`. Text justification
+#'   for labels, passed to `geom_text()` as `hjust` and `vjust`.
 #'
-#' @param label_just Numeric vector of length two or `waiver()`. Horizontal and
-#'   vertical text justification passed to `geom_text()` as `hjust` and `vjust`.
-#'
-#'   If `waiver()`, justification is computed automatically from `label_pos`,
-#'   the projection axis, and `spacer`.
-#'   If supplied, must be a numeric vector *c(hjust, vjust)*.
+#'   \itemize{
+#'     \item{`vbl_def()`: } Compute justification automatically from `label_pos`,
+#'       the projection axis, and `spacer`.
+#'     \item{Numeric: } Explicit justification given as *c(hjust, vjust)*.
+#'   }
 #' @param linewidth Numeric line width passed to \code{geom_segment()}.
-#' @param linetype Line type passed to \code{geom_segment()}.
 #' @param size Numeric text size passed to \code{geom_text()}.
-#' @param spacer Numeric scalar. Controls the offset used when computing default
-#'   text justification for slice projection labels.
-#'
-#'   The value is applied as a small additive or subtractive adjustment to the
-#'   automatically determined `hjust` and `vjust` values when `label_just =
-#'   waiver()`. Larger values move labels further away from the projection line.
+#' @param label_spacer Numeric scalar. Controls the offset used when computing default
+#' text justification for slice projection labels. Larger values move labels further away
+#' from the projection line.
 #' @param ... Additional arguments forwarded to \code{geom_text()}.
 #'
 #' @inherit vbl_doc_layer params return
 #'
 #' @note Label alignment (\code{hjust}/\code{vjust}) is determined
-#' automatically from \code{anchor}.
+#' automatically from \code{label_just}.
 #'
 #' @export
 
 layer_slice_projections <- function(slices_proj,
                                     plane_proj,
-                                    color = "red",
-                                    alpha = 1,
-                                    size = 3.5,
-                                    linewidth = 0.75,
-                                    linetype = "solid",
                                     ref_bb = "data",
-                                    spacer = 0.75,
-                                    label_pos = waiver(),
-                                    label_just = waiver(),
-                                    slices = waiver(),
+                                    alpha = 0.9,
+                                    color = "red",
+                                    size = 3.5,
+                                    linetype = "solid",
+                                    linewidth = 0.5,
+                                    label_pos = vbl_def(),
+                                    label_just = vbl_def(),
+                                    label_spacer = vbl_def(),
+                                    slices = NULL,
                                     ...){
 
   vbl_layer(
@@ -1593,6 +1518,8 @@ layer_slice_projections <- function(slices_proj,
         .glue_stop("`layer_slice_projections(plane_proj = '{plane_proj}')` is not possible with `ggplane(..., plane = '{plane(vbl2D)}').")
 
       }
+
+      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
 
       .layer_slice_projections_impl(
         vbl2D = vbl2D,
@@ -1606,8 +1533,7 @@ layer_slice_projections <- function(slices_proj,
         ref_bb = ref_bb,
         label_pos = label_pos,
         label_just = label_just,
-        spacer = spacer,
-        slices = slices,
+        label_spacer = label_spacer,
         ...
       )
 
@@ -1629,8 +1555,7 @@ layer_slice_projections <- function(slices_proj,
                                           ref_bb,
                                           label_pos,
                                           label_just,
-                                          spacer,
-                                          slices,
+                                          label_spacer,
                                           ...){
 
   vbl2D_proj <- reverse_offset(vbl2D)
@@ -1652,16 +1577,6 @@ layer_slice_projections <- function(slices_proj,
       plane = plane(vbl2D),
       plane_proj = plane_proj
     )
-
-  if(!is.numeric(slices)){
-
-    slices <- slices(vbl2D)
-
-  } else {
-
-    stopifnot(all(slices %in% slices(vbl2D)))
-
-  }
 
   layer_lst <- list()
 
@@ -1727,7 +1642,7 @@ layer_slice_projections <- function(slices_proj,
   if(isFALSE(label_pos)) return(layer_lst)
 
   # label positioning
-  if(.is_waiver(label_pos)){
+  if(.is_vbl_def(label_pos)){
 
     label_pos <- ifelse(axis_proj == "col", "top", "left")
 
@@ -1750,9 +1665,11 @@ layer_slice_projections <- function(slices_proj,
     )
 
   # label justification
-  if(.is_waiver(label_just)){
+  if(.is_vbl_def(label_just)){
 
-    label_just <- .label_just(label_pos, axis_proj, spacer)
+    label_spacer <- .resolve_label_spacer(label_spacer)
+
+    label_just <- .label_just(label_pos, axis_proj, label_spacer)
 
   } else {
 

@@ -1,6 +1,7 @@
 # Verbs and manipulation helpers, all attribute-safe.
 
 #' @importFrom rlang sym
+#' @export
 add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, fn = max, verbose = vbl_opts("verbose")){
 
   stopifnot(is.numeric(vbl[[var]]))
@@ -12,7 +13,7 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, fn = max, 
 
   # kmeans cluster to separate based on intensity
   set.seed(seed)
-  vbl[[var_out]] <- as.character(x = kmeans(x = vbl[[var]], centers = 2)$cluster)
+  vbl[[var_out]] <- as.character(x = kmeans(x = tidyr::replace_na(vbl[[var]], 0), centers = 2)$cluster)
 
   # foreground based on intensity only
   fg <-
@@ -50,7 +51,7 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, fn = max, 
           poly <-
             concaveman::concaveman(
               points = as.matrix(mask[,c("col", "row")]),
-              concavity = 1
+              concavity = 2.5
             ) %>%
             as.data.frame() %>%
             magrittr::set_colnames(value = c("col", "row"))
@@ -66,7 +67,7 @@ add_var_head_mask <- function(vbl, var, var_out = "head", seed = 123, fn = max, 
 
         }
 
-        return(unique(out, mask$id))
+        return(out)
 
       }
     )
@@ -178,11 +179,10 @@ dbscan3D <- function(vbl,
                      eps = 1.5,
                      minPts = 1,
                      min_size = NULL,
-                     rm0 = FALSE){
+                     rm_outlier = FALSE){
 
-  stopifnot(var %in% colnames(vbl))
-  stopifnot(is.logical(vbl[[var]]))
-  stopifnot(sum(vbl[[var]]) > 1 & sum(vbl[[var]]) < nrow(vbl))
+  .stop_if_not(is_vbl(vbl))
+  .check_input_var(vbl, var, type = "mask")
 
   vox_apply <- vbl[[var]]
 
@@ -198,7 +198,7 @@ dbscan3D <- function(vbl,
     if(min_size < 1){
 
       max_size <-
-        purrr::map_dbl(.x = attr(vbl, "ccs_limits"), .f = max) %>%
+        purrr::map_dbl(.x = ccs_limits(vbl), .f = max) %>%
         prod()
 
       min_size <- ceiling(max_size * min_size)
@@ -214,16 +214,17 @@ dbscan3D <- function(vbl,
 
   }
 
-  if(isTRUE(rm0)){
+  clusters <- unique(dbscan_out$cluster)
+  if(isTRUE(rm_outlier)){
 
-    vbl <- vbl[vox_apply & vbl[[var_out]] != 0, ]
+    clusters <- clusters[clusters != 0]
 
   }
 
   vbl[[var_out]] <-
     factor(
       x = paste0(pref_out, vbl[[var_out]]),
-      levels = paste0(pref_out, sort(unique(c(0, dbscan_out$cluster))))
+      levels = paste0(pref_out, sort(unique(c(clusters))))
     )
 
   return(vbl)
@@ -245,10 +246,7 @@ dbscan3D <- function(vbl,
 #' @return
 #' A filtered `vbl2D` object.
 #'
-#' @seealso
-#' is_vbl2D(),
-#' is_bb2D(),
-#' within_limits()
+#' @export
 filter_bb2D <- function(vbl2D, bb2D, null_ok = TRUE){
 
   stopif(is_offset(vbl2D))
@@ -278,9 +276,7 @@ filter_bb2D <- function(vbl2D, bb2D, null_ok = TRUE){
 #' @return
 #' A filtered `vbl` object.
 #'
-#' @seealso
-#' is_bb3D(),
-#' within_limits()
+#' @export
 filter_bb3D <- function(vbl, bb3D, null_ok = TRUE){
 
   .stop_if_not(is_bb3D(bb3D))
@@ -295,15 +291,23 @@ filter_bb3D <- function(vbl, bb3D, null_ok = TRUE){
 }
 
 
+
 #' @export
-filter_mask <- function(vbl, var){
+filter_mask <- function(data, var, rmM = TRUE){
 
-  stopifnot(is.logical(vbl[[var]]))
+  is_vartype(data, var = var, type = "mask")
 
-  vbl <- vbl[vbl[[var]], ]
-  vbl[[var]] <- NULL
+  data[[var]] <- tidyr::replace_na(data[[var]], replace = FALSE)
 
-  return(vbl)
+  data <- data[data[[var]], ]
+
+  if(isTRUE(rmM)){
+
+    data[[var]] <- NULL
+
+  }
+
+  return(data)
 
 }
 
@@ -453,3 +457,6 @@ join_vibbles <- function(a, b, .rfn = NULL, join = "full", ...){
   return(out)
 
 }
+
+
+

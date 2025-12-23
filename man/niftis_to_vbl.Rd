@@ -8,6 +8,7 @@ niftis_to_vbl(
   x,
   rgx_fp = ".*",
   rgx_var = ".*",
+  strip_var = NULL,
   recursive = FALSE,
   join = "full",
   .rfn = NULL,
@@ -24,6 +25,9 @@ matching NIfTI files.}
 
 \item{rgx_var}{Character scalar. Regular expression used to extract variable names from
 the basename (without extension) of each NIfTI file.}
+
+\item{strip_var}{Characte vector. A set of \code{pattern} inputs that are stripped from variable
+names via \link{str_remove_all}().}
 
 \item{recursive}{Logical. If \code{TRUE} and \code{x} is a directory it is searched recursively for NIfTI files.}
 

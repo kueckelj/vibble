@@ -21,8 +21,3 @@ A filtered \code{vbl2D} object.
 Filters a \code{vbl2D} object to rows whose \code{col} and \code{row} coordinates fall within
 a given 2D bounding box.
 }
-\seealso{
-is_vbl2D(),
-is_bb2D(),
-within_limits()
-}

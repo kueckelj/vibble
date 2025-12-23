@@ -5,28 +5,24 @@
 \title{Add outlines}
 \usage{
 layer_outline(
-  color,
   .cond = NULL,
-  .by = NULL,
+  color = "gold",
   linetype = "solid",
   linewidth = 0.75,
   use_dbscan = TRUE,
-  concavity = 2.5,
+  concavity = 1,
   clip_overlap = TRUE,
-  name = TRUE,
+  label = TRUE,
+  slices = NULL,
+  .by = "slice",
   ...
 )
 }
 \arguments{
-\item{color}{Character. Controls the color used for the lines.}
-
 \item{.cond}{A logical filter expression that determines the specific
-voxels for which this layer is drawn. The expression is evaluated via
+voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
-
-\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
-group by before applying the filtering logic of \code{.cond}.}
 
 \item{linetype}{Defines the line pattern. Supported values:
 \itemize{
@@ -49,10 +45,21 @@ but they can produce pretty crazy shapes.}
 content from each slice is clipped so that it cannot extend into adjacent
 slice regions.}
 
-\item{name}{Logical or character scalar. If character, the name with which
-the color is associated with in the color legend. If logical, \code{FALSE} prevents
-appearance in the legend and \code{TRUE} falls back to the naming default of the
-function.}
+\item{label}{Logical or character scalar. Controls the legend label with which
+the color of this layer is associated with in the legend.
+
+\itemize{
+\item{Character: } Uses the provided value as the label.
+\item{\code{TRUE}: } Uses the function’s default to create the label.
+\item{\code{FALSE}: } Does not include the color in the legend.
+}}
+
+\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
+restrict the layer to specific slices. If \code{NULL}, no restriction
+is applied.}
+
+\item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
+group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
 
 \item{alpha}{Numeric. Controls the transparency of the lines.}
 }

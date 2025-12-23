@@ -7,16 +7,16 @@
 layer_slice_projections(
   slices_proj,
   plane_proj,
-  color = "red",
-  alpha = 1,
-  size = 3.5,
-  linewidth = 0.75,
-  linetype = "solid",
   ref_bb = "data",
-  spacer = 0.75,
-  label_pos = waiver(),
-  label_just = waiver(),
-  slices = waiver(),
+  alpha = 0.9,
+  color = "red",
+  size = 3.5,
+  linetype = "solid",
+  linewidth = 0.5,
+  label_pos = vbl_def(),
+  label_just = vbl_def(),
+  label_spacer = vbl_def(),
+  slices = NULL,
   ...
 )
 }
@@ -26,18 +26,6 @@ layer_slice_projections(
 \item{plane_proj}{Character scalar specifying the anatomical plane of the
 projected slices. Must differ from the plane used in \link{ggplane}().}
 
-\item{color}{Character vector of length one or two specifying colors for
-the line and labels (recycled if length one).}
-
-\item{alpha}{Numeric vector of length one or two specifying alpha for
-the line and labels (recycled if length one).}
-
-\item{size}{Numeric text size passed to \code{geom_text()}.}
-
-\item{linewidth}{Numeric line width passed to \code{geom_segment()}.}
-
-\item{linetype}{Line type passed to \code{geom_segment()}.}
-
 \item{ref_bb}{Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
 to use when spanning the projection lines and anchoring slice labels:
 \itemize{
@@ -46,31 +34,49 @@ to use when spanning the projection lines and anchoring slice labels:
 \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 }}
 
-\item{spacer}{Numeric scalar. Controls the offset used when computing default
-text justification for slice projection labels.
+\item{alpha}{Numeric vector of length one or two specifying alpha for
+the line and labels (recycled if length one).}
 
-The value is applied as a small additive or subtractive adjustment to the
-automatically determined \code{hjust} and \code{vjust} values when \code{label_just = waiver()}. Larger values move labels further away from the projection line.}
+\item{color}{Character vector of length one or two specifying colors for
+the line and labels (recycled if length one).}
 
-\item{label_pos}{Character, logical, or \code{waiver()}. Controls where slice
-projection labels are placed relative to the projection line. Allowed values
-are the anchor names \emph{c("top", "bottom", "left", "right", "top-left", "top-right",
-"bottom-left", "bottom-right")}.
+\item{size}{Numeric text size passed to \code{geom_text()}.}
 
-If \code{waiver()}, a default position is chosen based on the projection axis
-(top for column projections, left for row projections).
+\item{linetype}{Defines the line pattern. Supported values:
+\itemize{
+\item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
+\item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
+\item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
+}}
 
-If \code{FALSE}, labels are not drawn.}
+\item{linewidth}{Numeric line width passed to \code{geom_segment()}.}
 
-\item{label_just}{Numeric vector of length two or \code{waiver()}. Horizontal and
-vertical text justification passed to \code{geom_text()} as \code{hjust} and \code{vjust}.
+\item{label_pos}{Character, logical, or \code{vbl_def()}. Position of slice projection
+labels relative to the projection line.
 
-If \code{waiver()}, justification is computed automatically from \code{label_pos},
+\itemize{
+\item{character: } One of \emph{c("top", "bottom", "left", "right",
+"top-left", "top-right", "bottom-left", "bottom-right")}.
+\item{\code{vbl_def()}: } Internal default based on the projection axis.
+\item{\code{FALSE}: } Do not draw labels.
+}}
+
+\item{label_just}{Numeric vector of length two or \code{vbl_def()}. Text justification
+for labels, passed to \code{geom_text()} as \code{hjust} and \code{vjust}.
+
+\itemize{
+\item{\code{vbl_def()}: } Compute justification automatically from \code{label_pos},
 the projection axis, and \code{spacer}.
-If supplied, must be a numeric vector \emph{c(hjust, vjust)}.}
+\item{Numeric: } Explicit justification given as \emph{c(hjust, vjust)}.
+}}
 
-\item{slices}{Optional numeric vector of slice indices to which the content
-of this layer is restricted. If \code{NULL}, the content is drawn for all slices.}
+\item{label_spacer}{Numeric scalar. Controls the offset used when computing default
+text justification for slice projection labels. Larger values move labels further away
+from the projection line.}
+
+\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
+restrict the layer to specific slices. If \code{NULL}, no restriction
+is applied.}
 
 \item{...}{Additional arguments forwarded to \code{geom_text()}.}
 }
@@ -85,5 +91,5 @@ another anatomical plane.
 }
 \note{
 Label alignment (\code{hjust}/\code{vjust}) is determined
-automatically from \code{anchor}.
+automatically from \code{label_just}.
 }

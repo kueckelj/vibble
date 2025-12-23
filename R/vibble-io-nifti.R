@@ -41,7 +41,7 @@ dcm_to_vbl <- function(x,
 
   stopifnot(is.character(var))
 
-  xpath <- divest::convertDicom(path = x, interactive = FALSE, ...)
+  xpath <- divest::convertDicom(path = x, interactive = FALSE)
 
   out <- nifti_to_vbl(x = xpath, var = var, rm0 = rm0, verbose = verbose)
 
@@ -110,6 +110,8 @@ vbl_to_nifti <- function(vbl,
 
   nii <- oro.nifti::nifti(data, datatype = datatype)
 
+  nii@pixdim[1] <- -1 # TODO
+
   # basic header geometry
   nii@pixdim[2:4] <-
     ccs_steps(vbl) %>%
@@ -166,11 +168,8 @@ vbl_to_nifti <- function(vbl,
 #' When `path_out` is not supplied, no file is written; only the modified NIfTI
 #' object is returned invisibly.
 #'
-#' @param vbl A \link{vibble}.
 #' @param var Character scalar. Name of the variable in `vbl` to export as a NIfTI volume.
-#' @param path_out
-#' Optional character path to the output NIfTI file (`.nii.gz`). If `NULL`,
-#' no file is written.
+#' @param path_out Character scalar. The file path to the output NIfTI file (`.nii.gz`).
 #' @param path_lut
 #' Optional character path for a LUT CSV associated with labeled variables.
 #' If `NULL` and the variable type is labeled, a default path is derived
@@ -190,65 +189,59 @@ vbl_to_nifti <- function(vbl,
 #' @param missing
 #' Numeric value used to fill voxel locations not present in `vbl` when
 #' reconstructing the array.
-#' @param verbose
-#' Logical. If `TRUE`, print messages about LUT handling, writing, and
-#' external command execution.
-#' @param ...
-#' Additional arguments. Currently supports `path_ref`, a character path to
-#' an explicit reference NIfTI that is used instead of `attr(vbl, "nifti")`.
 #'
-#' @return
-#' Invisibly returns the NIfTI object whose data array has been replaced. If
-#' `path_target` has been used to resample the NIfTI object the output
-#' is read in from `path_out` and is returned.
-#'
-#' @importFrom glue glue
-#'
-#' @examples
-#' \dontrun{
-#' # Write a numeric variable back to the original reference space
-#' make_nifti(vbl, var = "t1_score", path_out = "t1_score.nii.gz")
-#'
-#' # Resample into a target space using mri_vol2vol
-#' make_nifti(
-#'   vbl,
-#'   var        = "risk",
-#'   path_out   = "risk_mni.nii.gz",
-#'   path_target = "MNI152_T1_1mm.nii.gz",
-#'   path_fs    = "/Applications/freesurfer/7.4.0"
-#' )
-#' }
+#' @return Invisibly returns `TRUE` in case of successfull execution.
 #'
 #' @export
 
 write_nifti <- function(vbl,
                         var,
+                        path_out,
                         orientation = "RAS",
                         missing = 0,
-                        interp = NULL,
                         datatype = NULL,
-                        path_out = NULL,
-                        path_lut = NULL,
+                        path_native = NULL,
                         path_target = NULL,
+                        path_lut = NULL,
+                        interp = NULL,
                         path_fs = "/Applications/freesurfer/7.4.0",
                         dir_temp = getwd(),
-                        verbose = vbl_opts("verbose"),
+                        verbose = vbl_def(),
                         ...){
 
+  verbose <- .resolve_verbose(verbose)
   type <- var_type(vbl[[var]])
 
-  nii <-
-    vbl_to_nifti(
-      vbl = vbl,
-      var = var,
-      orientation = orientation,
-      missing = missing,
-      datatype = datatype,
-      verbose = verbose
-    )
+  if(is.character(path_native)){
+
+    nii <- oro.nifti::readNIfTI(path_native, reorient = FALSE)
+    orientation <- RNifti::orientation(nii)
+
+    nii@.Data <-
+      vbl_to_array(
+        vbl = vbl,
+        var = var,
+        orientation = orientation,
+        missing = missing,
+        verbose = verbose
+        )
+
+  } else {
+
+    nii <-
+      vbl_to_nifti(
+        vbl = vbl,
+        var = var,
+        orientation = orientation,
+        missing = missing,
+        datatype = datatype,
+        verbose = verbose
+      )
+
+  }
 
   # handle LUT if required
-  if(type == "label" & !is.na(path_lut)){
+  if(type == "categorical" & !is.character(path_lut)){
 
     lut <- make_lut(vbl, var = var)
 
@@ -260,7 +253,9 @@ write_nifti <- function(vbl,
 
     stopifnot(stringr::str_detect(path_lut, "_lut.csv$"))
 
-    .glue_message("Writing LUT to '{path_lut}'.", verbose)
+    .glue_message("Writing LUT to '{path_lut}'.", verbose = verbose)
+
+    readr::write_csv(x = lut, file = path_lut)
 
   }
 
@@ -385,32 +380,61 @@ write_nifti <- function(vbl,
 #' @export
 nifti_to_vbl <- function(x,
                          var = "value",
-                         lut = NULL,
+                         lut = vbl_def(),
                          ordered = FALSE,
                          add_id = FALSE,
-                         rm0 = TRUE,
+                         rm0 = FALSE,
                          verbose = vbl_opts("verbose"),
                          ...){
 
+  pointer_strings <- purrr::flatten_chr(ccs_orientation_mapping)
+
+  # ensure compatibility with `pointers` downstream
+  var_orig <- NULL
+  xpath <- NULL
+  if(var %in% pointer_strings){
+
+    var_orig <- var
+    var <- paste0(var, "xxx")
+
+  }
+
   if(is.character(x)){
 
+    msg <- .glue_message("Read from ~/{basename(x)}.")
+    xpath <- x
     x <- oro.nifti::readNIfTI(fname = x, reorient = FALSE)
 
+  } else {
+
+    msg <- "NIfTI input."
+
   }
 
+  # spatial checks
   if(isTRUE(x@reoriented)){
 
-    warning("Nifti object has @reoriented == TRUE. Output orientation is not reliable.")
+    rlang::warn("Nifti object has @reoriented == TRUE. Output orientation is not reliable.")
 
   }
 
-  msg <- "Created a vibble for variable '{var}'."
+  if(length(dim(x)) < 3){
+
+    rlang::abort("Input NIfTI has less than 3 dimensions. Invalid.")
+
+  } else if(length(dim(x)) > 3){
+
+    rlang::abort("Input NIfTI has more than 3 dimensions. Invalid.")
+
+  }
+
+  msg <- paste(msg, "Variable '{var}'.")
 
   # use to force XYZ==LIP orientation in the data.frame
   flip_check <- list(x = "R", y = "S", z = "A")
 
   pointers <-
-    RNifti::orientation(x) %>%
+    RNifti::orientation(x, useQuaternionFirst = FALSE) %>%
     stringr::str_split_1(pattern = "")
 
   names(pointers) <-
@@ -447,18 +471,61 @@ nifti_to_vbl <- function(x,
 
   }
 
-  # identify label input
+  # identify and manage categorical input
   if(is_label_candidate(data[[var]])){
 
-    if(is.null(lut)){
+    # how is LUT to be interpreted
+    if(.is_vbl_def(lut)){
 
-      msg <- paste0(msg, " Interpreting as numeric - no LUT provided.", collasep = "")
+      if(is.character(xpath)){
+
+        lut <- stringr::str_replace(xpath, pattern = ".nii.gz$", replacement = "_lut.csv")
+
+        if(file.exists(lut)){
+
+          msg <- paste0(msg, glue::glue(" Interpreting as categorical with detected lut: ~/{basename(lut)} "))
+
+        } else {
+
+          msg <- paste0(msg, glue::glue(" Interpreting as numeric - no LUT detected/specified."))
+          lut <- NULL
+
+        }
+
+      } else {
+
+        lut <- NULL
+
+      }
+
+    } else if(is.character(lut)) {
+
+      msg <- paste0(msg, glue::glue(" Interpreting as categorical with provided LUT: ~/{basename(lut)}."))
 
     } else {
 
-      msg <- paste0(msg, " Interpreting as label with provided LUT.")
+      msg <- paste0(msg, " Interpreting as numeric - LUT disabled.", collasep = "")
+      lut <- NULL
 
-      data <- map_lut(data, var = var, lut = lut, ordered = isTRUE(ordered), verbose = verbose)
+    }
+
+    # apply LUT
+    if(is.character(lut)){
+
+      if(file.exists(lut)){
+
+        data <- map_lut(data, var = var, lut = lut, ordered = isTRUE(ordered), verbose = verbose)
+
+      } else {
+
+        rlang::warn(
+          message = c(
+            glue::glue("LUT specified '{lut}' but file does not exist. Interpreting '{var}' as numeric."),
+            i = "See `?map_lut` for more information on how to apply a look up table to a vibble."
+          )
+        )
+
+      }
 
     }
 
@@ -504,7 +571,15 @@ nifti_to_vbl <- function(x,
 
   .glue_message(msg, verbose = verbose)
 
+
   # post process
+  if(is.character(var_orig)){
+
+    vbl[[var_orig]] <- vbl[[var]]
+    vbl[[var]] <- NULL
+
+  }
+
   if(isTRUE(rm0)){ vbl <- vbl[vbl[[var]] != 0, ] }
 
   if(isTRUE(add_id)){ vbl <- id_add(vbl) }
@@ -562,6 +637,10 @@ nifti_to_voxel_df <- nifti_to_vbl
 #' Character scalar. Regular expression used to extract variable names from
 #' the basename (without extension) of each NIfTI file.
 #'
+#' @param strip_var
+#' Characte vector. A set of `pattern` inputs that are stripped from variable
+#' names via \link{str_remove_all}().
+#'
 #' @param recursive
 #' Logical. If \code{TRUE} and `x` is a directory it is searched recursively for NIfTI files.
 #'
@@ -588,6 +667,7 @@ nifti_to_voxel_df <- nifti_to_vbl
 niftis_to_vbl <- function(x,
                           rgx_fp = ".*",
                           rgx_var = ".*",
+                          strip_var = NULL,
                           recursive = FALSE,
                           join = "full",
                           .rfn = NULL,
@@ -625,6 +705,16 @@ niftis_to_vbl <- function(x,
 
   stopifnot(is.character(rgx_var) && length(rgx_var) == 1)
   var_names <- stringr::str_extract(nii_files, pattern = rgx_var)
+
+  if(is.character(strip_var)){
+
+    for(pattern in strip_var){
+
+      var_names <- stringr::str_remove_all(var_names, pattern = pattern)
+
+    }
+
+  }
 
   if(any(is.na(var_names))){
 
