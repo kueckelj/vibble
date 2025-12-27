@@ -4,7 +4,7 @@
 \alias{bb3D}
 \title{Compute a 3D bounding box}
 \usage{
-bb3D(vbl, .cond = NULL, .by = NULL, buffer = 0)
+bb3D(vbl, .cond = NULL, .by = NULL, expand = FALSE)
 }
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}

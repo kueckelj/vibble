@@ -7,7 +7,7 @@
 layer_grid(
   col = 0.1,
   row = 0.1,
-  alpha = 0.25,
+  alpha = 0.15,
   color = "lightgrey",
   linewidth = 0.25,
   linetype = "solid"

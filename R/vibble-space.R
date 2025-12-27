@@ -44,28 +44,16 @@ apply_offset <- function(vbl2D, offset_col, offset_row){
   offset_col <- as.integer(offset_col)
   offset_row <- as.integer(offset_row)
 
+  # apply offset
   if(any(c(offset_col, offset_row) != 0)){
-
-    # save idx in case the var exists
-    vbl_names <- names(vbl2D)
-
-    # apply offset
-    idx_levels <- sort(slices(vbl2D))
-    idx_levels <- paste0("slice", idx_levels)
 
     vbl2D <-
       dplyr::mutate(
         .data = vbl2D,
-        idx. = as.numeric(factor(paste0("slice", slice), levels = idx_levels))-1
-      ) %>%
-      dplyr::group_by(idx.) %>%
-      dplyr::mutate(
-        col = .comp_offset(x = col, idx = unique(idx.), offset = {{offset_col}}),
-        row = .comp_offset(x = row, idx = unique(idx.), offset = {{offset_row}})
-      ) %>%
-      dplyr::ungroup() %>%
-      dplyr::arrange(idx.) %>%
-      dplyr::select(-idx.)
+        .by = "slice_idx",
+        col = .comp_offset(x = col, idx = unique(slice_idx), offset = {{ offset_col }}),
+        row = .comp_offset(x = row, idx = unique(slice_idx), offset = {{ offset_row }})
+      )
 
     offset_col(vbl2D) <- offset_col(vbl2D) + offset_col
     offset_row(vbl2D) <- offset_row(vbl2D) + offset_row
@@ -262,7 +250,9 @@ bb2D_df <- function(vbl2D,
 
       if(!.bb2D_possible(slice_df)) return(NULL)
 
-      sbb <- slice_bb(vbl2D, slice)
+      sbb <-
+        slice_bb(vbl2D, slice) %>%
+        expand_bb2D(expand = expand)
 
       tibble::tibble(
         plane = plane(vbl2D),
@@ -377,12 +367,12 @@ bb2D_lst <- function(vbl2D,
 #' bb_tumor <- bb3D(vbl, .cond = tumor == TRUE, buffer = 0.1)
 #'
 #' @export
-bb3D <- function(vbl, .cond = NULL, .by = NULL, buffer = 0){
+bb3D <- function(vbl, .cond = NULL, .by = NULL, expand = FALSE){
 
   .by_quo <- rlang::enquo(.by)
   .cond_quo <- rlang::enquo(.cond)
 
-  if(!rlang::quo_is_missing(.cond_quo)){
+  if(!rlang::quo_is_null(.cond_quo)){
 
     vbl <- dplyr::filter(vbl, !!.cond_quo, .by = {{ .by_quo }})
 
@@ -392,26 +382,7 @@ bb3D <- function(vbl, .cond = NULL, .by = NULL, buffer = 0){
     .x = vbl[, ccs_labels],
     .f = function(avar, axis){
 
-      alim <- ccs_limits(vbl)[[axis]]
-      r <- range(avar)
-
-      if(buffer != 0){
-
-        if(buffer < 1){
-
-          buffer <- diff(r)*buffer
-
-        }
-
-        r[1] <- r[1]-buffer
-        r[2] <- r[2]+buffer
-
-        r[1] <- ifelse(r[1] < min(alim), min(alim), r[1])
-        r[2] <- ifelse(r[2] > max(alim), max(alim), r[2])
-
-      }
-
-      return(r)
+      .apply_expand(limit = range(avar, na.rm = TRUE), expand = expand)
 
     })
 

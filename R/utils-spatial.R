@@ -1,5 +1,7 @@
 # Spatial, grid, polygon and geometry helpers.
 
+
+
 identify_nearest_voxel <- function(vbl_query, vbl_data){
 
   if(!"id" %in% colnames(vbl_query)){ vbl_query <- id_add(vbl_query) }

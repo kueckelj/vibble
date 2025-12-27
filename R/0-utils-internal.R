@@ -58,13 +58,22 @@ magrittr::`%>%`
 }
 
 #' @keywords internal
+.slice_collapse <- function(x, last = " or "){
+
+  glue::glue_collapse(x, sep = ", ", last = last)
+
+}
+
+#' @keywords internal
 .str_collapse <- function(x, last = "' or '"){
 
   glue::glue_collapse(x, sep = "', '", last = last)
 
 }
 
-#' @keywords internal
+
+#' @keywords internal#
+#' @export
 .check_input_slices <- function(x, ...){
 
   UseMethod(".check_input_slices")
@@ -72,6 +81,7 @@ magrittr::`%>%`
 }
 
 #' @keywords internal
+#' @export
 .check_input_slices.vbl2D <- function(x, slices, layer_str = "this layer()"){
 
   if(!is.null(slices)){
@@ -108,6 +118,7 @@ magrittr::`%>%`
 
 
 
+
 #' @keywords keyword
 .check_input_var <- function(x, var, type = "all", call = rlang::caller_fn()){
 
@@ -137,6 +148,15 @@ magrittr::`%>%`
   }
 
   return(var)
+
+}
+
+#' @keywords internal
+.clip_offset <- function(vbl2D){
+
+  length(slices(vbl2D)) > 1 &&
+    is_offset(vbl2D) &&
+    !isFALSE(vbl_opts("clip.offset"))
 
 }
 
@@ -242,7 +262,20 @@ magrittr::`%>%`
   idx <- round(seq(1, length(x), length.out = n))
   idx <- pmax(1L, pmin(length(x), idx))
 
-  x[idx]
+  out <- unique(x[idx])
+
+  if(length(out) < n){
+
+    rlang::warn(
+      message = c(
+        glue::glue("Attempting to downsample {length(x)} slice indices with n = {n}."),
+        i = glue::glue("Returning {length(out)} slices indices.")
+      )
+    )
+
+  }
+
+  return(out)
 
 }
 
@@ -508,7 +541,6 @@ magrittr::`%>%`
 
 }
 
-
 #' @title Reorder CCS-LIP according to orientation.
 #'
 #' @description
@@ -670,6 +702,43 @@ NULL
   return(plane)
 
 }
+
+#' @rdname vbl_doc_resolve_def
+#' @keywords internal
+.resolve_slices <- function(slices, slices_data, layer_str){
+
+  if(!is.null(slices)){
+
+    .stop_if_not(is_slice_set(slices))
+
+    slices_missing <- slices[!slices %in% slices_data]
+    n_missing <- length(slices_missing)
+
+    if(n_missing != 0){
+
+      fill <- ifelse(n_missing == 1, "slice", "slices")
+      slices_quo <- rlang::enquo(slices)
+      slices_text <- rlang::quo_text(slices_quo)
+      slices_d <- glue::glue_collapse(sort(slices_data), sep = ", ", last = " and ")
+      slices_m <- glue::glue_collapse(slices_missing, sep = ", ", last = " and ")
+
+      rlang::abort(
+        message = c(
+          glue::glue("In `slices = {slices_text}`, no data for {fill} {slices_m} in {layer_str}."),
+          i = glue::glue("The ggplane() to which this layer was added contains data for slices: {slices_d}")
+        )
+      )
+
+    }
+
+    slices_data <- slices
+
+  }
+
+  return(slices_data)
+
+}
+
 
 #' @rdname vbl_doc_resolve_def
 #' @keywords internal

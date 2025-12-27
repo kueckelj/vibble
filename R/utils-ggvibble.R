@@ -124,7 +124,7 @@ as_img_anchor_abs <- function(anchor, bb2D){
 
   if(is_img_anchor_chr(anchor)){
 
-    anchor <- match.arg(anchor, choices = names(img_anchors))
+    anchor <- .match_arg(anchor, choices = names(img_anchors))
     anchor <- img_anchors[[anchor]]
 
   }
@@ -256,8 +256,7 @@ NULL
 .comp_outlines <- function(vbl2D,
                            var,
                            use_dbscan,
-                           concavity = 2.5,
-                           ...){
+                           concavity = 2.5){
 
   # allow quick outline of all slice voxels
   if(is.null(var)){
@@ -429,10 +428,19 @@ NULL
 
 
 #' @keywords internal
-.filter_layer <- function(vbl2D, .cond_quo, .by = NULL, layer_str = "layer()"){
+.filter_layer <- function(vbl2D,
+                          .cond_quo = NULL,
+                          .by = NULL,
+                          slices = NULL,
+                          layer_str = "layer()"){
 
-  # cond is expected to be a quosure (possibly representing NULL)
-  if(!rlang::quo_is_null(.cond_quo)){
+  # filter by slices
+  slices <- .resolve_slices(slices, slices_data = slices(vbl2D), layer_str = layer_str)
+
+  vbl2D <- vbl2D[vbl2D$slice %in% slices, ]
+
+  # filter by cond
+  if(rlang::is_quosure(.cond_quo) && !rlang::quo_is_null(.cond_quo)){
 
     expr_text <- rlang::quo_text(.cond_quo)
 
@@ -524,38 +532,78 @@ NULL
 }
 
 #' @keywords internal
-.layer_lst_bb <- function(data, name, color, fill, linetype, linewidth, ...){
+.layer_lst_bb <- function(data, name, alpha, color, fill = NA, linetype, linewidth, clip_offset = FALSE, ...){
 
+  # map color to legend
   if(is.character(name)){
 
-    layer_lst <-
-      list(
-        ggplot2::geom_rect(
-          data = dplyr::mutate(data, bb. = {{ name }}),
-          mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax, color = bb.),
-          fill = fill,
-          linetype = linetype,
-          linewidth = linewidth,
-          ...
-        )
-      )
+    data <- dplyr::mutate(data, bb. = {{ name }})
 
+    if(isTRUE(clip_offset)){
+
+      layer_lst <-
+        list(
+          ggplot2::geom_segment(
+            data = data,
+            mapping = ggplot2::aes(x = x, y = y, xend = xend, yend = yend, color = bb.),
+            alpha = alpha,
+            linetype = linetype,
+            linewidth = linewidth
+          )
+        )
+
+    } else {
+
+      layer_lst <-
+        list(
+          ggplot2::geom_rect(
+            data = data,
+            mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax, color = bb.),
+            color = ggplot2::alpha(color, alpha),
+            fill = fill,
+            linetype = linetype,
+            linewidth = linewidth
+          )
+        )
+
+    }
+
+  # dont map color to legend
   } else {
 
-    layer_lst <-
-      list(
-        ggplot2::geom_rect(
-          data = data,
-          mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
-          color = color,
-          fill = fill,
-          linetype = linetype,
-          linewidth = linewidth,
-          ...
+    if(isTRUE(clip_offset)){
+
+      layer_lst <-
+        list(
+          ggplot2::geom_segment(
+            data = data,
+            mapping = ggplot2::aes(x = x, y = y, xend = xend, yend = yend),
+            alpha = alpha,
+            color = color,
+            linetype = linetype,
+            linewidth = linewidth
+          )
         )
-      )
+
+    } else {
+
+      layer_lst <-
+        list(
+          ggplot2::geom_rect(
+            data = data,
+            mapping = ggplot2::aes(xmin = cmin, xmax = cmax, ymin = rmin, ymax = rmax),
+            color = ggplot2::alpha(color, alpha),
+            fill = fill,
+            linetype = linetype,
+            linewidth = linewidth
+          )
+        )
+
+    }
 
   }
+
+  return(layer_lst)
 
 }
 
@@ -574,9 +622,218 @@ NULL
 }
 
 #' @keywords internal
-.remove_overlap <- function(vbl2D){
+.clip_offset_bb <- function(vbl2D, bb_df, outlines_full){
 
   slices_main <- unique(vbl2D$slice)
+  slices_lead <- dplyr::lead(slices_main)
+
+  slist <- vector(mode = "list", length = nrow(bb_df))
+  for(i in 1:nrow(bb_df)){
+
+    slice <- bb_df$slice[i]
+    slice_lead <- slices_lead[which(slice == slices_main)]
+
+    segm_df <- .rect_to_segments(bb_df[i,])
+
+    outline_lead <- dplyr::filter(outlines_full, slice == {{ slice_lead }})
+
+    if(nrow(outline_lead) == 0){ # no leading outline -> nothing must be clipped
+
+      slist[[i]] <- segm_df
+      next
+
+    }
+
+    segm_df$start_in <-
+      sp::point.in.polygon(
+        point.x = segm_df$x,
+        point.y = segm_df$y,
+        pol.x = outline_lead$col,
+        pol.y = outline_lead$row
+      ) %in% c(1:3)
+
+    segm_df$end_in <-
+      sp::point.in.polygon(
+        point.x = segm_df$xend,
+        point.y = segm_df$yend,
+        pol.x = outline_lead$col,
+        pol.y = outline_lead$row
+      ) %in% c(1:3)
+
+
+    # remove segments whose start- and endpoint are located in the polygon
+    segm_df <- dplyr::filter(segm_df, !(start_in & end_in))
+
+    #if all segments inside polygon -> remove whole BB with NULL
+    if(nrow(segm_df) == 0){
+
+      slist[[i]] <- NULL
+
+    } else { # iterate over all segments of the BB and check if
+
+      step <- 1
+
+      for(ii in 1:nrow(segm_df)){
+
+        segm <- segm_df[ii,]
+
+        if(segm$start_in){ # segment starts in polygon -> adjust
+
+          if(segm$just == "h"){ # x -> xend
+
+            tests <-
+              tidyr::expand_grid(
+                x = seq(from = segm$x, to = segm$xend, by = step),
+                y = segm$y # == segm$yend
+              )
+
+            var_test <- "x"
+            var_segm <- "x"
+
+          } else if(segm$just == "v"){ # x -> xend
+
+            tests <-
+              tidyr::expand_grid(
+                x = segm$x,  # == segm$xend
+                y = seq(from = segm$y, to = segm$yend, by = step)
+              )
+
+            var_test <- "y"
+            var_segm <- "y"
+
+          }
+
+          for(iii in 1:nrow(tests)){
+
+            inside <-
+              sp::point.in.polygon(
+                point.x = tests$x[iii],
+                point.y = tests$y[iii],
+                pol.x = outline_lead$col,
+                pol.y = outline_lead$row
+              ) %in% c(1:3)
+
+            if(!inside){ # first instance not in outline -> stop
+
+              test_fits <- tests[pmax(1, iii-1),]
+              break
+
+            }
+
+          }
+
+          segm_df[ii, var_segm] <- test_fits[[var_test]]
+
+        } else if(segm$end_in){ # segment ends in polygon -> adjust
+
+          if(segm$just == "h"){ # xend -> y
+
+            tests <-
+              tidyr::expand_grid(
+                x = rev(seq(from = segm$x, to = segm$xend, by = step)),
+                y = segm$y # == segm$yend
+              )
+
+            var_test <- "x"
+            var_segm <- "xend"
+
+          } else if(segm$just == "v"){ # yend -> y
+
+            tests <-
+              tidyr::expand_grid(
+                x = segm$x,  # == segm$xend
+                y = rev(seq(from = segm$y, to = segm$yend, by = step))
+              )
+
+            var_test <- "y"
+            var_segm <- "yend"
+
+          }
+
+          for(iii in 1:nrow(tests)){
+
+            inside <-
+              sp::point.in.polygon(
+                point.x = tests$x[iii],
+                point.y = tests$y[iii],
+                pol.x = outline_lead$col,
+                pol.y = outline_lead$row
+              ) %in% c(1:3)
+
+            if(!inside){ # first instance not in outline -> stop
+
+              test_fits <- tests[pmax(1, iii-1),]
+              break
+
+            }
+
+          }
+
+          segm_df[ii, var_segm] <- test_fits[[var_test]]
+
+        }
+
+      }
+
+      slist[[i]] <- segm_df
+
+    }
+
+  }
+
+  out <-
+    purrr::discard(slist, .p = is.null) %>%
+    purrr::map_df(.f = ~ .x)
+
+  return(out)
+
+}
+
+#' @keywords internal
+.clip_offset_outlines <- function(vbl2D, outlines, outlines_full){
+
+  slices_main <- unique(vbl2D$slice)
+  slices_lead <- dplyr::lead(slices_main)
+
+  purrr::map_df(
+    .x = seq_along(slices_main),
+    .f = function(i){
+
+      sm <- slices_main[i]
+      sl <- slices_lead[i]
+
+      # outline main
+      om <- dplyr::filter(outlines, slice == {{sm}})
+
+      # BREAK, if no leading slice for the last main slice
+      if(i == length(slices_main)){ return(om) }
+
+      # BREAK, if no outline available
+      if(nrow(om) == 0){ return(NULL) }
+
+      purrr::map_df(
+        .x = unique(om$outline),
+        .f = function(outline_use){
+
+          # split the outline according to the slice outline of the next slice
+          .split_outline(
+            outline = dplyr::filter(om, outline == {{outline_use}}),
+            outline_ref = dplyr::filter(outlines_full, slice == {{sl}})
+          ) %>%
+            dplyr::filter(pos_rel == "outside")
+
+        }
+      )
+
+    }
+  )
+
+}
+
+#' @keywords internal
+.clip_offset_raster <- function(vbl2D){
+
+  slices_main <- slices(vbl2D)
 
   if(length(slices_main) > 1){
 
@@ -584,17 +841,27 @@ NULL
 
     slices_lead <- dplyr::lead(slices_main)
 
-    for(i in 1:(length(slices_main)-1)){
+    n_iter <- length(slices_main)-1
+
+    for(i in 1:n_iter){
 
       sm <- slices_main[i]
       sl <- slices_lead[i]
 
-      vm <- vbl2D[vbl2D$slice == sm, ]
-      vl <- vbl2D[vbl2D$slice == sl, ]
+      vm <- dplyr::filter(vbl2D, slice == {{ sm }})
+      vl <- dplyr::filter(vbl2D, slice == {{ sl }})
 
-      id_rm <- intersect(x = vm[["id."]], y = vl[["id."]])
+      ids_rm <- intersect(x = vm[["id."]], y = vl[["id."]])
 
-      vbl2D <- dplyr::filter(vbl2D, !(slice == {{sm}} & id. %in% {{id_rm}}))
+      vbl2D <-
+        dplyr::mutate(
+          .data = vbl2D,
+          visible. = dplyr::if_else(
+            condition = slice == {{ sm }} & id. %in% {{ ids_rm }},
+            true = FALSE,
+            false = visible.
+          )
+        )
 
     }
 
@@ -603,6 +870,53 @@ NULL
   vbl2D[["id."]] <- NULL
 
   return(vbl2D)
+
+}
+
+#' @keywords internal
+.rect_to_segments <- function(bb){
+
+  stopifnot(
+    is.data.frame(bb),
+    all(c("slice","cmin","cmax","rmin","rmax") %in% colnames(bb))
+  )
+
+  # one row → four edges
+  dplyr::bind_rows(
+
+    # bottom edge
+    dplyr::transmute(
+      bb,
+      slice,
+      x = cmin, y = rmin,
+      xend = cmax, yend = rmin
+    ),
+
+    # top edge
+    dplyr::transmute(
+      bb,
+      slice,
+      x = cmin, y = rmax,
+      xend = cmax, yend = rmax
+    ),
+
+    # left edge
+    dplyr::transmute(
+      bb,
+      slice,
+      x = cmin, y = rmin,
+      xend = cmin, yend = rmax
+    ),
+
+    # right edge
+    dplyr::transmute(
+      bb,
+      slice,
+      x = cmax, y = rmin,
+      xend = cmax, yend = rmax
+    )
+  ) %>%
+    dplyr::mutate(just = dplyr::if_else(x == xend, "v", "h"))
 
 }
 
@@ -726,5 +1040,17 @@ NULL
   }
 
   return(just)
+
+}
+
+#' @keywords internal
+.nearest_vertex <- function(point, poly){
+
+  RANN::nn2(
+    data = as.matrix(poly[, c("col", "row")]),
+    query = as.matrix(point[, c("col", "row")]),
+    searchtype = "priority",
+    k = 1
+  )
 
 }

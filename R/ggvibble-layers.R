@@ -27,9 +27,9 @@
 #' @export
 layer_bb <- function(.cond = NULL,
                      color = "red",
-                     fill = NA,
+                     alpha = 0.9,
                      linetype = "solid",
-                     linewidth = 0.75,
+                     linewidth = 0.5,
                      expand = as_abs(0.5),
                      label = TRUE,
                      slices = NULL,
@@ -44,19 +44,35 @@ layer_bb <- function(.cond = NULL,
   vbl_layer(
     fun = function(vbl2D){
 
-      layer_str <- glue::glue("layer_bb(..., color = '{color}')")
+      # compute full outlines before subsetting!
+      if(.clip_offset(vbl2D)){
 
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
-      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
+        outlines_full <-
+          .comp_outlines(
+            vbl2D = vbl2D,
+            var = NULL,
+            concavity = 1,
+            use_dbscan = FALSE
+          )
+
+      } else {
+
+        outlines_full <- NULL
+
+      }
+
+      layer_str <- glue::glue("layer_bb(..., color = '{color}')")
+      vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_bb_impl(
         vbl2D = vbl2D,
+        alpha = alpha,
         color = color,
-        fill = fill,
         linetype = linetype,
         linewidth = linewidth,
         expand = expand,
         name = names(legend_label),
+        outlines_full = outlines_full,
         ...
       )
 
@@ -70,23 +86,31 @@ layer_bb <- function(.cond = NULL,
 
 #' @keywords internal
 .layer_bb_impl <- function(vbl2D,
+                           alpha,
                            color,
-                           fill,
                            linetype,
                            linewidth,
                            expand,
                            name,
+                           outlines_full,
                            ...){
 
-  data <- bb2D_df(vbl2D, expand = expand)
+  bb_df <- bb2D_df(vbl2D, expand = expand)
+
+  if(.clip_offset(vbl2D)){
+
+    bb_df <- .clip_offset_bb(vbl2D = vbl2D, bb_df = bb_df, outlines_full = outlines_full)
+
+  }
 
   .layer_lst_bb(
-    data = data,
+    data = bb_df,
     name = name,
+    alpha = alpha,
     color = color,
-    fill = fill,
     linetype = linetype,
     linewidth = linewidth,
+    clip_offset = .clip_offset(vbl2D),
     ...
   )
 
@@ -95,9 +119,10 @@ layer_bb <- function(.cond = NULL,
 #' @rdname layer_bb
 #' @export
 layer_bb_data <- function(color = "#F28E2B",
+                          alpha = 0.9,
                           fill = NA,
                           linetype = "solid",
-                          linewidth = 0.75,
+                          linewidth = 0.5,
                           label = TRUE,
                           slices = NULL,
                           ...){
@@ -107,10 +132,11 @@ layer_bb_data <- function(color = "#F28E2B",
   vbl_layer(
     fun = function(vbl2D){
 
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer = "layer_bb_data()")
+      vbl2D <- .filter_layer(vbl2D, slices = slices, layer_str = "layer_bb_data()")
 
       .layer_bb_data_impl(
         vbl2D = vbl2D,
+        alpha = alpha,
         color = color,
         fill = fill,
         linetype = linetype,
@@ -128,6 +154,7 @@ layer_bb_data <- function(color = "#F28E2B",
 
 #' @keywords internal
 .layer_bb_data_impl <- function(vbl2D,
+                                alpha,
                                 color,
                                 fill,
                                 linetype,
@@ -156,10 +183,12 @@ layer_bb_data <- function(color = "#F28E2B",
   .layer_lst_bb(
     data = data,
     name = name,
+    alpha = alpha,
     color = color,
     fill = fill,
     linetype = linetype,
     linewidth = linewidth,
+    clip_offset = FALSE,
     ...
   )
 
@@ -169,9 +198,10 @@ layer_bb_data <- function(color = "#F28E2B",
 #' @rdname layer_bb
 #' @export
 layer_bb_plot <- function(color = "#4CB36B",
+                          alpha = 0.9,
                           fill = NA,
                           linetype = "solid",
-                          linewidth = 0.75,
+                          linewidth = 0.5,
                           label = TRUE,
                           ...){
 
@@ -183,6 +213,7 @@ layer_bb_plot <- function(color = "#4CB36B",
 
       .layer_bb_plot_impl(
         vbl2D = vbl2D,
+        alpha = alpha,
         color = color,
         fill = fill,
         linetype = linetype,
@@ -200,6 +231,7 @@ layer_bb_plot <- function(color = "#4CB36B",
 
 #' @keywords internal
 .layer_bb_plot_impl <- function(vbl2D,
+                                alpha,
                                 color,
                                 fill,
                                 linetype,
@@ -214,10 +246,12 @@ layer_bb_plot <- function(color = "#4CB36B",
   .layer_lst_bb(
     data = data,
     name = name,
+    alpha = alpha,
     color = color,
     fill = fill,
     linetype = linetype,
     linewidth = linewidth,
+    clip_offset = FALSE,
     ...
   )
 
@@ -226,9 +260,10 @@ layer_bb_plot <- function(color = "#4CB36B",
 #' @rdname layer_bb
 #' @export
 layer_bb_screen <- function(color = "#4DA3D9",
+                            alpha = 0.9,
                             fill = NA,
                             linetype = "solid",
-                            linewidth = 0.75,
+                            linewidth = 0.5,
                             label = TRUE,
                             slices = NULL,
                             ...){
@@ -238,10 +273,11 @@ layer_bb_screen <- function(color = "#4DA3D9",
   vbl_layer(
     fun = function(vbl2D){
 
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer = "layer_bb_screen()")
+      vbl2D <- .filter_layer(vbl2D, slices = slices, layer_str = "layer_bb_screen()")
 
       .layer_bb_screen_impl(
         vbl2D = vbl2D,
+        alpha = alpha,
         color = color,
         fill = fill,
         linetype = linetype,
@@ -259,6 +295,7 @@ layer_bb_screen <- function(color = "#4DA3D9",
 
 #' @keywords internal
 .layer_bb_screen_impl <- function(vbl2D,
+                                  alpha,
                                   color,
                                   fill,
                                   linetype,
@@ -287,6 +324,7 @@ layer_bb_screen <- function(color = "#4DA3D9",
   .layer_lst_bb(
     data = data,
     name = name,
+    alpha = alpha,
     color = color,
     fill = fill,
     linetype = linetype,
@@ -299,9 +337,10 @@ layer_bb_screen <- function(color = "#4DA3D9",
 #' @rdname layer_bb
 #' @export
 layer_bb_slice <- function(color = "#8F7BD4",
+                           alpha = 0.9,
                            fill = NA,
                            linetype = "solid",
-                           linewidth = 0.75,
+                           linewidth = 0.5,
                            label = TRUE,
                            slices = NULL,
                            ...){
@@ -311,10 +350,11 @@ layer_bb_slice <- function(color = "#8F7BD4",
   vbl_layer(
     fun = function(vbl2D){
 
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer = "layer_bb_slice()")
+      vbl2D <- .filter_layer(vbl2D, slices = slices, layer_str = "layer_bb_slice()")
 
       .layer_bb_slice_impl(
         vbl2D = vbl2D,
+        alpha = alpha,
         color = color,
         fill = fill,
         name = names(legend_label),
@@ -332,6 +372,7 @@ layer_bb_slice <- function(color = "#8F7BD4",
 
 #' @keywords internal
 .layer_bb_slice_impl <- function(vbl2D,
+                                 alpha,
                                  color,
                                  fill,
                                  linetype,
@@ -360,10 +401,12 @@ layer_bb_slice <- function(color = "#8F7BD4",
   .layer_lst_bb(
     data = data,
     name = name,
+    alpha = alpha,
     color = color,
     fill = fill,
     linetype = linetype,
     linewidth = linewidth,
+    clip_offset = FALSE,
     ...
     )
 
@@ -400,9 +443,7 @@ layer_categorical <- function(var,
     fun = function(vbl2D){
 
       layer_str <- glue::glue("layer_categorical(var = '{var}', ...")
-
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
-      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_categorical_impl(
         vbl2D = vbl2D,
@@ -434,22 +475,22 @@ layer_categorical <- function(var,
 
   }
 
+  if(is.character(vbl2D[[var]])){
+
+    vbl2D[[var]] <- as.factor(vbl2D[[var]])
+
+  }
+
   var <- .check_input_var(vbl2D, var = var, type = "categorical")
 
-  vbl2D <- vbl2D[!is.na(vbl2D[[var]]), ]
-
-  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
-
-  if(is.character(vbl2D[[var]])){ vbl2D[[var]] <- as.factor(vbl2D[[var]]) }
-
-  alpha_use <- .eval_tidy_opacity(vbl2D, opacity = opacity, var = var)
+  data <- vbl2D[!is.na(vbl2D[[var]]) & vbl2D$visible., ]
 
   list(
     ggnewscale::new_scale_fill(),
     ggplot2::geom_raster(
-      data = vbl2D,
+      data = data,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      alpha = alpha_use,
+      alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
       interpolate = vbl_opts("interpolate")
     ),
     scale_fill_categorical(
@@ -520,7 +561,7 @@ layer_crop <- function(.cond, expand = FALSE, ...){
   layer_lst <-
     list(
       ggplot2::coord_equal(
-        ratio = .ratio2D(vbl2D),
+        ratio = 1,
         xlim = plot_lim$col,
         ylim = rev(plot_lim$row),
         expand = FALSE
@@ -568,7 +609,7 @@ layer_crop <- function(.cond, expand = FALSE, ...){
 #' @export
 layer_grid <- function(col = 0.1,
                        row = 0.1,
-                       alpha = 0.25,
+                       alpha = 0.15,
                        color = "lightgrey",
                        linewidth = 0.25,
                        linetype = "solid"
@@ -714,9 +755,7 @@ layer_labels <- function(var,
     fun = function(vbl2D){
 
       layer_str <- glue::glue("layer_labels(var = '{var}', ...")
-
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
-      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_labels_impl(
         vbl2D = vbl2D,
@@ -767,7 +806,11 @@ layer_labels <- function(var,
 
   }
 
-  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D)}
+  if(.clip_offset(vbl2D)){
+
+    vbl2D <- .clip_offset_raster(vbl2D)
+
+  }
 
   labels <- levels(vbl2D[[var]])
 
@@ -904,9 +947,7 @@ layer_mask <- function(.cond = NULL,
     fun = function(vbl2D){
 
       layer_str <- glue::glue("layer_mask(..., color = '{color}')")
-
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
-      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_mask_impl(
         vbl2D = vbl2D,
@@ -930,16 +971,16 @@ layer_mask <- function(.cond = NULL,
                              name,
                              ...){
 
-  data <- if(is_offset(vbl2D)){ .remove_overlap(vbl2D) } else { vbl2D }
+  data <- vbl2D[vbl2D$visible.,]
 
   if(is.character(name)){
 
     layer_lst <-
       list(
         ggplot2::geom_raster(
-          data = dplyr::mutate(vbl2D, mask. = {{ name }}),
+          data = dplyr::mutate(data, mask. = {{ name }}),
           mapping = ggplot2::aes(x = col, y = row, fill = mask.),
-          alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+          alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
           interpolate = vbl_opts("interpolate")
         )
       )
@@ -949,9 +990,9 @@ layer_mask <- function(.cond = NULL,
     layer_lst <-
       list(
         ggplot2::geom_raster(
-          data = vbl2D,
+          data = data,
           mapping = ggplot2::aes(x = col, y = row),
-          alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+          alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
           fill = color,
           interpolate = vbl_opts("interpolate")
         )
@@ -1035,9 +1076,7 @@ layer_numeric <- function(var,
     fun = function(vbl2D){
 
       layer_str <- glue::glue("layer_numeric(var = '{var}', ...)")
-
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
-      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
+      vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_numeric_impl(
         vbl2D = vbl2D,
@@ -1062,19 +1101,19 @@ layer_numeric <- function(var,
 
   var <- .check_input_var(vbl2D, var = var, type = "numeric")
 
-  if(is_offset(vbl2D)){ vbl2D <- .remove_overlap(vbl2D) }
+  data <- vbl2D[vbl2D$visible.,]
 
   list(
     ggnewscale::new_scale_fill(),
     ggplot2::geom_raster(
-      data = vbl2D,
+      data = data,
       mapping = ggplot2::aes(x = col, y = row, fill = .data[[var]]),
-      alpha = .eval_tidy_opacity(vbl2D, opacity = opacity, var = var),
+      alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
       interpolate = vbl_opts("interpolate")
     ),
     scale_fill_numeric(
       clrsp,
-      limits = .get_var_limits(vbl2D, var),
+      limits = .get_var_limits(data, var),
       ...
     )
   )
@@ -1103,11 +1142,11 @@ layer_numeric <- function(var,
 #' @export
 layer_outline <- function(.cond = NULL,
                           color = "gold",
+                          fill = NA,
                           linetype = "solid",
-                          linewidth = 0.75,
+                          linewidth = 0.5,
                           use_dbscan = TRUE,
-                          concavity = 1,
-                          clip_overlap = TRUE,
+                          concavity = 1.5,
                           label = TRUE,
                           slices = NULL,
                           .by = "slice",
@@ -1121,33 +1160,34 @@ layer_outline <- function(.cond = NULL,
     fun = function(vbl2D){
 
       # compute full outlines before subsetting!
-      outlines_slice <- NULL
-      if(is_offset(vbl2D)){
+      if(.clip_offset(vbl2D)){
 
-        outlines_slice <-
+        outlines_full <-
           .comp_outlines(
             vbl2D = vbl2D,
             var = NULL,
-            concavity = 2,
+            concavity = 1,
             use_dbscan = FALSE
           )
 
+      } else {
+
+        outlines_full <- NULL
+
       }
 
-      layer_str <- glue::glue("layer_outline(color = '{color}', ...)")
-
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
-      vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
+      layer_str <- glue::glue("layer_outline(..., color = '{color}')")
+      vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
       .layer_outline_impl(
         vbl2D = vbl2D,
         color = color,
+        fill = fill,
         linetype = linetype,
         linewidth = linewidth,
         use_dbscan = use_dbscan,
         concavity = concavity,
-        clip_overlap = clip_overlap,
-        outlines_slice = outlines_slice,
+        outlines_full = outlines_full,
         name = names(legend_label),
         ...
       )
@@ -1162,65 +1202,34 @@ layer_outline <- function(.cond = NULL,
 #' @keywords internal
 .layer_outline_impl <- function(vbl2D,
                                 color,
+                                fill,
                                 linetype,
                                 linewidth,
                                 concavity,
                                 use_dbscan,
-                                outlines_slice,
-                                clip_overlap,
+                                outlines_full,
                                 name,
                                 ...){
 
 
-  # create raw outlines on the input vbl2D
-  # (which was filtered by .cond/.by in layer_outline())
+  # create outlines on the input vbl2D
+  # which was filtered by .cond/.by in layer_outline()!
   outlines <-
     .comp_outlines(
       vbl2D = vbl2D,
       var = NULL,
       concavity = concavity,
-      use_dbscan = use_dbscan,
-      ...)
+      use_dbscan = use_dbscan
+      )
 
-  # handle offset overlaps
-  if(is_offset(vbl2D) && isTRUE(clip_overlap)){
-
-    slices_main <- unique(vbl2D$slice)
-    slices_lead <- dplyr::lead(slices_main)
+  if(.clip_offset(vbl2D)){
 
     outlines <-
-      purrr::map_df(
-        .x = seq_along(slices_main),
-        .f = function(i){
-
-          sm <- slices_main[i]
-          sl <- slices_lead[i]
-
-          # outline main
-          om <- dplyr::filter(outlines, slice == {{sm}})
-
-          # BREAK, if no leading slice for the last main slice
-          if(i == length(slices_main)){ return(om) }
-
-          # BREAK, if no outline available
-          if(nrow(om) == 0){ return(NULL) }
-
-          purrr::map_df(
-            .x = unique(om$outline),
-            .f = function(outline_use){
-
-              # split the outline according to the slice outline of the next slice
-              .split_outline(
-                outline = dplyr::filter(om, outline == {{outline_use}}),
-                outline_ref = dplyr::filter(outlines_slice, slice == {{sl}})
-              ) %>%
-                dplyr::filter(pos_rel == "outside")
-
-            }
-          )
-
-        }
-      )
+      .clip_offset_outlines(
+        vbl2D = vbl2D,
+        outlines = outlines,
+        outlines_full = outlines_full
+        )
 
   }
 
@@ -1272,7 +1281,7 @@ layer_outline <- function(.cond = NULL,
           mapping = ggplot2::aes(x = col, y = row, group = outline, color = outline.),
           linetype = linetype,
           linewidth = linewidth,
-          fill = NA,
+          fill = fill,
           ...
         )
 
@@ -1285,7 +1294,7 @@ layer_outline <- function(.cond = NULL,
           color = color,
           linetype = linetype,
           linewidth = linewidth,
-          fill = NA,
+          fill = fill,
           ...
         )
 
@@ -1313,7 +1322,7 @@ layer_outline <- function(.cond = NULL,
 #'   }
 #' @param wrap Optional template for label text. Defaults to \code{"{slice}"}.
 #' @param angle Rotation angle passed to \code{geom_text()}.
-#' @param alpha,color,size Passed to \code{geom_text()} to define the label aesthetics.
+#' @param alpha,color,size Passed to \code{geom_text()} to define the text aesthetics.
 #' @param ... Additional arguments passed to \code{geom_text()}.
 #'
 #' @inherit vbl_doc_layer return
@@ -1519,8 +1528,6 @@ layer_slice_projections <- function(slices_proj,
 
       }
 
-      vbl2D <- .check_input_slices(vbl2D, slices = slices, layer_str = layer_str)
-
       .layer_slice_projections_impl(
         vbl2D = vbl2D,
         plane_proj = plane_proj,
@@ -1534,6 +1541,7 @@ layer_slice_projections <- function(slices_proj,
         label_pos = label_pos,
         label_just = label_just,
         label_spacer = label_spacer,
+        slices = .resolve_slices(slices, slices(vbl2D), layer_str = "layer_slice_projections()"),
         ...
       )
 
@@ -1556,6 +1564,7 @@ layer_slice_projections <- function(slices_proj,
                                           label_pos,
                                           label_just,
                                           label_spacer,
+                                          slices,
                                           ...){
 
   vbl2D_proj <- reverse_offset(vbl2D)
@@ -1567,7 +1576,7 @@ layer_slice_projections <- function(slices_proj,
 
   }
 
-  ref_bb <- match.arg(ref_bb, choices = c("data", "screen", "slice"))
+  ref_bb <- .match_arg(ref_bb, choices = c("data", "screen", "slice"))
 
   alpha <- if(length(alpha) == 1){ rep(alpha, 2) } else { alpha }
   color <- if(length(color) == 1){ rep(color, 2) } else { color }
@@ -1696,6 +1705,312 @@ layer_slice_projections <- function(slices_proj,
 
 
 
+#' @title Add text annotations to slices.
+#' @description
+#' Adds a per-slice text annotation layer using \code{ggplot2::geom_text()}.
+#'
+#' @param text Text specification. See Details for more information.
+#'
+#' \itemize{
+#'   \item{Character: } Flattened with \code{collapse} and drawn on every slice.
+#'   \item{data.frame: } Must contain a \code{slice} column.
+#'   \item{Named list of formulas: } Each named formula is evaluated per slice via
+#'   \link{summarise}(vbl2D, ..., .by = "slice").
+#' }
+#'
+#' @param sep Character scalar used to separate names and values when \code{text} is a data.frame.
+#' @param collapse Character scalar used to collapse multi-line text.
+#' @param ref_bb Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
+#' to use when anchoring the text:
+#'   \itemize{
+#'     \item \code{"data"}: uses global bounding boxes from \link{data_bb}().
+#'     \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
+#'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
+#'     \item \code{"plot"}: uses the plot bounding box rom \link{plot_bb)}().
+#'   }
+#' @param alpha,color,size Passed to \code{geom_text()} to define the text aesthetics.
+#' @param hjust,vjust Numeric scalars or \link[=vbl_def]{default}. Default justifications depend
+#' on input for `anchor`. If `anchor` is specified as a character anchor definition, `hjust` and `vjust`
+#' are picked such that the text is aligned to the respective side.
+#'
+#' @param ... Additional arguments passed to \code{ggplot2::geom_text()}.
+#'
+#' @inherit vbl_doc_layer params return
+#' @inheritParams vbl_doc
+#'
+#' @details
+#' Text handling depends on the type of \code{text}.
+#'
+#' If \code{text} is a character vector, it is checked to be non-empty and flattened with
+#' \code{collapse}. The resulting string is drawn on every slice of the incoming \code{vbl2D}.
+#'
+#' If \code{text} is a data.frame, it must contain a valid \code{slice} column. The provided slices
+#' are matched to the layer’s available slices. If no overlap exists, an error is raised reporting
+#' both the provided slices and the layer’s slices. For each matched slice, all non-\code{slice}
+#' columns are converted into \code{<name><sep><value>} strings and then combined using \code{collapse}.
+#'
+#' If \code{text} is a named list of formulas, only named formulas are kept. Each formula is converted
+#' to a quosure anchored in the caller environment and evaluated per slice using
+#' \code{dplyr::summarise(vbl2D, .by = "slice", !!!text)}. The resulting summary columns are then
+#' converted into \code{<name><sep><value>} strings and combined using \code{collapse}.
+#'
+#' Positioning is computed per slice by selecting the reference bounding box specified by \code{ref_bb}
+#' (\code{data_bb()}, \code{plot_bb()}, \code{screen_bb()}, or \code{slice_bb()}) and converting the chosen
+#' \code{anchor} into absolute image coordinates via \code{as_img_anchor_abs()}.
+#'
+#' @export
+layer_text_ann <- function(text,
+                           anchor = "top-left",
+                           ref_bb = "screen",
+                           sep = ": ",
+                           collapse = "\n",
+                           alpha = 0.9,
+                           color = "white",
+                           size = 3.5,
+                           slices = NULL,
+                           hjust = vbl_def(),
+                           vjust = vbl_def(),
+                           ...){
 
+  .stop_if_not(is.character(sep))
+  .stop_if_not(is.character(collapse))
+
+  ref_bb <- .match_arg(ref_bb, choices = c("data", "plot", "screen", "slice"))
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      vbl2D <- .filter_layer(vbl2D, slices = slices)
+
+      .layer_text_ann_impl(
+        vbl2D = vbl2D,
+        text = text,
+        anchor = anchor,
+        ref_bb = ref_bb,
+        collapse = collapse,
+        alpha = alpha,
+        color = color,
+        size = size,
+        hjust = hjust,
+        vjust = vjust,
+        ...
+      )
+
+    },
+    class_add = "layer_ann"
+  )
+
+}
+
+#' @keywords internal
+.layer_text_ann_impl <- function(vbl2D,
+                                 text,
+                                 anchor,
+                                 ref_bb,
+                                 collapse,
+                                 alpha,
+                                 color,
+                                 size,
+                                 hjust,
+                                 vjust,
+                                 ...){
+
+  # prepare text df
+  text_df <- tibble::tibble(slice = slices(vbl2D), text. = "")
+
+  if(is.character(text)){
+
+    # sanity check
+    if(length(text) == 0){
+
+      msg <- "Input for `text` is of length 0."
+      rlang::abort(msg)
+
+    }
+
+    text_df <-
+      dplyr::mutate(
+        .data = text_df,
+        text. = stringr::str_flatten({{ text }}, collapse = collapse)
+        )
+
+  } else if(is.data.frame(text)){
+
+    # sanity check
+    if(!"slice" %in% colnames(text) || !is_slice_set(text[["slice"]])){
+
+      msg <- "If `text` is a data.frame, it must contain a slice variable."
+      rlang::abort(msg)
+
+    } else {
+
+      overlap <- intersect(text$slice, text_df$slice)
+
+      if(length(overlap) == 0){
+
+        msg <- c(
+          "Could not match text to any slice.",
+          i = glue::glue("Text input for slices: {.slice_collapse(text$slice, ' and ') }"),
+          i = glue::glue("Layer has slices: {.slice_collapse(slices(vbl2D), ' and ')}")
+        )
+
+        rlang::abort(msg)
+
+      }
+
+    }
+
+    text_df <- dplyr::filter(text_df, slice %in% text$slice)
+
+    # collapse columns to text.
+    vnames <- setdiff(colnames(text), "slice")
+
+    for(i in 1:nrow(text_df)){
+
+      idx <- which(text$slice == text_df$slice[i])
+
+      text_df$text.[[i]] <-
+        purrr::map_chr(
+          .x = vnames,
+          .f = ~ paste0(.x, sep, text[idx, .x])
+        ) %>%
+        stringr::str_flatten(string = ., collapse = collapse)
+
+    }
+
+  } else if(is.list(text)){
+
+    # process text
+    text <- purrr::keep(text, .p = rlang::is_formula)
+    text <- text[names(text) != ""]
+
+    if(length(text) == 0){
+
+      msg <- "If `text` is a list, it must contain at least one named formula."
+      rlang::abort(msg)
+
+    }
+
+    text <-
+      purrr::imap(
+        .x = text,
+        .f = ~ rlang::as_quosure(.x, env = rlang::caller_env())
+      )
+
+    text <- dplyr::summarise(vbl2D, !!!text, .by = "slice")
+
+    # collapse columns to text.
+    vnames <- setdiff(colnames(text), "slice")
+
+    for(i in 1:nrow(text_df)){
+
+      idx <- which(text$slice == text_df$slice[i])
+
+      text_df$text.[[i]] <-
+        purrr::map_chr(
+          .x = vnames,
+          .f = ~ paste0(.x, sep, text[idx, .x])
+        ) %>%
+        stringr::str_flatten(string = ., collapse = collapse)
+
+    }
+
+  } else {
+
+    msg <- "Invalid input for `text`. Must be a character vector, a data.frame or a named list of formulas."
+
+  }
+
+  # add positioning
+  pos_df <-
+    purrr::map_dfr(
+      .x = text_df$slice,
+      .f = function(slice){
+
+        if(ref_bb == "data"){
+
+          bb <- data_bb(vbl2D, slice = slice)
+
+        } else if(ref_bb == "plot"){
+
+          bb <- plot_bb(vbl2D)
+
+        } else if(ref_bb == "screen"){
+
+          bb <- screen_bb(vbl2D, slice = slice)
+
+        } else if(ref_bb == "slice"){
+
+          bb <- slice_bb(vbl2D, slice = slice)
+
+        }
+
+        as_img_anchor_abs(anchor, bb2D = bb)
+
+      }
+    )
+
+  text_df <- cbind(text_df, pos_df)
+
+  if(is_offset(vbl2D) && ref_bb == "plot"){
+
+    text_df <- dplyr::distinct(text_df, text., col, row)
+
+  }
+
+  # justifications
+  if(.is_vbl_def(hjust)){
+
+    if(is.character(anchor)){
+
+      hjust <-
+        dplyr::case_when(
+          grepl("left", anchor) ~ 0,
+          grepl("right", anchor) ~ 1,
+          TRUE ~ 0.5
+        )
+
+    } else {
+
+      hjust <- 0.5
+
+    }
+
+  }
+
+  if(.is_vbl_def(vjust)){
+
+    if(is.character(anchor)){
+
+      vjust <-
+        dplyr::case_when(
+          grepl("top", anchor) ~ 1,
+          grepl("bottom", anchor) ~ 0,
+          TRUE ~ 0.5
+        )
+
+    } else {
+
+      vjust <- 0.5
+
+    }
+
+  }
+
+  # output
+  list(
+    ggplot2::geom_text(
+      data = text_df,
+      mapping = ggplot2::aes(x = col, y = row, label = text.),
+      alpha = alpha,
+      color = color,
+      size = size,
+      hjust = hjust,
+      vjust = vjust,
+      ...
+    )
+  )
+
+}
 
 

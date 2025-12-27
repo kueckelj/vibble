@@ -401,7 +401,7 @@ nifti_to_vbl <- function(x,
 
   if(is.character(x)){
 
-    msg <- .glue_message("Read from ~/{basename(x)}.")
+    msg <- .glue_message("Read from ~/{basename(x)}.", verbose = verbose)
     xpath <- x
     x <- oro.nifti::readNIfTI(fname = x, reorient = FALSE)
 

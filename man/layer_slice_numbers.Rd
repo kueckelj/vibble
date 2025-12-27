@@ -32,7 +32,7 @@ to use when anchoring slice numbers via relative or character image anchors:
 
 \item{angle}{Rotation angle passed to \code{geom_text()}.}
 
-\item{alpha, color, size}{Passed to \code{geom_text()} to define the label aesthetics.}
+\item{alpha, color, size}{Passed to \code{geom_text()} to define the text aesthetics.}
 
 \item{...}{Additional arguments passed to \code{geom_text()}.}
 }

@@ -38,7 +38,7 @@ vbl_ccs_axes <- c("x", "y", "z")
 vbl_data_var_types <- c("categorical", "mask", "numeric")
 
 #' @export
-vbl_planes <- c("Sagittal" = "sag", "Axial" = "axi", "Coronal" = "cor")
+vbl_planes <- c("sag", "axi", "cor")
 
 #' @export
 vbl_planes_pretty <- c("sag" = "Sagittal", "axi" = "Axial", "cor" = "Coronal")

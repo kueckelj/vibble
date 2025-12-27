@@ -6,6 +6,7 @@
 \alias{.resolve_legend_label}
 \alias{.resolve_n}
 \alias{.resolve_plane}
+\alias{.resolve_slices}
 \alias{.resolve_verbose}
 \title{Resolve parameters with vbl_def()}
 \usage{
@@ -16,6 +17,8 @@
 .resolve_n(n, opt)
 
 .resolve_plane(plane)
+
+.resolve_slices(slices, slices_data, layer_str)
 
 .resolve_verbose(verbose)
 }

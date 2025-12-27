@@ -182,13 +182,23 @@ slice_bb <- function(vbl2D, slice){
 
 #' @keywords internal
 .slice_offset_indices <- function(vbl2D){
-  seq_along(sort(slices(vbl2D))) - 1
+
+  sort(unique(vbl2D$slice_idx))
+
 }
 
 #' @keywords internal
 .slice_offset_index <- function(vbl2D, slice){
+
   stopifnot(slice %in% slices(vbl2D))
-  which(slice == sort(slices(vbl2D))) - 1
+
+  out <-
+    dplyr::distinct(vbl2D, slice, slice_idx) %>%
+    dplyr::filter(slice == {{ slice }}) %>%
+    dplyr::pull(var = "slice_idx")
+
+  return(out)
+
 }
 
 
@@ -409,7 +419,7 @@ slices_mid <- function(x, ...){
 
 #' @rdname vbl_doc_slice_queries
 #' @export
-slices_mid.vbl <- function(x, n = vbl_def(), plane = vbl_def(), radius = 0.2){
+slices_mid.vbl <- function(x, n = vbl_def(), radius = 0.2, plane = vbl_def()){
 
   n <- .resolve_n(n = n, opt = "slices")
   plane <- .resolve_plane(plane = plane)
@@ -458,7 +468,37 @@ slices_mid.vbl2D <- function(x, n = vbl_def(), radius = 0.2){
 
 }
 
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_max_area <- function(x, ...){
 
+  UseMethod("slices_max_area")
+
+}
+
+#' @rdname vbl_doc_slice_queries
+#' @export
+slices_max_area.vbl <- function(x, .cond, n = vbl_def(), plane = vbl_def()){
+
+  plane <- .resolve_plane(plane)
+  n <- .resolve_n(n, opt = "slices")
+
+  .cond_quo <- rlang::enquo(.cond)
+  qassign(.cond_quo)
+
+  slice_axis <- unname(req_axes_2D(plane)["slice"])
+
+  out <-
+    dplyr::filter(x, !!.cond_quo, .by = {{ slice_axis }}) %>%
+    dplyr::group_by(!!rlang::sym(slice_axis)) %>%
+    dplyr::summarise(count = dplyr::n()) %>%
+    dplyr::arrange(dplyr::desc(count)) %>%
+    dplyr::pull(var = {{ slice_axis }}) %>%
+    head(x = ., n = n)
+
+  return(out)
+
+}
 
 
 

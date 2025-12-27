@@ -23,6 +23,8 @@ as_ggplot <- function(p, ...){
 
 }
 
+as_ggp <- as_ggplot
+
 
 #' @keywords internal
 #' @export
@@ -358,10 +360,21 @@ Ops.ggvibble <- function(x, y){
     )
 
   }
-
   if(.Generic == "+"){
 
-    if(inherits(y, "ggvibble_layer")){
+    if(inherits(y, "list")){
+
+      y <- purrr::keep(y, .p = ~ inherits(.x, "ggvibble_layer"))
+
+      for(i in seq_along(y)){
+
+        x$layers <- c(x$layers, list(y[[i]]))
+
+      }
+
+      return(x)
+
+    } else if(inherits(y, "ggvibble_layer")){
 
       x$layers <- c(x$layers, list(y))
       return(x)
@@ -381,8 +394,7 @@ Ops.ggvibble <- function(x, y){
       c(
         glue::glue("Invalid object supplied to `{.Generic}.ggvibble`."),
         "i" = "Use `+` to add ggvibble layers or other ggvibble objects."
-      ),
-      call = FALSE
+      )
     )
 
   }
@@ -555,6 +567,14 @@ ggplane <- function(vbl,
   # manage z-stack
   vbl2D <- apply_zstack(vbl2D, zstack = zstack)
 
+  # visibility
+  vbl2D$visible. <- TRUE
+  if(.clip_offset(vbl2D)){
+
+    vbl2D <- .clip_offset_raster(vbl2D)
+
+  }
+
   assign("vbl2D", vbl2D, envir = .GlobalEnv)
 
   structure(
@@ -663,12 +683,7 @@ ggplane <- function(vbl,
       layer_colors,
       layer_facet,
       ggplot2::scale_y_reverse(),
-      ggplot2::coord_equal(
-        ratio = .ratio2D(vbl2D),
-        xlim = col_lim,
-        ylim = rev(row_lim),
-        expand = FALSE
-        ),
+      ggplot2::coord_equal(xlim = col_lim, ylim = rev(row_lim), expand = FALSE),
       ggplot2::theme_bw(),
       ggplot2::theme(
         legend.background = ggplot2::element_rect(fill = "black"),
@@ -684,7 +699,6 @@ ggplane <- function(vbl,
         strip.text = ggplot2::element_text(color = "white")
       )
   )
-
 
 }
 

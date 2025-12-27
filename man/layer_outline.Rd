@@ -7,11 +7,11 @@
 layer_outline(
   .cond = NULL,
   color = "gold",
+  fill = NA,
   linetype = "solid",
-  linewidth = 0.75,
+  linewidth = 0.5,
   use_dbscan = TRUE,
-  concavity = 1,
-  clip_overlap = TRUE,
+  concavity = 1.5,
   label = TRUE,
   slices = NULL,
   .by = "slice",
@@ -40,10 +40,6 @@ are then outlined separately.}
 \item{concavity}{Numeric. A relative measure of concavity. Passed to \link[concaveman:concaveman]{concaveman()}.
 1 results in a relatively detailed shape, Infinity results in a convex hull. You can use values lower than 1,
 but they can produce pretty crazy shapes.}
-
-\item{clip_overlap}{Logical. Applies only to offset layouts. If \code{TRUE},
-content from each slice is clipped so that it cannot extend into adjacent
-slice regions.}
 
 \item{label}{Logical or character scalar. Controls the legend label with which
 the color of this layer is associated with in the legend.

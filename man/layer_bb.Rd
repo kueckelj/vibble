@@ -11,9 +11,9 @@
 layer_bb(
   .cond = NULL,
   color = "red",
-  fill = NA,
+  alpha = 0.9,
   linetype = "solid",
-  linewidth = 0.75,
+  linewidth = 0.5,
   expand = as_abs(0.5),
   label = TRUE,
   slices = NULL,
@@ -23,9 +23,10 @@ layer_bb(
 
 layer_bb_data(
   color = "#F28E2B",
+  alpha = 0.9,
   fill = NA,
   linetype = "solid",
-  linewidth = 0.75,
+  linewidth = 0.5,
   label = TRUE,
   slices = NULL,
   ...
@@ -33,18 +34,20 @@ layer_bb_data(
 
 layer_bb_plot(
   color = "#4CB36B",
+  alpha = 0.9,
   fill = NA,
   linetype = "solid",
-  linewidth = 0.75,
+  linewidth = 0.5,
   label = TRUE,
   ...
 )
 
 layer_bb_screen(
   color = "#4DA3D9",
+  alpha = 0.9,
   fill = NA,
   linetype = "solid",
-  linewidth = 0.75,
+  linewidth = 0.5,
   label = TRUE,
   slices = NULL,
   ...
@@ -52,9 +55,10 @@ layer_bb_screen(
 
 layer_bb_slice(
   color = "#8F7BD4",
+  alpha = 0.9,
   fill = NA,
   linetype = "solid",
-  linewidth = 0.75,
+  linewidth = 0.5,
   label = TRUE,
   slices = NULL,
   ...
@@ -67,8 +71,6 @@ voxels included in the content of this layer. The expression is evaluated via
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
 \item{color}{Color of the bounding-box outline.}
-
-\item{fill}{Fill of the bounding-box.}
 
 \item{linetype}{Defines the line pattern. Supported values:
 \itemize{
@@ -96,6 +98,8 @@ is applied.}
 group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
 
 \item{...}{Additional arguments passed to \link{geom_rect}().}
+
+\item{fill}{Fill of the bounding-box.}
 }
 \value{
 A \code{ggvibble_layer} object containing the supplied function. When

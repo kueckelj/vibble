@@ -12,10 +12,6 @@ voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
 into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
 
-\item{clip_overlap}{Logical. Applies only to offset layouts. If \code{TRUE},
-content from each slice is clipped so that it cannot extend into adjacent
-slice regions.}
-
 \item{linetype}{Defines the line pattern. Supported values:
 \itemize{
 \item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
@@ -33,6 +29,10 @@ the color of this layer is associated with in the legend.
 \item{\code{TRUE}: } Uses the function’s default to create the label.
 \item{\code{FALSE}: } Does not include the color in the legend.
 }}
+
+\item{offset_clip}{Logical. Applies only to offset layouts. If \code{TRUE},
+content from each slice is clipped so that it cannot extend into adjacent
+slice regions.}
 
 \item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
 restrict the layer to specific slices. If \code{NULL}, no restriction

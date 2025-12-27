@@ -11,6 +11,8 @@
 \alias{slices_mid}
 \alias{slices_mid.vbl}
 \alias{slices_mid.vbl2D}
+\alias{slices_max_area}
+\alias{slices_max_area.vbl}
 \alias{vbl_doc_slice_queries}
 \title{Slice queries}
 \usage{
@@ -30,9 +32,13 @@ slices_cond(x, ...)
 
 slices_mid(x, ...)
 
-\method{slices_mid}{vbl}(x, n = vbl_def(), plane = vbl_def(), radius = 0.2)
+\method{slices_mid}{vbl}(x, n = vbl_def(), radius = 0.2, plane = vbl_def())
 
 \method{slices_mid}{vbl2D}(x, n = vbl_def(), radius = 0.2)
+
+slices_max_area(x, ...)
+
+\method{slices_max_area}{vbl}(x, .cond, n = vbl_def(), plane = vbl_def())
 }
 \arguments{
 \item{x}{An object for which a method has been defined.}
