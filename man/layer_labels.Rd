@@ -49,9 +49,10 @@ Should take a and return a character scalar.}
 \item{repel}{Logical. If \code{TRUE}, the text is rendered with \link{geom_text_repel}(),
 which prevents label overlap. If \code{FALSE}, text ist rendered with \link{geom_text}().}
 
-\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
-restrict the layer to specific slices. If \code{NULL}, no restriction
-is applied.}
+\item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
+restrict the content of this layer to specific slices. If \code{NULL}, no restriction
+is applied and the function considers all slices, as denoted in the \link{ggplane}()
+container.}
 
 \item{.cond}{A logical filter expression that determines the specific
 voxels included in the content of this layer. The expression is evaluated via

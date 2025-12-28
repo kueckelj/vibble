@@ -9,8 +9,8 @@ apply_zstack(vbl2D, zstack)
 \arguments{
 \item{vbl2D}{A \link[=vbl_doc_vbl2D]{2D vibble}.}
 
-\item{zstack}{Character scalar. Controls the stacking order of slices along
-the slice axis when multiple slices are displayed with an offset-layout.
+\item{zstack}{Character scalar. Controls the stacking order when multiple slices
+are displayed with an offset-layout.
 
 \itemize{
 \item{\code{"asc"}: }{ Slices with lower slice indices are drawn first and may be

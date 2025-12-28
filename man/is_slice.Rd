@@ -4,7 +4,7 @@
 \alias{is_slice}
 \alias{is_slice_set}
 \alias{is_slice_seq}
-\title{Check slice indices and slice sequences.}
+\title{Check slice numbers and slice sequences.}
 \usage{
 is_slice(x)
 
@@ -19,16 +19,15 @@ is_slice_seq(x)
 Logical scalar.
 }
 \description{
-Utilities to test whether objects represent valid slice indices or sequences
-of slice indices.
+Utilities to test whether objects represent valid slice numbers or sequences
+of slice numbers
 }
 \details{
 These helpers distinguish between:
 
 \itemize{
-\item{Single slice: } A numeric scalar that represents a non-zero integer slice index.
-\item{Slice set: } A numeric vector consisting only of integer slice
-indices.
+\item{Single slice: } A numeric scalar that represents a non-zero integer slice number.
+\item{Slice set: } A numeric vector consisting only of integer slice numbers.
 \item{Slice seq: } A slice set that forms a contiguous, gap-free sequence spanning
 from its minimum to its maximum value
 }

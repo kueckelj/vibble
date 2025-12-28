@@ -44,15 +44,16 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
   # add ggvibble_layers
   if(length(p$layers) > 0){
 
-    # sort layers
+    # identify layer types
     layers_ann <- purrr::keep(p$layers, .p = ~ "layer_ann" %in% class(.x))
     layers_bb <- purrr::keep(p$layers, .p = ~ "layer_bb" %in% class(.x))
+    layers_crop <- purrr::keep(p$layers, .p = ~ "layer_crop" %in% class(.x))
     layers_mask <- purrr::keep(p$layers, .p = ~ "layer_mask" %in% class(.x))
+    layers_misc <- purrr::keep(p$layers, .p = ~ "layer_misc" %in% class(.x))
     layers_outline <- purrr::keep(p$layers, .p = ~ "layer_outline" %in% class(.x))
     layers_raster <- purrr::keep(p$layers, .p = ~ "layer_raster" %in% class(.x))
-    layers_misc <- purrr::keep(p$layers, .p = ~ "layer_misc" %in% class(.x))
-    layers_crop <- purrr::keep(p$layers, .p = ~ "layer_crop" %in% class(.x))
 
+    # sort layers
     # 1. raster
     if(length(layers_raster) != 0){
 
@@ -163,7 +164,8 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       if(length(layers_crop) > 1){
 
-        rlang::inform("Multple instances of `layer_crop()` detected. Using last one.")
+        msg <- "Multple instances of `layer_crop()` detected. Using last one."
+        rlang::inform(msg)
 
       }
 
@@ -360,6 +362,7 @@ Ops.ggvibble <- function(x, y){
     )
 
   }
+
   if(.Generic == "+"){
 
     if(inherits(y, "list")){
@@ -465,17 +468,26 @@ Ops.ggvibble <- function(x, y){
 # ggplane constructor -----------------------------------------------------
 
 
-#' @title Build a 2D ggplot representation of voxel data
+#' @title Initialize a 2D representation of voxel data
 #' @description
-#' Initializes a 2D visualization of voxel data by selecting slices in a
-#' specified anatomical plane. Returns a `ggvibble` container that can be
-#' complemented with additional ggvibble layers.
+#' Initializes a 2D visualization of voxel data in a specified anatomical plane that
+#' can be customized with additional layers.
 #'
-#' @param var Character scalar. Name of the background variable to plot.
-#' If \code{NULL}, no background layer is drawn.
-#' @param slices Integer vector. Slice indices in the specified anatomical
-#' `plane` to be included in the plot. Defaults to using \link{slices_mid}`()`.
+#' @param var Determines the data to plot in the background.
+#'
+#' \itemize{
+#'  \item{character:}{ Specifies the variable explicitly by name (recommended).}
+#'  \item{`NULL`:}{ No data is plotted in the background.}
+#'  \item{default:}{ Selects the first name of \link{vars_numeric()}. }
+#'  }
+#'
+#' @param slices Integer vector of \link[=is_slice]{slice numbers} in the specified anatomical
+#' `plane` to be included in the plot. Defaults to using \link{slices_mid}().
 #' @param ncol,nrow Passed to \link{facet_wrap()} in no-offset layouts.
+#' @param guide Passed to `guide` of the `scale_fill_<fn>()` required to map a color
+#' to `var` (if not `NULL`). In `ggplane()`, this defaults to *'none'*, cause `var` expects
+#' an intensity which usually does not need a legend for interpretation. To force a guide,
+#' use `guide = 'colourbar'` for numeric and `guide = 'legend'` for categorical variables.
 #' @param .cond Optional. A logical filter expression evaluated on the constructed
 #' `vbl2D`. The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.
 #' @param ... Additional arguments forwarded to the fill scale functions.
@@ -520,16 +532,17 @@ Ops.ggvibble <- function(x, y){
 #'
 #' @export
 ggplane <- function(vbl,
-                    var = NULL,
+                    var = vbl_def(),
                     slices = vbl_def(),
                     plane = vbl_def(),
                     crop = NULL,
                     expand = 0.1,
                     offset_col = 0,
                     offset_row = 0,
-                    zstack = "asc",
+                    zstack = "desc",
                     ncol = NULL,
                     nrow = NULL,
+                    guide = "none",
                     .cond = NULL,
                     .by = NULL,
                     ...){
@@ -586,6 +599,7 @@ ggplane <- function(vbl,
         var = var,
         ncol = ncol,
         nrow = nrow,
+        guide = guide,
         animate = FALSE,
         ...
       ),
@@ -606,6 +620,7 @@ ggplane <- function(vbl,
                           var,
                           ncol,
                           nrow,
+                          guide,
                           animate,
                           ...){
 
@@ -620,7 +635,45 @@ ggplane <- function(vbl,
 
   }
 
-  # layer colors
+  # resolve var if vbl_def
+  # resolve var if vbl_def
+  if(.is_vbl_def(var)){
+
+    vars_n <- vars_numeric(vbl2D)
+
+    if(length(vars_n) == 0){
+
+      var <- NULL
+
+      msg <- c(
+        "No numeric variables available for default background mapping in ggplane().",
+        i = "Proceeding with `var = NULL`; no background data will be drawn.",
+        i = "Consider specifying `var` explicitly."
+      )
+
+      rlang::warn(message = msg, .frequency = "always")
+
+    } else {
+
+      var <- vars_n[1]
+
+      msg <- c(
+        "Using default mechanism for selecting a data variable in ggplane().",
+        i = glue::glue("Selected first numeric variable: {var}"),
+        i = "Consider specifying `var` explicitly."
+      )
+
+      rlang::inform(
+        message = msg,
+        .frequency = "once",
+        .frequency_id = "ggplane.var.default2"
+      )
+
+    }
+
+  }
+
+  # prepar layer colors
   if(is.character(var)){
 
     layer_raster <-
@@ -633,7 +686,7 @@ ggplane <- function(vbl,
 
     if(is_numeric_var(vbl2D[[var]])){
 
-      layer_colors <- scale_fill_numeric(limits = .get_var_limits(vbl2D, var), ...)
+      layer_colors <- scale_fill_numeric(limits = .get_var_limits(vbl2D, var), guide = guide, ...)
 
     } else {
 
@@ -643,7 +696,7 @@ ggplane <- function(vbl,
 
       }
 
-      layer_colors <- scale_fill_categorical(name = var, names = levels(vbl2D[[var]]), ...)
+      layer_colors <- scale_fill_categorical(name = var, names = levels(vbl2D[[var]]), guide = guide, ...)
 
     }
 
@@ -684,7 +737,6 @@ ggplane <- function(vbl,
       layer_facet,
       ggplot2::scale_y_reverse(),
       ggplot2::coord_equal(xlim = col_lim, ylim = rev(row_lim), expand = FALSE),
-      ggplot2::theme_bw(),
       ggplot2::theme(
         legend.background = ggplot2::element_rect(fill = "black"),
         legend.text = ggplot2::element_text(color = "white"),

@@ -18,8 +18,8 @@ layer_grid(
 \itemize{
 \item \code{length(col) > 1}: values are used directly as col-intercepts.
 \item \code{length(col) == 1} and \code{col < 1}: interpreted as a proportion of
-the maximal \code{col} limit. Grid lines are placed symmetrically around the
-center (half the maximum) with that spacing.
+the maximal \code{col} of the \link[=plot_bb]{plot bounding box.}
+Grid lines are placed symmetrically around the center (half the maximum) with that spacing.
 \item \code{length(col) == 1} and \code{col >= 1}: interpreted as an absolute
 spacing in coordinate units, again used to place symmetric lines around
 the center.

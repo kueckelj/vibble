@@ -72,54 +72,7 @@ magrittr::`%>%`
 }
 
 
-#' @keywords internal#
-#' @export
-.check_input_slices <- function(x, ...){
-
-  UseMethod(".check_input_slices")
-
-}
-
 #' @keywords internal
-#' @export
-.check_input_slices.vbl2D <- function(x, slices, layer_str = "this layer()"){
-
-  if(!is.null(slices)){
-
-    .stop_if_not(is_slice_set(slices))
-
-    slices_missing <- slices[!slices %in% slices(x)]
-    n_missing <- length(slices_missing)
-
-    if(n_missing != 0){
-
-      fill <- ifelse(n_missing == 1, "slice", "slices")
-      slices_quo <- rlang::enquo(slices)
-      slices_text <- rlang::quo_text(slices_quo)
-      slices_d <- glue::glue_collapse(sort(slices(x)), sep = ", ", last = " and ")
-      slices_m <- glue::glue_collapse(slices_missing, sep = ", ", last = " and ")
-
-      rlang::abort(
-        message = c(
-          glue::glue("In `slices = {slices_text}`, no data for {fill} {slices_m} in {layer_str}."),
-          i = glue::glue("The ggplane() to which this layer was added contains data for slices: {slices_d}")
-          )
-      )
-
-    }
-
-    x <- dplyr::filter(x, slice %in% {{ slices }})
-
-  }
-
-  return(x)
-
-}
-
-
-
-
-#' @keywords keyword
 .check_input_var <- function(x, var, type = "all", call = rlang::caller_fn()){
 
   opts <- vars_type(x, type = type)

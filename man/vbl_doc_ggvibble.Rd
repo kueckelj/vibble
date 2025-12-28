@@ -6,7 +6,7 @@
 \description{
 ggvibble provides a user-oriented interface for visualizing voxel-based medical
 imaging data stored as tidy data. It allows users to create 2D slice-based
-plots that behave like ggplot2 objects, while handling voxel-specific details
+plots in a \emph{ggplot2-like} fashion, while handling voxel-specific details
 such as slicing, spatial layout, layer ordering, and multiple color scales
 automatically.
 }
@@ -38,11 +38,6 @@ Users can think of ggvibble layers as semantic plotting actions such as
 The internal ordering of layers (e.g. raster first, annotations last) is
 handled automatically and does not depend on the order in which layers are
 added.
-}
-\note{
-ggvibble is designed to remove common sources of friction when plotting voxel
-data (slice selection, raster alignment, scale conflicts), while remaining
-familiar to users who already know ggplot2.
 }
 \section{Basic usage}{
 
@@ -83,7 +78,7 @@ p <-
 
 Similar to ggplot2, ggvibbles are rendered during printing. So \code{p} itself is
 a lightweight container with data and instructions that can be complemented
-with additional layers. These layers draw data and layout instructions from
+with additional layers. These layers use data and layout instructions from
 the \code{ggplane()} call.
 
 \preformatted{

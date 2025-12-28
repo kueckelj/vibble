@@ -117,6 +117,30 @@ plot_bb <- function(vbl2D){
 }
 
 #' @keywords internal
+.ref_bb <- function(vbl2D, type, slice = NULL){
+
+  type <- .match_arg(type, choices = c("data", "plot", "screen", "slice"))
+
+  if(type == "data"){
+
+    data_bb(vbl2D, slice = slice)
+
+  } else if(type == "plot"){
+
+    plot_bb(vbl2D)
+
+  } else if(type == "screen"){
+
+    screen_bb(vbl2D, slice = slice)
+
+  } else if(type == "slice"){
+
+    slice_bb(vbl2D, slice = slice)
+  }
+
+}
+
+#' @keywords internal
 .screen_bb0 <- function(vbl2D){
 
   .vbl_attr(vbl2D, which = "screen_bb")

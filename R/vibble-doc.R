@@ -392,7 +392,7 @@ NULL
 #' @description
 #' ggvibble provides a user-oriented interface for visualizing voxel-based medical
 #' imaging data stored as tidy data. It allows users to create 2D slice-based
-#' plots that behave like ggplot2 objects, while handling voxel-specific details
+#' plots in a *ggplot2-like* fashion, while handling voxel-specific details
 #' such as slicing, spatial layout, layer ordering, and multiple color scales
 #' automatically.
 #'
@@ -461,7 +461,7 @@ NULL
 #' @section Adding layers:
 #' Similar to ggplot2, ggvibbles are rendered during printing. So `p` itself is
 #' a lightweight container with data and instructions that can be complemented
-#' with additional layers. These layers draw data and layout instructions from
+#' with additional layers. These layers use data and layout instructions from
 #' the `ggplane()` call.
 #'
 #' \preformatted{
@@ -485,11 +485,6 @@ NULL
 #'  ggp + ggplot2::theme_void()
 #'
 #' }
-#'
-#' @note
-#' ggvibble is designed to remove common sources of friction when plotting voxel
-#' data (slice selection, raster alignment, scale conflicts), while remaining
-#' familiar to users who already know ggplot2.
 #'
 #' @seealso
 #' \link{ggplane}(),
@@ -842,8 +837,8 @@ NULL
 #' @param verbose Logical. If `TRUE`, informative messages are printed in the
 #' console.
 #' @param x An object for which a method has been defined.
-#' @param zstack Character scalar. Controls the stacking order of slices along
-#' the slice axis when multiple slices are displayed with an offset-layout.
+#' @param zstack Character scalar. Controls the stacking order when multiple slices
+#' are displayed with an offset-layout.
 #'
 #' \itemize{
 #'   \item{`"asc"`: }{ Slices with lower slice indices are drawn first and may be
@@ -908,9 +903,10 @@ NULL
 #' content from each slice is clipped so that it cannot extend into adjacent
 #' slice regions.
 #'
-#' @param slices Optional numeric \link[=is_slice]{slice indices} used to
-#' restrict the layer to specific slices. If \code{NULL}, no restriction
-#' is applied.
+#' @param slices Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
+#' restrict the content of this layer to specific slices. If \code{NULL}, no restriction
+#' is applied and the function considers all slices, as denoted in the \link{ggplane}()
+#' container.
 #'
 #' @return A `ggvibble_layer` object containing the supplied function. When
 #' added to a `ggvibble`, the function is executed and its returned layers are

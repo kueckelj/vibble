@@ -1,8 +1,5 @@
 
 
-fallback_aes <- list(
-
-)
 
 
 
@@ -42,5 +39,9 @@ vbl_planes <- c("sag", "axi", "cor")
 
 #' @export
 vbl_planes_pretty <- c("sag" = "Sagittal", "axi" = "Axial", "cor" = "Coronal")
+
+#' @export
+vbl_protected_vars <- c("x", "y", "z", "slice", "slice_idx")
+
 
 

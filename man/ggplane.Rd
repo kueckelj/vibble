@@ -2,20 +2,21 @@
 % Please edit documentation in R/ggvibble.R
 \name{ggplane}
 \alias{ggplane}
-\title{Build a 2D ggplot representation of voxel data}
+\title{Initialize a 2D representation of voxel data}
 \usage{
 ggplane(
   vbl,
-  var = NULL,
+  var = vbl_def(),
   slices = vbl_def(),
   plane = vbl_def(),
   crop = NULL,
   expand = 0.1,
   offset_col = 0,
   offset_row = 0,
-  zstack = "asc",
+  zstack = "desc",
   ncol = NULL,
   nrow = NULL,
+  guide = "none",
   .cond = NULL,
   .by = NULL,
   ...
@@ -24,11 +25,16 @@ ggplane(
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
-\item{var}{Character scalar. Name of the background variable to plot.
-If \code{NULL}, no background layer is drawn.}
+\item{var}{Determines the data to plot in the background.
 
-\item{slices}{Integer vector. Slice indices in the specified anatomical
-\code{plane} to be included in the plot. Defaults to using \link{slices_mid}\verb{()}.}
+\itemize{
+\item{character:}{ Specifies the variable explicitly by name (recommended).}
+\item{\code{NULL}:}{ No data is plotted in the background.}
+\item{default:}{ Selects the first name of \link{vars_numeric()}. }
+}}
+
+\item{slices}{Integer vector of \link[=is_slice]{slice numbers} in the specified anatomical
+\code{plane} to be included in the plot. Defaults to using \link{slices_mid}().}
 
 \item{plane}{Character scalar. The anatomical orientation, one of \emph{'sag', 'axi' or 'cor'}.
 Defaults to the \link[=vbl_doc_defaults]{global default plane}.}
@@ -58,8 +64,8 @@ interpreted as absolute offsets in data coordinates.}
 interpreted as offsets relative to the \link[=data_bb]{screen bounding box}.}
 }}
 
-\item{zstack}{Character scalar. Controls the stacking order of slices along
-the slice axis when multiple slices are displayed with an offset-layout.
+\item{zstack}{Character scalar. Controls the stacking order when multiple slices
+are displayed with an offset-layout.
 
 \itemize{
 \item{\code{"asc"}: }{ Slices with lower slice indices are drawn first and may be
@@ -69,6 +75,11 @@ occluded by lower-index slices in overlapping offset layouts.}
 }}
 
 \item{ncol, nrow}{Passed to \link{facet_wrap()} in no-offset layouts.}
+
+\item{guide}{Passed to \code{guide} of the \verb{scale_fill_<fn>()} required to map a color
+to \code{var} (if not \code{NULL}). In \code{ggplane()}, this defaults to \emph{'none'}, cause \code{var} expects
+an intensity which usually does not need a legend for interpretation. To force a guide,
+use \code{guide = 'colourbar'} for numeric and \code{guide = 'legend'} for categorical variables.}
 
 \item{.cond}{Optional. A logical filter expression evaluated on the constructed
 \code{vbl2D}. The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.}
@@ -82,9 +93,8 @@ group by before applying the filtering logic of \code{.cond}.}
 A \link{ggvibble} object.
 }
 \description{
-Initializes a 2D visualization of voxel data by selecting slices in a
-specified anatomical plane. Returns a \code{ggvibble} container that can be
-complemented with additional ggvibble layers.
+Initializes a 2D visualization of voxel data in a specified anatomical plane that
+can be customized with additional layers.
 }
 \details{
 \code{ggplane()} constructs a \code{ggvibble} in a small number of explicit steps.

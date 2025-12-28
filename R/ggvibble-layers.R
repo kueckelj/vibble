@@ -118,7 +118,7 @@ layer_bb <- function(.cond = NULL,
 
 #' @rdname layer_bb
 #' @export
-layer_bb_data <- function(color = "#F28E2B",
+layer_bb_data <- function(color = "orange",
                           alpha = 0.9,
                           fill = NA,
                           linetype = "solid",
@@ -197,7 +197,7 @@ layer_bb_data <- function(color = "#F28E2B",
 
 #' @rdname layer_bb
 #' @export
-layer_bb_plot <- function(color = "#4CB36B",
+layer_bb_plot <- function(color = "forestgreen",
                           alpha = 0.9,
                           fill = NA,
                           linetype = "solid",
@@ -259,7 +259,7 @@ layer_bb_plot <- function(color = "#4CB36B",
 
 #' @rdname layer_bb
 #' @export
-layer_bb_screen <- function(color = "#4DA3D9",
+layer_bb_screen <- function(color = "steelblue",
                             alpha = 0.9,
                             fill = NA,
                             linetype = "solid",
@@ -336,7 +336,7 @@ layer_bb_screen <- function(color = "#4DA3D9",
 
 #' @rdname layer_bb
 #' @export
-layer_bb_slice <- function(color = "#8F7BD4",
+layer_bb_slice <- function(color = "purple",
                            alpha = 0.9,
                            fill = NA,
                            linetype = "solid",
@@ -431,6 +431,7 @@ layer_categorical <- function(var,
                               clrp = "hue_pal",
                               clrp_adjust = NULL,
                               opacity = 0.25,
+                              guide = "drop",
                               slices = NULL,
                               .cond = NULL,
                               .by = "slice",
@@ -451,6 +452,7 @@ layer_categorical <- function(var,
         clrp = clrp,
         clrp_adjust = clrp_adjust,
         opacity = opacity_quo,
+        guide = guide,
         ...
       )
 
@@ -467,6 +469,7 @@ layer_categorical <- function(var,
                                     clrp,
                                     clrp_adjust,
                                     opacity,
+                                    guide,
                                     ...){
 
   if(is_mask_var(vbl2D[[var]])){
@@ -483,6 +486,35 @@ layer_categorical <- function(var,
 
   var <- .check_input_var(vbl2D, var = var, type = "categorical")
 
+  clr_values <- color_vector(clrp = clrp, clrp_adjust = clrp_adjust, names = levels(vbl2D[[var]]))
+
+  if(is.character(guide) && length(guide) == 1 && guide == "drop"){
+
+    levels_keep <-
+      dplyr::filter(vbl2D, visible.) %>%
+      droplevels() %>%
+      dplyr::pull(var = {{ var }}) %>%
+      levels()
+
+    clr_values <- clr_values[levels_keep]
+
+  }
+
+  if(length(clr_values) > 15){
+
+    msg <- c(
+      glue::glue("Number of legend entries for `var = {var}` is {length(clr_values)}."),
+      i = "Use `guide = 'none'` to omit legend plotting for this layer_categorical()."
+    )
+
+    rlang::inform(
+      message = msg,
+      .frequency = "regularly",
+      .frequency_id = "layer.categorical.guide.drop"
+      )
+
+  }
+
   data <- vbl2D[!is.na(vbl2D[[var]]) & vbl2D$visible., ]
 
   list(
@@ -493,12 +525,7 @@ layer_categorical <- function(var,
       alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
       interpolate = vbl_opts("interpolate")
     ),
-    scale_fill_categorical(
-      clrp = clrp,
-      clrp_adjust = clrp_adjust,
-      names = levels(vbl2D[[var]]),
-      ...
-    )
+    ggplot2::scale_fill_manual(values = clr_values, guide = guide, ...)
   )
 
 }
@@ -584,8 +611,8 @@ layer_crop <- function(.cond, expand = FALSE, ...){
 #' \itemize{
 #'   \item `length(col) > 1`: values are used directly as col-intercepts.
 #'   \item `length(col) == 1` and `col < 1`: interpreted as a proportion of
-#'   the maximal `col` limit. Grid lines are placed symmetrically around the
-#'   center (half the maximum) with that spacing.
+#'   the maximal `col` of the \link[=plot_bb]{plot bounding box.}
+#'   Grid lines are placed symmetrically around the center (half the maximum) with that spacing.
 #'   \item `length(col) == 1` and `col >= 1`: interpreted as an absolute
 #'   spacing in coordinate units, again used to place symmetric lines around
 #'   the center.
@@ -614,9 +641,6 @@ layer_grid <- function(col = 0.1,
                        linewidth = 0.25,
                        linetype = "solid"
                        ){
-
-  alpha <- .default_alpha(alpha, key = "alpha.grid")
-  color <- .default_color(color, key = "clr.grid")
 
   vbl_layer(
     fun = function(vbl2D){
@@ -914,6 +938,39 @@ layer_labels <- function(var,
 
 }
 
+#' @title Modify plot labels and theme.
+#' @description
+#' Adds plot-level annotations and appearance settings to a \code{ggvibble} plot.
+#'
+#' @param ... Arguments passed directly to \link{ggplot2::labs}() or
+#' \link{ggplot2::theme}(), depending on the layer.
+#'
+#' @inherit vbl_doc_layer return
+#'
+#' @details
+#' These layers apply globally and are independent of slice content, layout, or
+#' faceting. They are evaluated once on the resulting \code{ggplot} object and are
+#' therefore compatible with all \code{ggvibble} layouts.
+#'
+#' @export
+layer_labs <- function(...){
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      list(
+        ggplot2::labs(
+          ...
+        )
+      )
+
+    },
+    class_add = "layer_misc"
+  )
+
+
+}
+
 #' @title Add a masking layer
 #' @description Overlay a logical mask on a \link{ggplane}() plot by filling
 #' voxels.
@@ -1119,6 +1176,159 @@ layer_numeric <- function(var,
   )
 
 }
+
+
+
+#' @title Add orientation labels
+#' @description
+#' Adds per-slice orientation labels (e.g., L/R, A/P, S/I) to a `ggplane()`.
+#'
+#' @param col Logical. If \code{TRUE}, annotate the column axis orientation.
+#' @param row Logical. If \code{TRUE}, annotate the row axis orientation.
+#' @param ref_bb Character scalar. Reference bounding box used to position the labels.
+#' Valid values are *c("data", "plot", "screen", "slice")*.
+#' If \code{vbl_def()}, defaults to *'plot'* for offset layouts and *'screen'* otherwise.
+#' @param alpha,color,size Passed to \link{geom_text()} to define the text \link[=vbl_doc_plot_aesthetics]{aesthetics}.
+#' @param ... Additional arguments passed to `geom_text()`
+#'
+#' @inherit vbl_doc_layer return
+#'
+#' @details
+#' The orientation labels are derived from \code{ccs_orientation_mapping} for the current plane.
+#' For each requested axis (\code{col} and/or \code{row}), two labels are created (min/max) and
+#' anchored to the corresponding side of the selected reference bounding box.
+#'
+#' Label positions are computed per slice. For each slice, the reference bounding box is obtained
+#' via \code{.ref_bb(..., type = ref_bb, slice = slice)} and converted to absolute image coordinates
+#' using \code{as_img_anchor_abs()}. The labels are drawn with \code{ggplot2::geom_text()}.
+#'
+#' @export
+
+layer_orientation <- function(col = TRUE,
+                              row = TRUE,
+                              ref_bb = vbl_def(),
+                              alpha = 0.5,
+                              color = "white",
+                              size = 3.5,
+                              ...){
+
+  col <- isTRUE(col[1])
+  row <- isTRUE(row[1])
+
+  if(!any(c(col, row))){
+
+    msg <- "At least one of `col` or `row` must be TRUE."
+    rlang::abort(msg)
+
+  }
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      .layer_orientation_impl(
+        vbl2D = vbl2D,
+        col = col,
+        row = row,
+        ref_bb = ref_bb,
+        alpha = alpha,
+        color = color,
+        size = size,
+        ...
+      )
+
+    },
+    class_add = "layer_ann"
+  )
+
+
+}
+
+#' @keywords internal
+.layer_orientation_impl <- function(vbl2D,
+                                    col,
+                                    row,
+                                    ref_bb,
+                                    alpha,
+                                    color,
+                                    size,
+                                    ...){
+
+  if(.is_vbl_def(ref_bb)){
+
+    ref_bb <- ifelse(is_offset(vbl2D), "plot", "screen")
+
+  }
+
+  plane <- plane(vbl2D)
+  axes <- req_axes_2D(plane)[c("col", "row")]
+  axes <- axes[c(col, row)]
+
+  mapping <-
+    t(as.data.frame(ccs_orientation_mapping)) %>%
+    as.data.frame() %>%
+    tibble::rownames_to_column(var = "ccs") %>%
+    magrittr::set_colnames(value = c("ccs", "min", "max")) %>%
+    dplyr::filter(ccs %in% {{ axes }}) %>%
+    tidyr::pivot_longer(
+      cols = dplyr::all_of(c("min", "max")),
+      values_to = "label",
+      names_to = "or"
+    )
+
+  mapping$axis <- ""
+  mapping$anchor <- ""
+  for(i in 1:nrow(mapping)){
+
+    mapping$axis[i] <- names(axes)[axes==mapping$ccs[i]]
+
+    if(mapping$axis[i] == "col"){
+
+      mapping$anchor[i] <- ifelse(mapping$or[i] == "min", "left", "right")
+
+    } else if(mapping$axis[i] == "row"){
+
+      mapping$anchor[i] <- ifelse(mapping$or[i] == "min", "top", "bottom")
+
+    }
+
+  }
+
+  text_df <-
+    purrr::map_df(
+      .x = slices(vbl2D),
+      .f = function(slice){
+
+          bb <- .ref_bb(vbl2D, type = ref_bb, slice = slice)
+
+
+          pos_df <-
+            purrr::map_df(
+              .x = 1:nrow(mapping),
+              .f = ~ as_img_anchor_abs(anchor = mapping$anchor[.x], bb2D = bb)
+            ) %>%
+            dplyr::mutate(slice = {{ slice }})
+
+          cbind(mapping, pos_df)
+
+      }
+    )
+
+  # output
+  list(
+    ggplot2::geom_text(
+      data = text_df,
+      mapping = ggplot2::aes(x = col, y = row, label = label),
+      alpha = alpha,
+      color = color,
+      size = size,
+      ...
+    )
+  )
+
+
+}
+
+
 
 #' @title Add outlines
 #' @description Overlay a \link{ggplane}() plot by outlining voxels
@@ -1473,8 +1683,8 @@ layer_slice_numbers <- function(anchor = vbl_def(),
 #'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
 #'     \item \code{"screen"}: uses screen-space bounding boxes from \link{screen_bb}().
 #'   }
-#' @param label_pos Character, logical, or `vbl_def()`. Position of slice projection
-#'   labels relative to the projection line.
+#' @param label_pos Character, logical, or `vbl_def()`. Controls the position of the label
+#' (slice number) relative to the projection line.
 #'
 #'   \itemize{
 #'     \item{character: } One of *c("top", "bottom", "left", "right",
@@ -1728,7 +1938,7 @@ layer_slice_projections <- function(slices_proj,
 #'     \item \code{"slice"}: uses per-slice bounding boxes from \link{slice_bb}().
 #'     \item \code{"plot"}: uses the plot bounding box rom \link{plot_bb)}().
 #'   }
-#' @param alpha,color,size Passed to \code{geom_text()} to define the text aesthetics.
+#' @param alpha,color,size Passed to \code{geom_text()} to define the text \link[=vbl_doc_plot_aesthetics]{aesthetics}.
 #' @param hjust,vjust Numeric scalars or \link[=vbl_def]{default}. Default justifications depend
 #' on input for `anchor`. If `anchor` is specified as a character anchor definition, `hjust` and `vjust`
 #' are picked such that the text is aligned to the respective side.
@@ -2009,6 +2219,26 @@ layer_text_ann <- function(text,
       vjust = vjust,
       ...
     )
+  )
+
+}
+
+
+#' @rdname layer_labs
+#' @export
+layer_theme <- function(...){
+
+  vbl_layer(
+    fun = function(vbl2D){
+
+      list(
+        ggplot2::theme(
+          ...
+        )
+      )
+
+    },
+    class_add = "layer_misc"
   )
 
 }

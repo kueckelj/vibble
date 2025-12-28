@@ -42,11 +42,12 @@ to use when anchoring the text:
 
 \item{collapse}{Character scalar used to collapse multi-line text.}
 
-\item{alpha, color, size}{Passed to \code{geom_text()} to define the text aesthetics.}
+\item{alpha, color, size}{Passed to \code{geom_text()} to define the text \link[=vbl_doc_plot_aesthetics]{aesthetics}.}
 
-\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
-restrict the layer to specific slices. If \code{NULL}, no restriction
-is applied.}
+\item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
+restrict the content of this layer to specific slices. If \code{NULL}, no restriction
+is applied and the function considers all slices, as denoted in the \link{ggplane}()
+container.}
 
 \item{hjust, vjust}{Numeric scalars or \link[=vbl_def]{default}. Default justifications depend
 on input for \code{anchor}. If \code{anchor} is specified as a character anchor definition, \code{hjust} and \code{vjust}

@@ -23,9 +23,10 @@ variable. If not specified, draws from the global default \code{vbl_opts('clrsp'
 \item{opacity}{Controls voxel transparency in raster layers. Accepts constants, ranges, or
 data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
-\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
-restrict the layer to specific slices. If \code{NULL}, no restriction
-is applied.}
+\item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
+restrict the content of this layer to specific slices. If \code{NULL}, no restriction
+is applied and the function considers all slices, as denoted in the \link{ggplane}()
+container.}
 
 \item{.cond}{A logical filter expression that determines the specific
 voxels included in the content of this layer. The expression is evaluated via

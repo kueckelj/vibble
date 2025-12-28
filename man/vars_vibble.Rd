@@ -3,7 +3,7 @@
 \name{vars_vibble}
 \alias{vars_vibble}
 \alias{vars_data}
-\alias{vars_label}
+\alias{vars_categorical}
 \alias{vars_mask}
 \alias{vars_numeric}
 \alias{vars_spatial}
@@ -12,7 +12,7 @@
 \usage{
 vars_data(vbl)
 
-vars_label(vbl)
+vars_categorical(vbl, ordered = NULL)
 
 vars_mask(vbl)
 
@@ -20,19 +20,27 @@ vars_numeric(vbl)
 
 vars_spatial(vbl)
 
-vars_type(vbl, type = "all")
+vars_type(vbl, type = "all", ordered = NULL)
 }
 \arguments{
 \item{vbl}{A \link[=vbl_doc_vbl]{vibble}.}
 
-\item{type}{Character value. The data variable type of interest. Must be one of \emph{c('label', 'mask', 'numeric')}.}
+\item{ordered}{Logical or \code{NULL}. Controls how ordered factors are handled.
+
+\itemize{
+\item{\code{TRUE}: } Only ordered factors are returned.
+\item{\code{FALSE}: } Ordered factors are excluded.
+\item{\code{NULL}: } Both ordered and unordered factors are returned.
+}}
+
+\item{type}{Character value. The data variable type of interest. Must be one of \emph{c('cateogorical', 'mask', 'numeric')}.}
 }
 \value{
 A character vector with column names:
 
 \itemize{
 \item \link{vars_data}() names of all non-spatial variables.
-\item \link{vars_label}() names of non-spatial variables stored as factors or character labels.
+\item \link{vars_categorical}() names of non-spatial variables stored as factors labels.
 \item \link{vars_mask}() names of non-spatial variables stored as logical masks.
 \item \link{vars_numeric}() names of non-spatial variables stored as numeric vectors.
 \item \link{vars_spatial}() names of spatial coordinate variables such as \code{x}, \code{y}, \code{z}, \code{col}, \code{row}, and \code{slice}.

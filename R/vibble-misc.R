@@ -138,14 +138,22 @@ set_up_progress_bar <- function(total,
 #' @description
 #' Helpers to retrieve column names from a vibble based on their type.
 #'
-#' @param type Character value. The data variable type of interest. Must be one of *c('label', 'mask', 'numeric')*.
+#' @param type Character value. The data variable type of interest. Must be one of *c('cateogorical', 'mask', 'numeric')*.
+#' @param ordered Logical or \code{NULL}. Controls how ordered factors are handled.
+#'
+#' \itemize{
+#'   \item{\code{TRUE}: } Only ordered factors are returned.
+#'   \item{\code{FALSE}: } Ordered factors are excluded.
+#'   \item{\code{NULL}: } Both ordered and unordered factors are returned.
+#' }
+#'
 #' @inherit vbl_doc params
 #'
 #' @return A character vector with column names:
 #'
 #' \itemize{
 #'   \item \link{vars_data}() names of all non-spatial variables.
-#'   \item \link{vars_label}() names of non-spatial variables stored as factors or character labels.
+#'   \item \link{vars_categorical}() names of non-spatial variables stored as factors labels.
 #'   \item \link{vars_mask}() names of non-spatial variables stored as logical masks.
 #'   \item \link{vars_numeric}() names of non-spatial variables stored as numeric vectors.
 #'   \item \link{vars_spatial}() names of spatial coordinate variables such as `x`, `y`, `z`, `col`, `row`, and `slice`.
@@ -169,9 +177,9 @@ vars_data <- function(vbl){
 
 #' @rdname vars_vibble
 #' @export
-vars_label <- function(vbl){
+vars_categorical <- function(vbl, ordered = NULL){
 
-  vars_type(vbl, "label")
+  vars_type(vbl, type = "categorical", ordered = ordered)
 
 }
 
@@ -179,7 +187,7 @@ vars_label <- function(vbl){
 #' @export
 vars_mask <- function(vbl){
 
-   vars_type(vbl, "mask")
+   vars_type(vbl, type = "mask")
 
 }
 
@@ -187,7 +195,7 @@ vars_mask <- function(vbl){
 #' @export
 vars_numeric <- function(vbl){
 
-  vars_type(vbl, "numeric")
+  vars_type(vbl, type = "numeric")
 
 }
 
@@ -195,7 +203,7 @@ vars_numeric <- function(vbl){
 #' @export
 vars_spatial <- function(vbl){
 
-  spatial <- c("x", "y", "z", "col", "row", "slice")
+  spatial <- c("x", "y", "z", "col", "row", "slice", "slice_idx")
 
   intersect(colnames(vbl), spatial)
 
@@ -203,31 +211,49 @@ vars_spatial <- function(vbl){
 
 #' @rdname vars_vibble
 #' @export
-vars_type <- function(vbl, type = "all"){
+vars_type <- function(vbl, type = "all", ordered = NULL){
 
-  type <- match.arg(type, choices = c(vbl_data_var_types, "data", "all"))
+  type <- .match_arg(type, choices = c(vbl_data_var_types, "data", "all"))
 
   if(type == "categorical"){
 
-    names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_categorical_var))
+    out <-
+      names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_categorical_var)) %>%
+      intersect(x = ., y = vars_data(vbl))
+
+    if(isTRUE(ordered) & length(out) != 0){
+
+      out <- names(purrr::keep(.x = vbl[,out], .p = is.ordered))
+
+    } else if(isFALSE(ordered)){
+
+      out <- names(purrr::discard(.x = vbl[,out], .p = is.ordered))
+
+    }
 
   } else if(type == "mask"){
 
-    names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_mask_var))
+    out <-
+      names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_mask_var)) %>%
+      intersect(x = ., y = vars_data(vbl))
 
   } else if(type == "numeric"){
 
-    names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_numeric_var))
+    out <-
+      names(purrr::keep(.x = vbl[,vars_data(vbl)], .p = is_numeric_var))%>%
+      intersect(x = ., y = vars_data(vbl))
 
   } else if(type == "data"){
 
-    vars_data(vbl)
+    out <- vars_data(vbl)
 
   } else {
 
-    names(vbl)
+    out <- names(vbl)
 
   }
+
+  return(out)
 
 }
 

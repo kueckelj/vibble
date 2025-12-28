@@ -19,8 +19,8 @@
 \arguments{
 \item{x}{A \code{ggvibble} object.}
 
-\item{zstack}{Character scalar. Controls the stacking order of slices along
-the slice axis when multiple slices are displayed with an offset-layout.
+\item{zstack}{Character scalar. Controls the stacking order when multiple slices
+are displayed with an offset-layout.
 
 \itemize{
 \item{\code{"asc"}: }{ Slices with lower slice indices are drawn first and may be

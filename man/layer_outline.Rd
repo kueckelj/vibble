@@ -50,9 +50,10 @@ the color of this layer is associated with in the legend.
 \item{\code{FALSE}: } Does not include the color in the legend.
 }}
 
-\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
-restrict the layer to specific slices. If \code{NULL}, no restriction
-is applied.}
+\item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
+restrict the content of this layer to specific slices. If \code{NULL}, no restriction
+is applied and the function considers all slices, as denoted in the \link{ggplane}()
+container.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}

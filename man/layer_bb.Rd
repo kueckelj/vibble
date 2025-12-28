@@ -22,7 +22,7 @@ layer_bb(
 )
 
 layer_bb_data(
-  color = "#F28E2B",
+  color = "orange",
   alpha = 0.9,
   fill = NA,
   linetype = "solid",
@@ -33,7 +33,7 @@ layer_bb_data(
 )
 
 layer_bb_plot(
-  color = "#4CB36B",
+  color = "forestgreen",
   alpha = 0.9,
   fill = NA,
   linetype = "solid",
@@ -43,7 +43,7 @@ layer_bb_plot(
 )
 
 layer_bb_screen(
-  color = "#4DA3D9",
+  color = "steelblue",
   alpha = 0.9,
   fill = NA,
   linetype = "solid",
@@ -54,7 +54,7 @@ layer_bb_screen(
 )
 
 layer_bb_slice(
-  color = "#8F7BD4",
+  color = "purple",
   alpha = 0.9,
   fill = NA,
   linetype = "solid",
@@ -90,9 +90,10 @@ the color of this layer is associated with in the legend.
 \item{\code{FALSE}: } Does not include the color in the legend.
 }}
 
-\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
-restrict the layer to specific slices. If \code{NULL}, no restriction
-is applied.}
+\item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
+restrict the content of this layer to specific slices. If \code{NULL}, no restriction
+is applied and the function considers all slices, as denoted in the \link{ggplane}()
+container.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}

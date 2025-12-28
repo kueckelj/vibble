@@ -51,8 +51,8 @@ the line and labels (recycled if length one).}
 
 \item{linewidth}{Numeric line width passed to \code{geom_segment()}.}
 
-\item{label_pos}{Character, logical, or \code{vbl_def()}. Position of slice projection
-labels relative to the projection line.
+\item{label_pos}{Character, logical, or \code{vbl_def()}. Controls the position of the label
+(slice number) relative to the projection line.
 
 \itemize{
 \item{character: } One of \emph{c("top", "bottom", "left", "right",
@@ -74,9 +74,10 @@ the projection axis, and \code{spacer}.
 text justification for slice projection labels. Larger values move labels further away
 from the projection line.}
 
-\item{slices}{Optional numeric \link[=is_slice]{slice indices} used to
-restrict the layer to specific slices. If \code{NULL}, no restriction
-is applied.}
+\item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
+restrict the content of this layer to specific slices. If \code{NULL}, no restriction
+is applied and the function considers all slices, as denoted in the \link{ggplane}()
+container.}
 
 \item{...}{Additional arguments forwarded to \code{geom_text()}.}
 }
