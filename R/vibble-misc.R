@@ -1,6 +1,118 @@
 
+#' @title Binarize foreground using Otsu thresholding.
+#'
+#' @description
+#' Identifies foreground voxels using Otsu's method applied to **non-zero,
+#' non-missing** intensity values. Intended for MRI intensities where zeros
+#' represent background/air.
+#'
+#' @param x Numeric vector. Intensity values (may include zeros and NA).
+#'
+#' @return
+#' Logical vector of same length as `x`, TRUE indicating foreground.
+#'
+#' @examples
+#' x <- c(rep(0, 100), rnorm(1000, 100, 10), rnorm(50, 400, 20))
+#' mask <- binarize_foreground_otsu(x)
+binarize_foreground_otsu <- function(x){
+
+  if(!is.numeric(x)){
+
+    stop("`x` must be numeric.")
+
+  }
+
+  n <- length(x)
+  nz <- x != 0 & !is.na(x)
+
+  if(!any(nz)){
+
+    return(rep(FALSE, n))
+
+  }
+
+  v <- x[nz]
+  v <- v[is.finite(v)]
+
+  if(length(v) == 0){
+
+    return(rep(FALSE, n))
+
+  }
+
+  rng <- range(v)
+  if(rng[1] == rng[2]){
+
+    thr <- rng[1]
+
+  } else {
+
+    nbins <- 256
+    h <- graphics::hist(v, breaks = nbins, plot = FALSE)
+
+    p <- h$counts / sum(h$counts)
+    mids <- h$mids
+
+    omega <- cumsum(p)
+    mu <- cumsum(p * mids)
+    mu_t <- mu[length(mu)]
+
+    sigma_b2 <- (mu_t * omega - mu)^2 / (omega * (1 - omega))
+    sigma_b2[!is.finite(sigma_b2)] <- -Inf
+
+    thr <- mids[which.max(sigma_b2)]
+
+  }
+
+  nz & (x >= thr)
+
+}
 
 
+#' @title Clip maximum intensity values by quantile (non-zero only).
+#'
+#' @description
+#' Clips extreme high values at an upper quantile computed **only on non-zero
+#' intensities**. Intended for MRI intensity vectors where zeros represent
+#' background/air.
+#'
+#' @param x Numeric vector. Intensity values (may include zeros and NA).
+#' @param p Numeric scalar. Upper quantile in (0, 1). Default is 0.995.
+#'
+#' @return
+#' Numeric vector of clipped values.
+#'
+#' @examples
+#' x <- c(0, 0, rnorm(1000, 100), 1e6)
+#' y <- clip_max_quantile(x)
+clip_max_quantile <- function(x,
+                              p = 0.995){
+
+  if(!is.numeric(x)){
+
+    stop("`x` must be numeric.")
+
+  }
+
+  if(!is.numeric(p) || length(p) != 1 || is.na(p) || p <= 0 || p >= 1){
+
+    stop("`p` must be a single number in (0, 1).")
+
+  }
+
+  x_nz <- x[x != 0 & !is.na(x)]
+
+  if(length(x_nz) == 0){
+
+    return(x)
+
+  }
+
+  thr <- stats::quantile(x_nz, probs = p, names = FALSE, type = 7)
+
+  pmin(x, thr)
+
+}
 
 
 

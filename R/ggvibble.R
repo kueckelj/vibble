@@ -38,7 +38,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
     ggplot2::ggplot(data = vbl2D) +
     do.call(
       what = .ggplane_impl,
-      args = c(list(vbl2D = vbl2D), p$base_args)
+      args = c(list(vbl2D = vbl2D), p$args_ggplane)
     )
 
   # add ggvibble_layers
@@ -59,7 +59,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       for(ly in layers_raster){
 
-        g <- g + ly$fun(vbl2D)
+        g <- g + ly$fun(vbl2D, p$context)
 
       }
 
@@ -83,7 +83,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       for(ly in layers_mask){
 
-        g <- g + ly$fun(vbl2D)
+        g <- g + ly$fun(vbl2D, p$context)
 
       }
 
@@ -107,7 +107,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       for(ly in layers_bb){
 
-        g <- g + ly$fun(vbl2D)
+        g <- g + ly$fun(vbl2D, p$context)
 
       }
 
@@ -131,7 +131,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       for(ly in layers_outline){
 
-        g <- g + ly$fun(vbl2D)
+        g <- g + ly$fun(vbl2D, p$context)
 
       }
 
@@ -142,7 +142,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       for(ly in layers_ann){
 
-        g <- g + ly$fun(vbl2D)
+        g <- g + ly$fun(vbl2D, p$context)
 
       }
 
@@ -153,7 +153,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       for(ly in layers_misc){
 
-        g <- g + ly$fun(vbl2D)
+        g <- g + ly$fun(vbl2D, p$context)
 
       }
 
@@ -171,7 +171,7 @@ build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
       ly_crop <- layers_crop[[length(layers_crop)]]
 
-      g <- g + ly_crop$fun(vbl2D)
+      g <- g + ly_crop$fun(vbl2D, p$context)
 
     }
 
@@ -267,7 +267,7 @@ print.ggvibble <- function(p, ...){
 #' @details
 #' `vbl_layer()` standardizes how custom layers are attached to ggvibble plots.
 #' The returned object is only a container; the actual layer generation happens
-#' when `+.ggvibble` evaluates `fun(vbl2D)` during plot building.
+#' when `+.ggvibble` evaluates `fun(vbl2D, p$context)` during plot building.
 #'
 #' @keywords internal
 vbl_layer <- function(fun, class_add = NULL, ...){
@@ -485,12 +485,15 @@ Ops.ggvibble <- function(x, y){
 #' `plane` to be included in the plot. Defaults to using \link{slices_mid}().
 #' @param ncol,nrow Passed to \link{facet_wrap()} in no-offset layouts.
 #' @param guide Passed to `guide` of the `scale_fill_<fn>()` required to map a color
-#' to `var` (if not `NULL`). In `ggplane()`, this defaults to *'none'*, cause `var` expects
-#' an intensity which usually does not need a legend for interpretation. To force a guide,
-#' use `guide = 'colourbar'` for numeric and `guide = 'legend'` for categorical variables.
+#' to `var` (if not `NULL`). In `ggplane()`, this defaults to *'none'*, cause it expects
+#' an intensity variable like T1 or FLAIR which usually does not need a legend for
+#' interpretation.
+#'
+#' To force a guide, use `guide = 'colourbar'` for numeric and `guide = 'legend'` for categorical variables.
 #' @param .cond Optional. A logical filter expression evaluated on the constructed
 #' `vbl2D`. The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.
 #' @param ... Additional arguments forwarded to the fill scale functions.
+#' @param context List of context specifications with which layers are evaluated.
 #' @inheritParams vibble2D
 #' @inheritParams vbl_doc
 #'
@@ -504,7 +507,7 @@ Ops.ggvibble <- function(x, y){
 #'   by selecting `plane` and `slices` and applying `crop` and `expand`.
 #'   \item{2. Filter plotted voxels: } Applies `.cond` (and optional grouping via `.by`)
 #'   using `.filter_layer()` to determine which voxels are shown.
-#'   \item{3. Order slices: } Optionally arranges `vbl2D` by slice index via `zstack`
+#'   \item{3. Order slices: } Optionally arranges `vbl2D` by slice number via `zstack`
 #'   to control draw order when slices overlap in offset layouts.
 #'   \item{4. Apply offsets: } Applies `offset_col` and `offset_row` via `apply_offset()`.
 #'   If both offsets are zero and multiple slices are present, slices are displayed in
@@ -515,8 +518,7 @@ Ops.ggvibble <- function(x, y){
 #'   \item{6. Determine plot limits and expansion: } The plotting bounding box is
 #'   derived from the spatial extent of the displayed voxels. Expansion is applied
 #'   in absolute image-space units, choosing the smallest symmetric expansion across
-#'   axes to preserve aspect ratio. Final limits are enforced via `coord_equal()`
-#'   with `expand = FALSE`.
+#'   axes to preserve aspect ratio. Final limits are enforced via `coord_equal()`.
 #' }
 #'
 #' The final ggplot is created when the object is printed or plotted. The base plot
@@ -543,11 +545,13 @@ ggplane <- function(vbl,
                     ncol = NULL,
                     nrow = NULL,
                     guide = "none",
+                    context = list(),
                     .cond = NULL,
                     .by = NULL,
                     ...){
 
   .stop_if_not(is_vbl(vbl))
+  .stop_if_not(is.list(context))
 
   plane <- .resolve_plane(plane = plane)
 
@@ -567,12 +571,10 @@ ggplane <- function(vbl,
     plane = plane,
     slices = slices,
     crop = crop,
-    expand = expand
+    expand = expand,
+    .cond = {{ .cond }},
+    .by = {{ .by }}
   )
-
-  # filter
-  .cond_quo <- rlang::enquo(.cond)
-  vbl2D <- .filter_layer(vbl2D, .cond = .cond_quo, .by = .by, layer = "ggplane()")
 
   # apply offset
   vbl2D <- apply_offset(vbl2D, offset_col = offset_col, offset_row = offset_row)
@@ -580,7 +582,7 @@ ggplane <- function(vbl,
   # manage z-stack
   vbl2D <- apply_zstack(vbl2D, zstack = zstack)
 
-  # visibility
+  # manage visibility (in offset layouts)
   vbl2D$visible. <- TRUE
   if(.clip_offset(vbl2D)){
 
@@ -588,14 +590,16 @@ ggplane <- function(vbl,
 
   }
 
+  # context
+  context <- list()
+  context$outlines_full <- if(.clip_offset(vbl2D)) .comp_outlines(vbl2D)
+
   assign("vbl2D", vbl2D, envir = .GlobalEnv)
 
   structure(
     list(
       vbl2D = vbl2D,
-      plane = plane,
-      slices = slices(vbl2D),
-      base_args = list(
+      args_ggplane = list(
         var = var,
         ncol = ncol,
         nrow = nrow,
@@ -603,6 +607,7 @@ ggplane <- function(vbl,
         animate = FALSE,
         ...
       ),
+      context = context,
       layers = list()
     ),
     class = "ggvibble"
@@ -738,6 +743,9 @@ ggplane <- function(vbl,
       ggplot2::scale_y_reverse(),
       ggplot2::coord_equal(xlim = col_lim, ylim = rev(row_lim), expand = FALSE),
       ggplot2::theme(
+        axis.ticks = ggplot2::element_blank(),
+        axis.title = ggplot2::element_blank(),
+        axis.text = ggplot2::element_blank(),
         legend.background = ggplot2::element_rect(fill = "black"),
         legend.text = ggplot2::element_text(color = "white"),
         legend.title = ggplot2::element_text(color = "white"),

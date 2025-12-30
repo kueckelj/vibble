@@ -254,9 +254,9 @@ NULL
 
 #' @keywords internal
 .comp_outlines <- function(vbl2D,
-                           var,
-                           use_dbscan,
-                           concavity = 2.5){
+                           var = NULL,
+                           use_dbscan = FALSE,
+                           concavity = 1){
 
   # allow quick outline of all slice voxels
   if(is.null(var)){
@@ -444,38 +444,33 @@ NULL
 
     expr_text <- rlang::quo_text(.cond_quo)
 
-    # returns either data.frame or character (error message)
-    vbl2D <-
-      tryCatch({
-
-        dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by }})
-
-        }, error = function(error){
-
-          error$message
-
-        })
+    res <- tryCatch(
+      expr = { dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by }}) },
+      error = function(error){ error }
+    )
 
     # sanity checks
-    if(is.character(vbl2D)){ # -> failed
+    if(inherits(res, "error")){
 
-      msg <-
-        c(
-          glue::glue("Filtering with .cond = {expr_text} in {layer_str} failed."),
-          i = glue::glue("Error: {vbl2D}"),
-          i = "Check the filtering expression for correct spelling of variable names."
-        )
+      err_msg <- conditionMessage(res)
 
-      rlang::abort(msg)
-
-    } else if(nrow(vbl2D) == 0){ # ->
-
-      msg <-
-        c(
-          glue::glue("No voxels remain in {layer}() after filtering with `{expr_text}`.")
-        )
+      msg <- c(
+        glue::glue("Filtering with `.cond = {expr_text}` in {layer_str} failed."),
+        i = glue::glue("Reason: {err_msg}"),
+        i = "Check the filtering expression (variable names, functions, and types)."
+      )
 
       rlang::abort(msg)
+
+    } else {
+
+      vbl2D <- res
+
+      if(nrow(vbl2D) == 0){
+
+        .glue_message("Empty {layer_str} after filtering with .cond = `{expr_text}`.")
+
+      }
 
     }
 

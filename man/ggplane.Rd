@@ -17,6 +17,7 @@ ggplane(
   ncol = NULL,
   nrow = NULL,
   guide = "none",
+  context = list(),
   .cond = NULL,
   .by = NULL,
   ...
@@ -77,9 +78,13 @@ occluded by lower-index slices in overlapping offset layouts.}
 \item{ncol, nrow}{Passed to \link{facet_wrap()} in no-offset layouts.}
 
 \item{guide}{Passed to \code{guide} of the \verb{scale_fill_<fn>()} required to map a color
-to \code{var} (if not \code{NULL}). In \code{ggplane()}, this defaults to \emph{'none'}, cause \code{var} expects
-an intensity which usually does not need a legend for interpretation. To force a guide,
-use \code{guide = 'colourbar'} for numeric and \code{guide = 'legend'} for categorical variables.}
+to \code{var} (if not \code{NULL}). In \code{ggplane()}, this defaults to \emph{'none'}, cause it expects
+an intensity variable like T1 or FLAIR which usually does not need a legend for
+interpretation.
+
+To force a guide, use \code{guide = 'colourbar'} for numeric and \code{guide = 'legend'} for categorical variables.}
+
+\item{context}{List of context specifications with which layers are evaluated.}
 
 \item{.cond}{Optional. A logical filter expression evaluated on the constructed
 \code{vbl2D}. The expression is evaluated via \link[rlang:args_data_masking]{data-masking} semantics.}
@@ -104,7 +109,7 @@ can be customized with additional layers.
 by selecting \code{plane} and \code{slices} and applying \code{crop} and \code{expand}.
 \item{2. Filter plotted voxels: } Applies \code{.cond} (and optional grouping via \code{.by})
 using \code{.filter_layer()} to determine which voxels are shown.
-\item{3. Order slices: } Optionally arranges \code{vbl2D} by slice index via \code{zstack}
+\item{3. Order slices: } Optionally arranges \code{vbl2D} by slice number via \code{zstack}
 to control draw order when slices overlap in offset layouts.
 \item{4. Apply offsets: } Applies \code{offset_col} and \code{offset_row} via \code{apply_offset()}.
 If both offsets are zero and multiple slices are present, slices are displayed in
@@ -115,8 +120,7 @@ arguments, and an initially empty layer list in a \code{ggvibble} container.
 \item{6. Determine plot limits and expansion: } The plotting bounding box is
 derived from the spatial extent of the displayed voxels. Expansion is applied
 in absolute image-space units, choosing the smallest symmetric expansion across
-axes to preserve aspect ratio. Final limits are enforced via \code{coord_equal()}
-with \code{expand = FALSE}.
+axes to preserve aspect ratio. Final limits are enforced via \code{coord_equal()}.
 }
 
 The final ggplot is created when the object is printed or plotted. The base plot

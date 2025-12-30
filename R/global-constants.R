@@ -13,8 +13,8 @@ img_anchors <- list(
   "right" = c(1, 0.5),
   "top-left" = c(0, 0),
   "top-right" = c(1, 0),
-  "bottom-left" = c(1, 0),
-  "bottom-right" = c(0, 1)
+  "bottom-left" = c(0, 1),
+  "bottom-right" = c(1, 1)
 )
 
 
@@ -36,6 +36,9 @@ vbl_data_var_types <- c("categorical", "mask", "numeric")
 
 #' @export
 vbl_planes <- c("sag", "axi", "cor")
+
+#' @export
+vbl_planes_full <- c("sag" = "sagittal", "axi" = "axial", "cor" = "coronal")
 
 #' @export
 vbl_planes_pretty <- c("sag" = "Sagittal", "axi" = "Axial", "cor" = "Coronal")

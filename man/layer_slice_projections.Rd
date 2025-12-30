@@ -5,8 +5,8 @@
 \title{Add orthogonal slice references}
 \usage{
 layer_slice_projections(
-  slices_proj,
   plane_proj,
+  slices_proj,
   ref_bb = "data",
   alpha = 0.9,
   color = "red",
@@ -21,10 +21,10 @@ layer_slice_projections(
 )
 }
 \arguments{
-\item{slices_proj}{Integer vector giving the slice indices to display as projection lines.}
-
 \item{plane_proj}{Character scalar specifying the anatomical plane of the
 projected slices. Must differ from the plane used in \link{ggplane}().}
+
+\item{slices_proj}{Integer vector giving the slice indices to display as projection lines.}
 
 \item{ref_bb}{Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
 to use when spanning the projection lines and anchoring slice labels:

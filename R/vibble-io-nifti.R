@@ -418,16 +418,6 @@ nifti_to_vbl <- function(x,
 
   }
 
-  if(length(dim(x)) < 3){
-
-    rlang::abort("Input NIfTI has less than 3 dimensions. Invalid.")
-
-  } else if(length(dim(x)) > 3){
-
-    rlang::abort("Input NIfTI has more than 3 dimensions. Invalid.")
-
-  }
-
   msg <- paste(msg, "Variable '{var}'.")
 
   # use to force XYZ==LIP orientation in the data.frame
@@ -452,9 +442,24 @@ nifti_to_vbl <- function(x,
     purrr::keep(.p = ~ .x) %>%
     names()
 
+  if(length(dim(x)) < 3){
+
+    rlang::abort("Input NIfTI has less than 3 dimensions. Invalid.")
+
+  } else if(length(dim(x)) > 3){
+
+    rlang::warn("Input NIfTI has more than 3 dimensions. Reducing.")
+    data_array <- x@.Data[,,,1]
+
+  } else {
+
+    data_array <- x@.Data
+
+  }
+
   # create preliminary data for vbl and reorient if required
   data <-
-    reshape2::melt(x@.Data, varnames = unname(pointers), value.name = var) %>%
+    reshape2::melt(data_array, varnames = unname(pointers), value.name = var) %>%
     tibble::as_tibble() %>%
     dplyr::select(!!!pointers[c(ccs_labels)], !!rlang::sym(var))
 

@@ -26,6 +26,6 @@ internally by all \verb{layer_*()} functions.
 \details{
 \code{vbl_layer()} standardizes how custom layers are attached to ggvibble plots.
 The returned object is only a container; the actual layer generation happens
-when \code{+.ggvibble} evaluates \code{fun(vbl2D)} during plot building.
+when \code{+.ggvibble} evaluates \code{fun(vbl2D, p$context)} during plot building.
 }
 \keyword{internal}

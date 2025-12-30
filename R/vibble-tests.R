@@ -314,6 +314,14 @@ is_offset.ggvibble <- function(x, ...){
 }
 
 
+#' @keywords internal
+#' @export
+is_outlier <- function(x, ...) {
+
+  x %in% grDevices::boxplot.stats(x = x, ...)[["out"]]
+
+}
+
 #' @title Check plane input
 #'
 #' @description Test whether input for recurring argument `plane`

@@ -13,9 +13,9 @@ layer_text_ann(
   alpha = 0.9,
   color = "white",
   size = 3.5,
-  slices = NULL,
   hjust = vbl_def(),
   vjust = vbl_def(),
+  slices = NULL,
   ...
 )
 }
@@ -44,14 +44,14 @@ to use when anchoring the text:
 
 \item{alpha, color, size}{Passed to \code{geom_text()} to define the text \link[=vbl_doc_plot_aesthetics]{aesthetics}.}
 
+\item{hjust, vjust}{Numeric scalars or \link[=vbl_def]{default}. Default justifications depend
+on input for \code{anchor}. If \code{anchor} is specified as a character anchor definition, \code{hjust} and \code{vjust}
+are picked such that the text is aligned to the respective side.}
+
 \item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
 restrict the content of this layer to specific slices. If \code{NULL}, no restriction
 is applied and the function considers all slices, as denoted in the \link{ggplane}()
 container.}
-
-\item{hjust, vjust}{Numeric scalars or \link[=vbl_def]{default}. Default justifications depend
-on input for \code{anchor}. If \code{anchor} is specified as a character anchor definition, \code{hjust} and \code{vjust}
-are picked such that the text is aligned to the respective side.}
 
 \item{...}{Additional arguments passed to \code{ggplot2::geom_text()}.}
 }

@@ -42,6 +42,7 @@ vibble2D <- function(vbl,
 
   req_axes <- req_axes_2D(plane = plane)
   slice_axis <- req_axes["slice"]
+  slices_data <- slices(vbl, plane = plane)
 
   # change class name HERE to allow x,y,z manipulation/renaming
   class(vbl) <- stringr::str_replace(class(vbl), "vbl", "vbl2D")
@@ -53,7 +54,11 @@ vibble2D <- function(vbl,
 
   if(!is.null(slices)){
 
-    .stop_if_not(is_slice_set(slices))
+    slices <- .resolve_slices(
+      slices = slices,
+      slices_data = slices_data,
+      where_str = glue::glue("in {vbl_planes_full[plane]} plane")
+    )
 
     vbl2D <- dplyr::filter(vbl2D, slice %in% {{ slices }})
 
@@ -73,11 +78,19 @@ vibble2D <- function(vbl,
   offset_row(vbl2D) <- 0L
   plane(vbl2D) <- plane
 
-  # apply condition
+  # .cond - apply
   .cond_quo <- rlang::enquo(.cond)
   if(!rlang::quo_is_null(.cond_quo)){
 
     vbl2D <- dplyr::filter(vbl2D, !!.cond_quo, .by = {{ .by }})
+
+    # .cond - feedback
+    if(nrow(vbl2D) == 0){
+
+      msg <- glue::glue("No voxels remain after filtering with .cond = {rlang::quo_text(.cond)}.")
+      rlang::abort(msg)
+
+    }
 
   }
 
@@ -92,9 +105,14 @@ vibble2D <- function(vbl,
 
     # pass, already valid input
 
-  } else {
+  } else if(is.null(crop)){
 
     crop <- list(col = range(vbl2D$col), row = range(vbl2D$row))
+
+  } else {
+
+    msg <- "Invalid input for `crop`. Must be a limit, a bb2D or NULL."
+    rlang::abort(msg)
 
   }
 
@@ -113,20 +131,21 @@ vibble2D <- function(vbl,
   # crop - feedback
   if(length(slices_before) != length(slices_after)){
 
+    crop_ref <- rlang::quo_text(rlang::enquo(crop))
+
     if(length(slices_after) == 0){
 
-      crop_ref <- rlang::quo_text(rlang::enquo(crop))
-      msg <- c(glue::glue("Cropping with crop = {crop_ref} removed all voxel-level data."))
+      msg <- glue::glue("Cropping with crop = {crop_ref} removed all voxel-level data.")
       rlang::abort(msg)
 
-    } else if(length(slices_after) != length(slices_before)){
+    } else {
 
       slices_missing <-
         setdiff(slices_before, slices_after) %>%
         .slice_collapse(last = " and ")
 
       msg <- c(
-        glue::glue("Cropping with crop = {crop_ref} removed all voxel-level data of some slices completely."),
+        glue::glue("Cropping with crop = {crop_ref} removed all voxel-level data from one or more slices."),
         i = "Removed slices: {slices_missing}"
       )
 

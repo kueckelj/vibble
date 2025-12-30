@@ -58,11 +58,26 @@ magrittr::`%>%`
 }
 
 #' @keywords internal
-.slice_collapse <- function(x, last = " or "){
+.slice_collapse <- function(x, last = " or ", truncate = 10){
 
-  glue::glue_collapse(x, sep = ", ", last = last)
+  n <- length(x)
+
+  if(is.null(truncate) || n <= truncate){
+
+    return(glue::glue_collapse(x, sep = ", ", last = last))
+
+  }
+
+  shown <- x[seq_len(truncate)]
+  n_more <- n - truncate
+
+  shown_txt <- glue::glue_collapse(shown, sep = ", ", last = ", ")
+
+  glue::glue("{shown_txt}, \u2026 (+{n_more} more)")
 
 }
+
+
 
 #' @keywords internal
 .str_collapse <- function(x, last = "' or '"){
@@ -477,6 +492,13 @@ magrittr::`%>%`
 
   val <- rlang::eval_tidy(arg_quo)
 
+  if(length(arg) != 1){
+
+    msg <- glue::glue("Input for `{arg_expr}` must be of length 1.")
+    rlang::abort(msg)
+
+  }
+
   if(!is.character(val) || length(val) != 1 || !val %in% choices){
 
     msg <- sprintf(
@@ -658,11 +680,33 @@ NULL
 
 #' @rdname vbl_doc_resolve_def
 #' @keywords internal
-.resolve_slices <- function(slices, slices_data, layer_str){
+.resolve_size_ref <- function(size_ref, context){
+
+  if(.is_vbl_def(size_ref)){
+
+    size_ref <- context[["size_ref"]]
+    size_ref <- ifelse(is.character(size_ref), size_ref[1], vbl_opts("size.ref"))
+
+  }
+
+  size_ref <- .match_arg(size_ref, choices = c("device", "panel"))
+
+  return(size_ref)
+
+}
+
+
+#' @rdname vbl_doc_resolve_def
+#' @keywords internal
+.resolve_slices <- function(slices, slices_data, where_str = NULL, layer_str = NULL, ...){
+
+  stopifnot(is_slice_set(slices_data)) # dev feedback
+  if(!is.null(where_str)){ stopifnot(is.character(where_str) && length(where_str) == 1) }
+  if(!is.null(layer_str)){ stopifnot(is.character(layer_str) && length(layer_str) == 1) }
 
   if(!is.null(slices)){
 
-    .stop_if_not(is_slice_set(slices))
+    .stop_if_not(is_slice_set(slices)) # API feedback
 
     slices_missing <- slices[!slices %in% slices_data]
     n_missing <- length(slices_missing)
@@ -672,13 +716,39 @@ NULL
       fill <- ifelse(n_missing == 1, "slice", "slices")
       slices_quo <- rlang::enquo(slices)
       slices_text <- rlang::quo_text(slices_quo)
-      slices_d <- glue::glue_collapse(sort(slices_data), sep = ", ", last = " and ")
-      slices_m <- glue::glue_collapse(slices_missing, sep = ", ", last = " and ")
+      slices_d <- .slice_collapse(sort(slices_data), last = " and ")
+      slices_m <- .slice_collapse(slices_missing, last = " and ")
+
+      imessages <- c(...)
+
+      if(is.character(where_str)){
+
+        where_str <- paste0(" ", where_str)
+
+      } else if(is.character(layer_str)){
+
+        where_str <- paste0(" in ", layer_str)
+        imessages <-
+          c(
+            imessages,
+            i = glue::glue("The ggplane() to which this layer was added contains data for slices: {slices_d}")
+            )
+
+      } else {
+
+        where_str <- ""
+
+      }
+
+      imessages <- c(
+        imessages,
+        i = "See `?slices` for supported ways to specify valid slice numbers."
+      )
 
       rlang::abort(
         message = c(
-          glue::glue("In `slices = {slices_text}`, no data for {fill} {slices_m} in {layer_str}."),
-          i = glue::glue("The ggplane() to which this layer was added contains data for slices: {slices_d}")
+          glue::glue("In `slices = {slices_text}`, no data for {fill} {slices_m}{where_str}."),
+          imessages
         )
       )
 

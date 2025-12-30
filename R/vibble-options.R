@@ -110,6 +110,7 @@ vbl_opts_default <-
     vibble.interpolate = TRUE,
     vibble.n.slices = 6,
     vibble.plane = "axi",
+    vibble.size.ref = "device",
     vibble.size.text = 3.5,
     vibble.slices.n = 6,
     vibble.verbose = TRUE

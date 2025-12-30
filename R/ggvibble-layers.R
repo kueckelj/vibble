@@ -38,43 +38,34 @@ layer_bb <- function(.cond = NULL,
 
   .cond_quo <- rlang::enquo(.cond)
 
-  # resolve label
+
   legend_label <- .resolve_legend_label(label, color, rlang::quo_text(.cond_quo))
 
   vbl_layer(
-    fun = function(vbl2D){
-
-      # compute full outlines before subsetting!
-      if(.clip_offset(vbl2D)){
-
-        outlines_full <-
-          .comp_outlines(
-            vbl2D = vbl2D,
-            var = NULL,
-            concavity = 1,
-            use_dbscan = FALSE
-          )
-
-      } else {
-
-        outlines_full <- NULL
-
-      }
+    fun = function(vbl2D, context){
 
       layer_str <- glue::glue("layer_bb(..., color = '{color}')")
       vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
-      .layer_bb_impl(
-        vbl2D = vbl2D,
-        alpha = alpha,
-        color = color,
-        linetype = linetype,
-        linewidth = linewidth,
-        expand = expand,
-        name = names(legend_label),
-        outlines_full = outlines_full,
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_bb_impl(
+          vbl2D = vbl2D,
+          alpha = alpha,
+          color = color,
+          linetype = linetype,
+          linewidth = linewidth,
+          expand = expand,
+          name = names(legend_label),
+          outlines_full = context$outlines_full,
+          ...
+        )
+
+      }
 
     },
     legend_label = legend_label,
@@ -130,20 +121,28 @@ layer_bb_data <- function(color = "orange",
   legend_label <- .resolve_legend_label(label, color, "Data")
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       vbl2D <- .filter_layer(vbl2D, slices = slices, layer_str = "layer_bb_data()")
 
-      .layer_bb_data_impl(
-        vbl2D = vbl2D,
-        alpha = alpha,
-        color = color,
-        fill = fill,
-        linetype = linetype,
-        linewidth = linewidth,
-        name = names(legend_label),
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_bb_data_impl(
+          vbl2D = vbl2D,
+          alpha = alpha,
+          color = color,
+          fill = fill,
+          linetype = linetype,
+          linewidth = linewidth,
+          name = names(legend_label),
+          ...
+        )
+
+      }
 
     },
     legend_label = legend_label,
@@ -205,11 +204,10 @@ layer_bb_plot <- function(color = "forestgreen",
                           label = TRUE,
                           ...){
 
-  # resolve label
   legend_label <- .resolve_legend_label(label, color, "Plot")
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       .layer_bb_plot_impl(
         vbl2D = vbl2D,
@@ -218,12 +216,12 @@ layer_bb_plot <- function(color = "forestgreen",
         fill = fill,
         linetype = linetype,
         linewidth = linewidth,
-        name = names(color_nm),
+        name = names(legend_label),
         ...
       )
 
     },
-    color_nm = color_nm,
+    legend_label = legend_label,
     class_add = "layer_bb"
   )
 
@@ -271,20 +269,28 @@ layer_bb_screen <- function(color = "steelblue",
   legend_label <- .resolve_legend_label(label, color, "Screen")
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       vbl2D <- .filter_layer(vbl2D, slices = slices, layer_str = "layer_bb_screen()")
 
-      .layer_bb_screen_impl(
-        vbl2D = vbl2D,
-        alpha = alpha,
-        color = color,
-        fill = fill,
-        linetype = linetype,
-        linewidth = linewidth,
-        name = names(legend_label),
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_bb_screen_impl(
+          vbl2D = vbl2D,
+          alpha = alpha,
+          color = color,
+          fill = fill,
+          linetype = linetype,
+          linewidth = linewidth,
+          name = names(legend_label),
+          ...
+        )
+
+      }
 
     },
     legend_label = legend_label,
@@ -348,20 +354,28 @@ layer_bb_slice <- function(color = "purple",
   legend_label <- .resolve_legend_label(label, color, "Slice")
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       vbl2D <- .filter_layer(vbl2D, slices = slices, layer_str = "layer_bb_slice()")
 
-      .layer_bb_slice_impl(
-        vbl2D = vbl2D,
-        alpha = alpha,
-        color = color,
-        fill = fill,
-        name = names(legend_label),
-        linetype = linetype,
-        linewidth = linewidth,
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_bb_slice_impl(
+          vbl2D = vbl2D,
+          alpha = alpha,
+          color = color,
+          fill = fill,
+          name = names(legend_label),
+          linetype = linetype,
+          linewidth = linewidth,
+          ...
+        )
+
+      }
 
     },
     legend_label = legend_label,
@@ -441,20 +455,28 @@ layer_categorical <- function(var,
   .cond_quo <- rlang::enquo(.cond)
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       layer_str <- glue::glue("layer_categorical(var = '{var}', ...")
       vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
-      .layer_categorical_impl(
-        vbl2D = vbl2D,
-        var = var,
-        clrp = clrp,
-        clrp_adjust = clrp_adjust,
-        opacity = opacity_quo,
-        guide = guide,
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_categorical_impl(
+          vbl2D = vbl2D,
+          var = var,
+          clrp = clrp,
+          clrp_adjust = clrp_adjust,
+          opacity = opacity_quo,
+          guide = guide,
+          ...
+        )
+
+      }
 
     },
     class_add = "layer_raster"
@@ -497,6 +519,7 @@ layer_categorical <- function(var,
       levels()
 
     clr_values <- clr_values[levels_keep]
+    guide = "legend"
 
   }
 
@@ -559,7 +582,7 @@ layer_crop <- function(.cond, expand = FALSE, ...){
   .cond_quo <- rlang::enquo(.cond)
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       vbl2D <- .filter_layer(vbl2D, .cond_quo = .cond_quo, layer = "layer_crop()")
 
@@ -643,7 +666,7 @@ layer_grid <- function(col = 0.1,
                        ){
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       .layer_grid_impl(
         vbl2D = vbl2D,
@@ -776,25 +799,33 @@ layer_labels <- function(var,
   .cond_quo <- rlang::enquo(.cond)
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       layer_str <- glue::glue("layer_labels(var = '{var}', ...")
       vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
-      .layer_labels_impl(
-        vbl2D = vbl2D,
-        var = var,
-        include = include,
-        exclude = exclude,
-        alpha = alpha,
-        color = color,
-        size = size,
-        use_dbscan = use_dbscan,
-        centroid = centroid,
-        abbrev = abbrev,
-        repel = repel,
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_labels_impl(
+          vbl2D = vbl2D,
+          var = var,
+          include = include,
+          exclude = exclude,
+          alpha = alpha,
+          color = color,
+          size = size,
+          use_dbscan = use_dbscan,
+          centroid = centroid,
+          abbrev = abbrev,
+          repel = repel,
+          ...
+        )
+
+      }
 
     },
     class_add = "layer_ann"
@@ -956,7 +987,7 @@ layer_labels <- function(var,
 layer_labs <- function(...){
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       list(
         ggplot2::labs(
@@ -1001,18 +1032,26 @@ layer_mask <- function(.cond = NULL,
   legend_label <- .resolve_legend_label(label, color, rlang::quo_text(.cond_quo))
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       layer_str <- glue::glue("layer_mask(..., color = '{color}')")
       vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
-      .layer_mask_impl(
-        vbl2D = vbl2D,
-        color = color,
-        opacity = opacity_quo,
-        name = names(legend_label),
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_mask_impl(
+          vbl2D = vbl2D,
+          color = color,
+          opacity = opacity_quo,
+          name = names(legend_label),
+          ...
+        )
+
+      }
 
     },
     legend_label = legend_label,
@@ -1089,7 +1128,7 @@ layer_misc <- function(...){
   input <- list(...)
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       purrr::keep(
         .x = input,
@@ -1130,18 +1169,26 @@ layer_numeric <- function(var,
   opacity_quo <- rlang::enquo(opacity)
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       layer_str <- glue::glue("layer_numeric(var = '{var}', ...)")
       vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
-      .layer_numeric_impl(
-        vbl2D = vbl2D,
-        var = var,
-        clrsp = clrsp,
-        opacity = opacity_quo,
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_numeric_impl(
+          vbl2D = vbl2D,
+          var = var,
+          clrsp = clrsp,
+          opacity = opacity_quo,
+          ...
+        )
+
+      }
 
     },
     class_add = "layer_raster"
@@ -1223,7 +1270,7 @@ layer_orientation <- function(col = TRUE,
   }
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       .layer_orientation_impl(
         vbl2D = vbl2D,
@@ -1367,40 +1414,31 @@ layer_outline <- function(.cond = NULL,
   legend_label <- .resolve_legend_label(label, color, rlang::quo_text(.cond_quo))
 
   vbl_layer(
-    fun = function(vbl2D){
-
-      # compute full outlines before subsetting!
-      if(.clip_offset(vbl2D)){
-
-        outlines_full <-
-          .comp_outlines(
-            vbl2D = vbl2D,
-            var = NULL,
-            concavity = 1,
-            use_dbscan = FALSE
-          )
-
-      } else {
-
-        outlines_full <- NULL
-
-      }
+    fun = function(vbl2D, context){
 
       layer_str <- glue::glue("layer_outline(..., color = '{color}')")
       vbl2D <- .filter_layer(vbl2D, slices = slices, .cond_quo = .cond_quo, .by = .by, layer_str = layer_str)
 
-      .layer_outline_impl(
-        vbl2D = vbl2D,
-        color = color,
-        fill = fill,
-        linetype = linetype,
-        linewidth = linewidth,
-        use_dbscan = use_dbscan,
-        concavity = concavity,
-        outlines_full = outlines_full,
-        name = names(legend_label),
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_outline_impl(
+          vbl2D = vbl2D,
+          color = color,
+          fill = fill,
+          linetype = linetype,
+          linewidth = linewidth,
+          use_dbscan = use_dbscan,
+          concavity = concavity,
+          name = names(legend_label),
+          outlines_full = context$outlines_full,
+          ...
+        )
+
+      }
 
     },
     legend_label = legend_label,
@@ -1549,7 +1587,7 @@ layer_slice_numbers <- function(anchor = vbl_def(),
                                 ...){
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       .layer_slice_numbers_impl(
         vbl2D = vbl2D,
@@ -1715,8 +1753,8 @@ layer_slice_numbers <- function(anchor = vbl_def(),
 #'
 #' @export
 
-layer_slice_projections <- function(slices_proj,
-                                    plane_proj,
+layer_slice_projections <- function(plane_proj,
+                                    slices_proj,
                                     ref_bb = "data",
                                     alpha = 0.9,
                                     color = "red",
@@ -1729,8 +1767,10 @@ layer_slice_projections <- function(slices_proj,
                                     slices = NULL,
                                     ...){
 
+  plane_proj <- .match_arg(plane_proj, choices = vbl_planes)
+
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       if(plane_proj == plane(vbl2D)){
 
@@ -1738,22 +1778,32 @@ layer_slice_projections <- function(slices_proj,
 
       }
 
-      .layer_slice_projections_impl(
-        vbl2D = vbl2D,
-        plane_proj = plane_proj,
-        slices_proj = slices_proj,
-        alpha = alpha,
-        color = color,
-        size = size,
-        linetype = linetype,
-        linewidth = linewidth,
-        ref_bb = ref_bb,
-        label_pos = label_pos,
-        label_just = label_just,
-        label_spacer = label_spacer,
-        slices = .resolve_slices(slices, slices(vbl2D), layer_str = "layer_slice_projections()"),
-        ...
-      )
+      layer_str <- glue::glue("layer_slice_projections(plane_proj = {plane_proj}, ...)")
+      vbl2D <- .filter_layer(vbl2D, slices = slices, layer_str = layer_str)
+
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_slice_projections_impl(
+          vbl2D = vbl2D,
+          plane_proj = plane_proj,
+          slices_proj = slices_proj,
+          alpha = alpha,
+          color = color,
+          size = size,
+          linetype = linetype,
+          linewidth = linewidth,
+          ref_bb = ref_bb,
+          label_pos = label_pos,
+          label_just = label_just,
+          label_spacer = label_spacer,
+          ...
+        )
+
+      }
 
     },
     class_add = "layer_ann"
@@ -1802,7 +1852,7 @@ layer_slice_projections <- function(slices_proj,
   # line positioning
   line_df <-
     purrr::map_df(
-      .x = slices,
+      .x = slices(vbl2D),
       .f = function(slice){
 
         purrr::map_df(
@@ -1977,9 +2027,9 @@ layer_text_ann <- function(text,
                            alpha = 0.9,
                            color = "white",
                            size = 3.5,
-                           slices = NULL,
                            hjust = vbl_def(),
                            vjust = vbl_def(),
+                           slices = NULL,
                            ...){
 
   .stop_if_not(is.character(sep))
@@ -1988,23 +2038,31 @@ layer_text_ann <- function(text,
   ref_bb <- .match_arg(ref_bb, choices = c("data", "plot", "screen", "slice"))
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       vbl2D <- .filter_layer(vbl2D, slices = slices)
 
-      .layer_text_ann_impl(
-        vbl2D = vbl2D,
-        text = text,
-        anchor = anchor,
-        ref_bb = ref_bb,
-        collapse = collapse,
-        alpha = alpha,
-        color = color,
-        size = size,
-        hjust = hjust,
-        vjust = vjust,
-        ...
-      )
+      if(nrow(vbl2D) == 0){
+
+        return(NULL)
+
+      } else {
+
+        .layer_text_ann_impl(
+          vbl2D = vbl2D,
+          text = text,
+          anchor = anchor,
+          ref_bb = ref_bb,
+          collapse = collapse,
+          alpha = alpha,
+          color = color,
+          size = size,
+          hjust = hjust,
+          vjust = vjust,
+          ...
+        )
+
+      }
 
     },
     class_add = "layer_ann"
@@ -2229,7 +2287,7 @@ layer_text_ann <- function(text,
 layer_theme <- function(...){
 
   vbl_layer(
-    fun = function(vbl2D){
+    fun = function(vbl2D, context){
 
       list(
         ggplot2::theme(
