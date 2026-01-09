@@ -5,7 +5,7 @@
 \title{Plotting layouts}
 \description{
 This documentation defines the two layout modes used to display multiple
-slices in \code{ggplane()}: no-offset layouts and offset layouts.
+slices in \code{ggvibble()}: no-offset layouts and offset layouts.
 }
 \details{
 \itemize{

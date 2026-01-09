@@ -110,7 +110,10 @@ clip_max_quantile <- function(x,
 
   thr <- stats::quantile(x_nz, probs = p, names = FALSE, type = 7)
 
-  pmin(x, thr)
+  out <- pmin(x, thr)
+  var_limits(out) <- range(out, na.rm = TRUE)
+
+  return(out)
 
 }
 

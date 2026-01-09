@@ -22,7 +22,7 @@ layer_slice_projections(
 }
 \arguments{
 \item{plane_proj}{Character scalar specifying the anatomical plane of the
-projected slices. Must differ from the plane used in \link{ggplane}().}
+projected slices. Must differ from the plane used in \link{ggvibble}().}
 
 \item{slices_proj}{Integer vector giving the slice indices to display as projection lines.}
 
@@ -76,7 +76,7 @@ from the projection line.}
 
 \item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
 restrict the content of this layer to specific slices. If \code{NULL}, no restriction
-is applied and the function considers all slices, as denoted in the \link{ggplane}()
+is applied and the function considers all slices, as denoted in the \link{ggvibble}()
 container.}
 
 \item{...}{Additional arguments forwarded to \code{geom_text()}.}

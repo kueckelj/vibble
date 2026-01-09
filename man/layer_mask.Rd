@@ -18,7 +18,7 @@ layer_mask(
 \item{.cond}{A logical filter expression that determines the specific
 voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
-into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
+into this layer by \code{ggvibble}(). See \link[=vbl_doc_cond]{Details}.}
 
 \item{color}{Character scalar. The \link[=is_color]{color} used for
 the mask.}
@@ -37,7 +37,7 @@ the color of this layer is associated with in the legend.
 
 \item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
 restrict the content of this layer to specific slices. If \code{NULL}, no restriction
-is applied and the function considers all slices, as denoted in the \link{ggplane}()
+is applied and the function considers all slices, as denoted in the \link{ggvibble}()
 container.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
@@ -49,11 +49,11 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Overlay a logical mask on a \link{ggplane}() plot by filling
+Overlay a logical mask on a \link{ggvibble}() plot by filling
 voxels.
 }
 \details{
 The condition of \code{.cond} determines which voxels are included in the mask.
 If no condition is provided (\code{.cond = NULL}) this layer masks every voxel in
-every slice of the 2D vibble passed to it by \code{ggplane()}.
+every slice of the 2D vibble passed to it by \code{ggvibble()}.
 }

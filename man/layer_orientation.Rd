@@ -33,7 +33,7 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Adds per-slice orientation labels (e.g., L/R, A/P, S/I) to a \code{ggplane()}.
+Adds per-slice orientation labels (e.g., L/R, A/P, S/I) to a \code{ggvibble()}.
 }
 \details{
 The orientation labels are derived from \code{ccs_orientation_mapping} for the current plane.

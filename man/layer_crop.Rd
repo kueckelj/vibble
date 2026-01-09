@@ -2,9 +2,9 @@
 % Please edit documentation in R/ggvibble-layers.R
 \name{layer_crop}
 \alias{layer_crop}
-\title{Crop a ggplane plot to a filtered voxel extent}
+\title{Crop a ggvibble plot to a filtered voxel extent}
 \usage{
-layer_crop(.cond, expand = FALSE, ...)
+layer_crop(.cond = NULL, expand = FALSE, square = FALSE, ...)
 }
 \arguments{
 \item{.cond}{A logical filter expression evaluated on \code{vbl2D} that determines
@@ -28,7 +28,7 @@ The layer filters \code{vbl2D} via \code{.cond} and then sets plot limits using
 \examples{
 vbl <- example_vbl()
 
-ggplane(vbl, var = "t1", plane = "axi", slices = 100) +
+ggvibble(vbl, var = "t1", plane = "axi", slices = 100) +
   layer_crop(brain, expand = 0.05)
 
 }

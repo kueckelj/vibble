@@ -1,18 +1,19 @@
 
 
-#' @title Use vibble default
-#'
-#' @description
-#' Sentinel value indicating that a parameter should use the global vibble
-#' default as defined via vbl_opts().
-#'
-#' @return
-#' An internal sentinel object.
-#'
-#' @export
-vbl_def <- function(){
+descr_dim <- function(vbl, collapse = "; "){
 
-  structure(list(), class = "vbl_def")
+  d <-
+    ccs_limits(vbl) %>%
+    purrr::map_chr(.f = ~ as.character(diff(.x))) %>%
+    stringr::str_c(., collapse = " x ")
+
+  s <-
+    ccs_steps(vbl) %>%
+    purrr::map(.f = ~ round(.x, 2)) %>%
+    stringr::str_c(., collapse = " x ") %>%
+    stringr::str_c(., " (mm)")
+
+  paste0(d, " | ", s)
 
 }
 
@@ -127,6 +128,46 @@ seq_range <- function(x){
 
     r <- range(x)
     min(r):max(r)
+
+}
+
+
+#' @export
+theme_vbl <- function(){
+
+  ggplot2::theme(
+    axis.ticks = ggplot2::element_blank(),
+    axis.title = ggplot2::element_blank(),
+    axis.text = ggplot2::element_blank(),
+    legend.background = ggplot2::element_rect(fill = "black"),
+    legend.text = ggplot2::element_text(color = "white"),
+    legend.title = ggplot2::element_text(color = "white"),
+    panel.background = ggplot2::element_rect(fill = "black"),
+    panel.grid = ggplot2::element_blank(),
+    plot.background = ggplot2::element_rect(fill = "black", color = "black"),
+    plot.caption = ggplot2::element_text(color = "white"),
+    plot.subtitle = ggplot2::element_text(color = "white"),
+    plot.title = ggplot2::element_text(color = "white"),
+    strip.background = ggplot2::element_blank(),# ggplot2::element_rect(fill = "black", color = "black"),
+    strip.text = ggplot2::element_blank()#ggplot2::element_text(color = "white")
+  )
+
+}
+
+
+#' @title Use vibble default
+#'
+#' @description
+#' Sentinel value indicating that a parameter should use the global vibble
+#' default as defined via vbl_opts().
+#'
+#' @return
+#' An internal sentinel object.
+#'
+#' @export
+vbl_def <- function(){
+
+  structure(list(), class = "vbl_def")
 
 }
 

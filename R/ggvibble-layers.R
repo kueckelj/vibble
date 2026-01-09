@@ -428,7 +428,7 @@ layer_bb_slice <- function(color = "purple",
 
 
 #' @title Add a color layer for categorical variables
-#' @description Overlay a categorical label variable on a `ggplane()` plot by
+#' @description Overlay a categorical label variable on a `ggvibble()` plot by
 #' filling voxels with discrete colors.
 #'
 #' @param var Character. The name of a factor-variable with categorical labels.
@@ -555,7 +555,7 @@ layer_categorical <- function(var,
 
 
 
-#' @title Crop a ggplane plot to a filtered voxel extent
+#' @title Crop a ggvibble plot to a filtered voxel extent
 #' @description
 #' Crops the plot extent to the bounding box of voxels selected by `.cond`.
 #'
@@ -573,11 +573,11 @@ layer_categorical <- function(var,
 #' @examples
 #' vbl <- example_vbl()
 #'
-#' ggplane(vbl, var = "t1", plane = "axi", slices = 100) +
+#' ggvibble(vbl, var = "t1", plane = "axi", slices = 100) +
 #'   layer_crop(brain, expand = 0.05)
 #'
 #' @export
-layer_crop <- function(.cond, expand = FALSE, ...){
+layer_crop <- function(.cond = NULL, expand = FALSE, square = FALSE, ...){
 
   .cond_quo <- rlang::enquo(.cond)
 
@@ -589,6 +589,7 @@ layer_crop <- function(.cond, expand = FALSE, ...){
       .layer_crop_impl(
         vbl2D = vbl2D,
         expand = expand,
+        square = square,
         ...
       )
 
@@ -599,27 +600,38 @@ layer_crop <- function(.cond, expand = FALSE, ...){
 }
 
 #' @keywords internal
-.layer_crop_impl <- function(vbl2D, expand, ...){
+.layer_crop_impl <- function(vbl2D, expand, square, ...){
 
-  plot_lim <-
+  bb <-
     list(
       col = range(vbl2D$col),
       row = range(vbl2D$row)
-    ) %>%
-    expand_bb2D(expand = expand)
-
-  layer_lst <-
-    list(
-      ggplot2::coord_equal(
-        ratio = 1,
-        xlim = plot_lim$col,
-        ylim = rev(plot_lim$row),
-        expand = FALSE
-      ),
-      ...
     )
 
-  layer_lst[[1]]$default <- TRUE
+  if(!is_bb2D(bb)){
+
+    layer_lst <- list()
+
+  } else {
+
+    plot_lim <-
+      expand_bb2D(bb, expand = expand) %>%
+      square_bb2D(square = square)
+
+    layer_lst <-
+      list(
+        ggplot2::coord_equal(
+          ratio = 1,
+          xlim = plot_lim$col,
+          ylim = rev(plot_lim$row),
+          expand = FALSE
+        ),
+        ...
+      )
+
+    layer_lst[[1]]$default <- TRUE
+
+  }
 
   return(layer_lst)
 
@@ -1003,7 +1015,7 @@ layer_labs <- function(...){
 }
 
 #' @title Add a masking layer
-#' @description Overlay a logical mask on a \link{ggplane}() plot by filling
+#' @description Overlay a logical mask on a \link{ggvibble}() plot by filling
 #' voxels.
 #'
 #' @param color Character scalar. The \link[=is_color]{color} used for
@@ -1012,7 +1024,7 @@ layer_labs <- function(...){
 #' @details
 #' The condition of `.cond` determines which voxels are included in the mask.
 #' If no condition is provided (`.cond = NULL`) this layer masks every voxel in
-#' every slice of the 2D vibble passed to it by `ggplane()`.
+#' every slice of the 2D vibble passed to it by `ggvibble()`.
 #'
 #' @inherit vbl_doc_layer params return
 #' @inheritParams vbl_doc
@@ -1148,7 +1160,7 @@ layer_misc <- function(...){
 
 
 #' @title Add a color layer for numeric variables
-#' @description Overlay a numeric variable on a \link{ggplane}() plot by mapping its
+#' @description Overlay a numeric variable on a \link{ggvibble}() plot by mapping its
 #' values to a continuous fill scale.
 #'
 #' @param ... Additional arguments passed to \link{scale_fill_numeric}().
@@ -1228,7 +1240,7 @@ layer_numeric <- function(var,
 
 #' @title Add orientation labels
 #' @description
-#' Adds per-slice orientation labels (e.g., L/R, A/P, S/I) to a `ggplane()`.
+#' Adds per-slice orientation labels (e.g., L/R, A/P, S/I) to a `ggvibble()`.
 #'
 #' @param col Logical. If \code{TRUE}, annotate the column axis orientation.
 #' @param row Logical. If \code{TRUE}, annotate the row axis orientation.
@@ -1378,7 +1390,7 @@ layer_orientation <- function(col = TRUE,
 
 
 #' @title Add outlines
-#' @description Overlay a \link{ggplane}() plot by outlining voxels
+#' @description Overlay a \link{ggvibble}() plot by outlining voxels
 #' that match a certain condition.
 #'
 #' @param alpha Numeric. Controls the transparency of the lines.
@@ -1389,7 +1401,7 @@ layer_orientation <- function(col = TRUE,
 #' @details
 #' The condition of `.cond` determines which voxels are outlined. If no condition
 #' is provided (`.cond = NULL`) this layer outlines all voxels in every slice of the
-#' 2D vibble passed to this layer by `ggplane()`.
+#' 2D vibble passed to this layer by `ggvibble()`.
 #'
 #' Outlines are **always** computed slicewise.
 #'
@@ -1556,7 +1568,7 @@ layer_outline <- function(.cond = NULL,
 
 
 #' @title Add slice numbers
-#' @description Add slice numbers as text labels to a \link{ggplane()}-plot.
+#' @description Add slice numbers as text labels to a \link{ggvibble()}-plot.
 #'
 #' @param anchor \link[=vbl_doc_img_anchor]{Image anchor} specification for
 #' positioning the slice labels. If, character one of *c('center', 'top', 'bottom', 'left', 'right')*.
@@ -1712,7 +1724,7 @@ layer_slice_numbers <- function(anchor = vbl_def(),
 #' @param color Character vector of length one or two specifying colors for
 #'   the line and labels (recycled if length one).
 #' @param plane_proj Character scalar specifying the anatomical plane of the
-#' projected slices. Must differ from the plane used in \link{ggplane}().
+#' projected slices. Must differ from the plane used in \link{ggvibble}().
 #' @param slices_proj Integer vector giving the slice indices to display as projection lines.
 #' @param ref_bb Character scalar indicating which \link[=vbl_doc_ref_bb]{2D reference bounding box}
 #' to use when spanning the projection lines and anchoring slice labels:
@@ -1774,7 +1786,7 @@ layer_slice_projections <- function(plane_proj,
 
       if(plane_proj == plane(vbl2D)){
 
-        .glue_stop("`layer_slice_projections(plane_proj = '{plane_proj}')` is not possible with `ggplane(..., plane = '{plane(vbl2D)}').")
+        .glue_stop("`layer_slice_projections(plane_proj = '{plane_proj}')` is not possible with `ggvibble(..., plane = '{plane(vbl2D)}').")
 
       }
 
@@ -2053,6 +2065,7 @@ layer_text_ann <- function(text,
           text = text,
           anchor = anchor,
           ref_bb = ref_bb,
+          sep = sep,
           collapse = collapse,
           alpha = alpha,
           color = color,

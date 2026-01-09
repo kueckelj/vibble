@@ -2,22 +2,28 @@
 % Please edit documentation in R/ggvibble.R
 \name{as_ggplot}
 \alias{as_ggplot}
-\title{Convert a ggvibble to a ggplot object}
+\title{Coerce objects to a ggplot.}
 \usage{
-as_ggplot(p, ...)
+as_ggplot(x, ...)
 }
 \arguments{
-\item{x}{A \code{ggvibble} object.}
+\item{x}{An object to be converted to a ggplot.}
+
+\item{...}{Additional arguments passed to the corresponding method.}
 }
 \value{
-A ggplot object that can be further modified using ggplot2 or composed using
-patchwork.
+A ggplot or ggplot-compatible (patchwork) object.
 }
 \description{
-Materializes a \code{ggvibble} object into a ggplot object.
+\code{as_ggplot()} is an S3 generic that converts supported objects into a
+\code{ggplot}-compatible representation. It provides a unified coercion interface
+used internally by plotting and layout machinery.
+
+Implemented methods:
+\describe{
+\item{\code{ggvibble}}{Builds a ggplot from a single \code{ggvibble}.}
+\item{\code{ggvibble_layout}}{Converts each contained \code{ggvibble} to a
+ggplot and combines them into a composed layout via
+\code{patchwork::wrap_plots()}.}
 }
-\details{
-\code{as_ggplot()} terminates the ggvibble layer pipeline and converts it into a
-concrete ggplot representation. After conversion, ggvibble layers can no
-longer be added.
 }

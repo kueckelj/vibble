@@ -608,11 +608,11 @@ NULL
 
   axes <- req_axes_2D(plane(vbl2D))
 
-  col <- max(ccs_limits(vbl2D)[[axes[["col"]]]])
+  col <- ccs_steps(vbl2D)[[axes[["col"]]]]
 
-  row <- max(ccs_limits(vbl2D)[[axes[["row"]]]])
+  row <- ccs_steps(vbl2D)[[axes[["row"]]]]
 
-  col/row
+  row/col
 
 }
 

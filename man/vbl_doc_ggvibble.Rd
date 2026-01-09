@@ -14,7 +14,7 @@ automatically.
 From a user perspective, ggvibble works similarly to ggplot2:
 
 \itemize{
-\item A plot is initialized from a \link{vibble} using \link{ggplane}().
+\item A plot is initialized from a \link{vibble} using \link{ggvibble}().
 \item Additional visual elements are added using the \code{+} operator.
 \item The plot is rendered automatically when printed.
 }
@@ -41,7 +41,7 @@ added.
 }
 \section{Basic usage}{
 
-The plot is initialized with \link{ggplane}() for a set of slices. While the variable
+The plot is initialized with \link{ggvibble}() for a set of slices. While the variable
 used for the coloring should be an intensity like T1, FLAIR or T2, data-driven variables
 like masks or categorical labels can also be used.
 \preformatted{
@@ -49,7 +49,7 @@ vbl <- example_vbl()
 
 # start with an intensity
 p <-
- ggplane(
+ ggvibble(
    vbl = vbl,
    var = "t1",
    plane = "axi",
@@ -61,7 +61,7 @@ p <-
 
  # start with categorical label data
  p_cat <-
-   ggplane(
+   ggvibble(
     vbl = vbl,
     var = "macro",
     plane = "axi",
@@ -79,7 +79,7 @@ p <-
 Similar to ggplot2, ggvibbles are rendered during printing. So \code{p} itself is
 a lightweight container with data and instructions that can be complemented
 with additional layers. These layers use data and layout instructions from
-the \code{ggplane()} call.
+the \code{ggvibble()} call.
 
 \preformatted{
 p_with_layers <- p +
@@ -107,7 +107,7 @@ A ggvibble plot can be treated like a ggplot object \strong{after explicit build
 }
 
 \seealso{
-\link{ggplane}(),
+\link{ggvibble}(),
 \link{layer_mask}(),
 \link{layer_outline}(),
 \link{layer_labels}(),

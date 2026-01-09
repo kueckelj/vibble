@@ -42,5 +42,5 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Add slice numbers as text labels to a \link{ggplane()}-plot.
+Add slice numbers as text labels to a \link{ggvibble()}-plot.
 }

@@ -100,7 +100,7 @@ vbl_opts_default <-
     vibble.clrp = "hue_pal",
     vibble.clrsp = c("black", "white"),
     vibble.expand.fraction = 0.05,
-    vibble.expand.ggplane = 0.075,
+    vibble.expand.ggvibble = 0.075,
     vibble.expand.data.bb = as_abs(0.5),
     vibble.expand.slice.bb = as_abs(0.5),
     vibble.label.spacer = 0.75,

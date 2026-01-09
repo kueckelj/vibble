@@ -48,6 +48,34 @@ expand_bb2D <- function(bb2D, expand){
   return(bb2D)
 }
 
+square_bb2D <- function(bb2D, square = TRUE){
+
+  if(isTRUE(square)){
+
+    dd <- purrr::map_dbl(bb2D, .f = diff)
+
+    if(!identical(dd[1], dd[2])){
+
+      imn <- which.min(dd)
+      imx <- which.max(dd)
+
+      mn <- bb2D[[imn]]
+      mx <- bb2D[[imx]]
+
+      dst2 <- diff(mx)/2
+
+      mid <- max(bb2D[[imn]]) - diff(bb2D[[imn]])/2
+
+      bb2D[[imn]] <- c(mid-dst2, mid+dst2)
+
+    }
+
+  }
+
+  return(bb2D)
+
+}
+
 
 #' @keywords internal
 .comp_offset <- function(x, idx, offset){

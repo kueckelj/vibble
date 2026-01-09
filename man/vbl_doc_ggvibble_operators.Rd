@@ -35,7 +35,7 @@ For this reason, \code{ggvibble} \strong{does not support} adding ggplot2 compon
 inject ggplot2 objects through \code{layer_misc()}.
 
 \preformatted{
-p <- ggplane(vbl, var = "t1", plane = "axi", slices = 120)
+p <- ggvibble(vbl, var = "t1", plane = "axi", slices = 120)
 
 # fails:
 p + ggplot2::theme_void()
@@ -56,8 +56,8 @@ Patchwork must be attached to enable plot composition.
 \preformatted{
 library(patchwork)
 
-p1 <- ggplane(vbl, var = "t1", plane = "axi", slices = 120)
-p2 <- ggplane(vbl, var = "flair", plane = "axi", slices = 120)
+p1 <- ggvibble(vbl, var = "t1", plane = "axi", slices = 120)
+p2 <- ggvibble(vbl, var = "flair", plane = "axi", slices = 120)
 
 # horizontal and vertical composition
 p1 | p2

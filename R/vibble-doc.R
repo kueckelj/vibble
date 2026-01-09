@@ -400,7 +400,7 @@ NULL
 #' From a user perspective, ggvibble works similarly to ggplot2:
 #'
 #' \itemize{
-#'   \item A plot is initialized from a \link{vibble} using \link{ggplane}().
+#'   \item A plot is initialized from a \link{vibble} using \link{ggvibble}().
 #'   \item Additional visual elements are added using the \code{+} operator.
 #'   \item The plot is rendered automatically when printed.
 #' }
@@ -426,7 +426,7 @@ NULL
 #' added.
 #'
 #' @section Basic usage:
-#' The plot is initialized with \link{ggplane}() for a set of slices. While the variable
+#' The plot is initialized with \link{ggvibble}() for a set of slices. While the variable
 #' used for the coloring should be an intensity like T1, FLAIR or T2, data-driven variables
 #' like masks or categorical labels can also be used.
 #' \preformatted{
@@ -434,7 +434,7 @@ NULL
 #'
 #' # start with an intensity
 #' p <-
-#'  ggplane(
+#'  ggvibble(
 #'    vbl = vbl,
 #'    var = "t1",
 #'    plane = "axi",
@@ -446,7 +446,7 @@ NULL
 #'
 #'  # start with categorical label data
 #'  p_cat <-
-#'    ggplane(
+#'    ggvibble(
 #'     vbl = vbl,
 #'     var = "macro",
 #'     plane = "axi",
@@ -462,7 +462,7 @@ NULL
 #' Similar to ggplot2, ggvibbles are rendered during printing. So `p` itself is
 #' a lightweight container with data and instructions that can be complemented
 #' with additional layers. These layers use data and layout instructions from
-#' the `ggplane()` call.
+#' the `ggvibble()` call.
 #'
 #' \preformatted{
 #' p_with_layers <- p +
@@ -487,7 +487,7 @@ NULL
 #' }
 #'
 #' @seealso
-#' \link{ggplane}(),
+#' \link{ggvibble}(),
 #' \link{layer_mask}(),
 #' \link{layer_outline}(),
 #' \link{layer_labels}(),
@@ -683,7 +683,7 @@ NULL
 #' @name vbl_doc_plot_layouts
 #' @description
 #' This documentation defines the two layout modes used to display multiple
-#' slices in `ggplane()`: no-offset layouts and offset layouts.
+#' slices in `ggvibble()`: no-offset layouts and offset layouts.
 #'
 #' @details
 #' \itemize{
@@ -882,7 +882,7 @@ NULL
 #' @param .cond A logical filter expression that determines the specific
 #' voxels included in the content of this layer. The expression is evaluated via
 #' \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
-#' into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.
+#' into this layer by \code{ggvibble}(). See \link[=vbl_doc_cond]{Details}.
 #' @param linetype Defines the line pattern. Supported values:
 #' \itemize{
 #'   \item {Named types:}{ c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash") }
@@ -905,7 +905,7 @@ NULL
 #'
 #' @param slices Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
 #' restrict the content of this layer to specific slices. If \code{NULL}, no restriction
-#' is applied and the function considers all slices, as denoted in the \link{ggplane}()
+#' is applied and the function considers all slices, as denoted in the \link{ggvibble}()
 #' container.
 #'
 #' @return A `ggvibble_layer` object containing the supplied function. When

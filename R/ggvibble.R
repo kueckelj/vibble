@@ -1,29 +1,89 @@
 # The core plotting grammar bridge to ggplot2.
 
 
-#' @title Convert a ggvibble to a ggplot object
-#'
-#' @description Materializes a `ggvibble` object into a ggplot object.
-#'
-#' @param x A `ggvibble` object.
-#'
-#' @return
-#' A ggplot object that can be further modified using ggplot2 or composed using
-#' patchwork.
-#'
-#' @details
-#' `as_ggplot()` terminates the ggvibble layer pipeline and converts it into a
-#' concrete ggplot representation. After conversion, ggvibble layers can no
-#' longer be added.
-#'
-#' @export
-as_ggplot <- function(p, ...){
 
-  build_ggplot.ggvibble(p, ...)
+#' @title Coerce objects to a ggplot.
+#'
+#' @description
+#' `as_ggplot()` is an S3 generic that converts supported objects into a
+#' `ggplot`-compatible representation. It provides a unified coercion interface
+#' used internally by plotting and layout machinery.
+#'
+#' Implemented methods:
+#' \describe{
+#'   \item{`ggvibble`}{Builds a ggplot from a single `ggvibble`.}
+#'   \item{`ggvibble_layout`}{Converts each contained `ggvibble` to a
+#'   ggplot and combines them into a composed layout via
+#'   `patchwork::wrap_plots()`.}
+#' }
+#'
+#' @param x An object to be converted to a ggplot.
+#' @param ... Additional arguments passed to the corresponding method.
+#'
+#' @return A ggplot or ggplot-compatible (patchwork) object.
+#' @export
+as_ggplot <- function(x, ...){
+
+  UseMethod("as_ggplot")
 
 }
 
-as_ggp <- as_ggplot
+#' @export
+as_ggplot.ggvibble <- function(x, ...){
+
+  build_ggplot.ggvibble(x, ...)
+
+}
+
+#' @export
+as_ggplot.ggvibble_layout <- function(x, ...){
+
+  n_plots <- length(x$plots)
+  n_ops <- length(x$ops)
+
+  if(n_plots == 0){
+
+    rlang::abort("`ggvibble_layout` contains no plots.")
+
+  }
+
+  if(n_ops != (n_plots - 1)){
+
+    rlang::abort(
+      c(
+        "Invalid `ggvibble_layout` object.",
+        "i" = glue::glue("Expected {length(ops) == length(plots) - 1} operators for {n_plots} plots but input has {n_ops}.")
+      )
+    )
+
+  }
+
+  out <- as_ggplot(x$plots[[1]])
+
+  if(n_plots > 1){
+
+    for(i in 2:n_plots){
+
+      op <- x$ops[i-1]
+      p <- as_ggplot(x$plots[[i]])
+
+      out <-
+        switch(
+          op,
+          "+" = out + p,
+          "/" = out / p,
+          "|" = out | p,
+          rlang::abort(glue::glue("Invalid operator `{op}` in `ggvibble_layout`."))
+        )
+
+    }
+
+  }
+
+  return(out)
+
+}
+
 
 
 #' @keywords internal
@@ -31,14 +91,14 @@ as_ggp <- as_ggplot
 build_ggplot.ggvibble <- function(p, animate = FALSE, ...){
 
   vbl2D <- p$vbl2D
-  p$base_args$animate <- isTRUE(animate)
+  p$args$animate <- isTRUE(animate)
 
   # build ggvibble
   g <-
     ggplot2::ggplot(data = vbl2D) +
     do.call(
-      what = .ggplane_impl,
-      args = c(list(vbl2D = vbl2D), p$args_ggplane)
+      what = .ggvibble_impl,
+      args = c(list(vbl2D = vbl2D), p$args)
     )
 
   # add ggvibble_layers
@@ -309,7 +369,7 @@ vbl_layer <- function(fun, class_add = NULL, ...){
 #' inject ggplot2 objects through `layer_misc()`.
 #'
 #' \preformatted{
-#' p <- ggplane(vbl, var = "t1", plane = "axi", slices = 120)
+#' p <- ggvibble(vbl, var = "t1", plane = "axi", slices = 120)
 #'
 #' # fails:
 #' p + ggplot2::theme_void()
@@ -328,8 +388,8 @@ vbl_layer <- function(fun, class_add = NULL, ...){
 #' \preformatted{
 #' library(patchwork)
 #'
-#' p1 <- ggplane(vbl, var = "t1", plane = "axi", slices = 120)
-#' p2 <- ggplane(vbl, var = "flair", plane = "axi", slices = 120)
+#' p1 <- ggvibble(vbl, var = "t1", plane = "axi", slices = 120)
+#' p2 <- ggvibble(vbl, var = "flair", plane = "axi", slices = 120)
 #'
 #' # horizontal and vertical composition
 #' p1 | p2
@@ -357,8 +417,7 @@ Ops.ggvibble <- function(x, y){
       c(
         glue::glue("Operator `{.Generic}` is not implemented for `ggvibble`."),
         "i" = "Supported operators are `+`, `/`, and `|`."
-      ),
-      call = FALSE
+      )
     )
 
   }
@@ -384,12 +443,8 @@ Ops.ggvibble <- function(x, y){
 
     } else if(inherits(y, "ggvibble")) {
 
-      .check_patchwork_attached()
-
-      xp <- as_ggplot(x)
-      yp <- as_ggplot(y)
-
-      return(xp + yp)
+      x <- .init_ggvibble_layout(plots = list(x, y), ops = "+")
+      return(x)
 
     }
 
@@ -406,12 +461,8 @@ Ops.ggvibble <- function(x, y){
 
     if(inherits(y, "ggvibble")){
 
-      .check_patchwork_attached()
-
-      xp <- as_ggplot(x)
-      yp <- as_ggplot(y)
-
-      return(xp / yp)
+      x <- .init_ggvibble_layout(plots = list(x, y), ops = "/")
+      return(x)
 
     }
 
@@ -422,7 +473,7 @@ Ops.ggvibble <- function(x, y){
     rlang::abort(
       c(
         glue::glue("Invalid object supplied of class {ic} to `/.ggvibble`."),
-        "i" = "Use `/` to combine ggvibbles."
+        "i" = "Use `/` to combine ggvibble_layout."
       )
     )
 
@@ -432,12 +483,8 @@ Ops.ggvibble <- function(x, y){
 
     if(inherits(y, "ggvibble")){
 
-      .check_patchwork_attached()
-
-      xp <- as_ggplot(x)
-      yp <- as_ggplot(y)
-
-      return(xp | yp)
+      x <- .init_ggvibble_layout(plots = list(x, y), ops = "|")
+      return(x)
 
     }
 
@@ -465,7 +512,7 @@ Ops.ggvibble <- function(x, y){
 
 
 
-# ggplane constructor -----------------------------------------------------
+# ggvibble constructor -----------------------------------------------------
 
 
 #' @title Initialize a 2D representation of voxel data
@@ -485,7 +532,7 @@ Ops.ggvibble <- function(x, y){
 #' `plane` to be included in the plot. Defaults to using \link{slices_mid}().
 #' @param ncol,nrow Passed to \link{facet_wrap()} in no-offset layouts.
 #' @param guide Passed to `guide` of the `scale_fill_<fn>()` required to map a color
-#' to `var` (if not `NULL`). In `ggplane()`, this defaults to *'none'*, cause it expects
+#' to `var` (if not `NULL`). In `ggvibble()`, this defaults to *'none'*, cause it expects
 #' an intensity variable like T1 or FLAIR which usually does not need a legend for
 #' interpretation.
 #'
@@ -500,7 +547,7 @@ Ops.ggvibble <- function(x, y){
 #' @return A \link{ggvibble} object.
 #'
 #' @details
-#' `ggplane()` constructs a `ggvibble` in a small number of explicit steps.
+#' `ggvibble()` constructs a `ggvibble` in a small number of explicit steps.
 #'
 #' \itemize{
 #'   \item{1. Build 2D representation: } Converts `vbl` to `vbl2D` via \link{vibble2D}()
@@ -533,22 +580,22 @@ Ops.ggvibble <- function(x, y){
 #' and \link[=vbl_doc_ggvibble_operators]{ggplot2 compatibility}.
 #'
 #' @export
-ggplane <- function(vbl,
-                    var = vbl_def(),
-                    slices = vbl_def(),
-                    plane = vbl_def(),
-                    crop = NULL,
-                    expand = 0.1,
-                    offset_col = 0,
-                    offset_row = 0,
-                    zstack = "desc",
-                    ncol = NULL,
-                    nrow = NULL,
-                    guide = "none",
-                    context = list(),
-                    .cond = NULL,
-                    .by = NULL,
-                    ...){
+ggvibble <- function(vbl,
+                     var = vbl_def(),
+                     slices = vbl_def(),
+                     plane = vbl_def(),
+                     crop = NULL,
+                     expand = 0.1,
+                     offset_col = 0,
+                     offset_row = 0,
+                     zstack = "desc",
+                     ncol = NULL,
+                     nrow = NULL,
+                     guide = "none",
+                     context = list(),
+                     .cond = NULL,
+                     .by = NULL,
+                     ...){
 
   .stop_if_not(is_vbl(vbl))
   .stop_if_not(is.list(context))
@@ -590,6 +637,42 @@ ggplane <- function(vbl,
 
   }
 
+  # resolve var if vbl_def
+  if(.is_vbl_def(var)){
+
+    vars_n <- vars_numeric(vbl2D)
+
+    if(length(vars_n) == 0){
+
+      var <- NULL
+
+      msg <- c(
+        "No numeric variables available for default background mapping in ggvibble().",
+        i = "Proceeding with `var = NULL`; no background data will be drawn.",
+        i = "It is recommended to specify `var` explicitly."
+      )
+
+      rlang::warn(message = msg, .frequency = "always")
+
+    } else {
+
+      var <- vars_n[1]
+
+      msg <- c(
+        "Using default mechanism for selecting a data variable in ggvibble().",
+        i = glue::glue("Selected first numeric variable: `var = '{var}'`"),
+        i = "It's recommended to specify `var` explicitly."
+      )
+
+      rlang::inform(
+        message = msg,
+        .frequency = "always"
+      )
+
+    }
+
+  }
+
   # context
   context <- list()
   context$outlines_full <- if(.clip_offset(vbl2D)) .comp_outlines(vbl2D)
@@ -599,7 +682,7 @@ ggplane <- function(vbl,
   structure(
     list(
       vbl2D = vbl2D,
-      args_ggplane = list(
+      args = list(
         var = var,
         ncol = ncol,
         nrow = nrow,
@@ -615,13 +698,22 @@ ggplane <- function(vbl,
 
 }
 
-#' @title ggplane implementation
-#' @param animate Logical. If `TRUE`, no facets are created. In `ggplane()`, this
+#' @keywords internal
+ggplane <- function(...){
+
+  warning("ggplane() is deprecated in favor of ggvibble().")
+
+  ggvibble(...)
+
+}
+
+#' @title ggvibble implementation
+#' @param animate Logical. If `TRUE`, no facets are created. In `ggvibble()`, this
 #' is always FALSE. Inside build_ggplot.ggvibble() this can be set to TRUE. Should
 #' only be set to TRUE within `render_animation()`.
 #'
 #' @keywords internal
-.ggplane_impl <- function(vbl2D,
+.ggvibble_impl <- function(vbl2D,
                           var,
                           ncol,
                           nrow,
@@ -637,44 +729,6 @@ ggplane <- function(vbl,
   } else {
 
     layer_facet <- NULL
-
-  }
-
-  # resolve var if vbl_def
-  # resolve var if vbl_def
-  if(.is_vbl_def(var)){
-
-    vars_n <- vars_numeric(vbl2D)
-
-    if(length(vars_n) == 0){
-
-      var <- NULL
-
-      msg <- c(
-        "No numeric variables available for default background mapping in ggplane().",
-        i = "Proceeding with `var = NULL`; no background data will be drawn.",
-        i = "Consider specifying `var` explicitly."
-      )
-
-      rlang::warn(message = msg, .frequency = "always")
-
-    } else {
-
-      var <- vars_n[1]
-
-      msg <- c(
-        "Using default mechanism for selecting a data variable in ggplane().",
-        i = glue::glue("Selected first numeric variable: {var}"),
-        i = "Consider specifying `var` explicitly."
-      )
-
-      rlang::inform(
-        message = msg,
-        .frequency = "once",
-        .frequency_id = "ggplane.var.default2"
-      )
-
-    }
 
   }
 
@@ -716,7 +770,7 @@ ggplane <- function(vbl,
   plot_lim <-
     expand_bb2D(
       bb2D = plot_bb(vbl2D),
-      expand = vbl_opts("expand.ggplane")
+      expand = vbl_opts("expand.ggvibble")
       )
 
   expand <-
@@ -741,23 +795,12 @@ ggplane <- function(vbl,
       layer_colors,
       layer_facet,
       ggplot2::scale_y_reverse(),
-      ggplot2::coord_equal(xlim = col_lim, ylim = rev(row_lim), expand = FALSE),
-      ggplot2::theme(
-        axis.ticks = ggplot2::element_blank(),
-        axis.title = ggplot2::element_blank(),
-        axis.text = ggplot2::element_blank(),
-        legend.background = ggplot2::element_rect(fill = "black"),
-        legend.text = ggplot2::element_text(color = "white"),
-        legend.title = ggplot2::element_text(color = "white"),
-        panel.background = ggplot2::element_rect(fill = "black"),
-        panel.grid = ggplot2::element_blank(),
-        plot.background = ggplot2::element_rect(fill = "black", color = "black"),
-        plot.caption = ggplot2::element_text(color = "white"),
-        plot.subtitle = ggplot2::element_text(color = "white"),
-        plot.title = ggplot2::element_text(color = "white"),
-        strip.background = ggplot2::element_rect(fill = "black", color = "black"),
-        strip.text = ggplot2::element_text(color = "white")
-      )
+      ggplot2::coord_equal(
+        ratio = .ratio2D(vbl2D),
+        xlim = col_lim,
+        ylim = rev(row_lim),
+        expand = FALSE),
+      theme_vbl()
   )
 
 }

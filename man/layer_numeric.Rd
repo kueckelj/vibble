@@ -25,13 +25,13 @@ data-masked expressions. See \link[=vbl_doc_opacity]{Details}.}
 
 \item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
 restrict the content of this layer to specific slices. If \code{NULL}, no restriction
-is applied and the function considers all slices, as denoted in the \link{ggplane}()
+is applied and the function considers all slices, as denoted in the \link{ggvibble}()
 container.}
 
 \item{.cond}{A logical filter expression that determines the specific
 voxels included in the content of this layer. The expression is evaluated via
 \link[rlang:args_data_masking]{data-masking} semantics with the 2D vibble passed
-into this layer by \code{ggplane}(). See \link[=vbl_doc_cond]{Details}.}
+into this layer by \code{ggvibble}(). See \link[=vbl_doc_cond]{Details}.}
 
 \item{.by}{A \link[dplyr:dplyr_tidy_select]{tidy-selection} of columns to
 group by before applying the filtering logic of \code{.cond}. Defaults to \emph{'slice'}.}
@@ -44,6 +44,6 @@ added to a \code{ggvibble}, the function is executed and its returned layers are
 inserted into the plot.
 }
 \description{
-Overlay a numeric variable on a \link{ggplane}() plot by mapping its
+Overlay a numeric variable on a \link{ggvibble}() plot by mapping its
 values to a continuous fill scale.
 }

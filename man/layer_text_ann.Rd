@@ -50,7 +50,7 @@ are picked such that the text is aligned to the respective side.}
 
 \item{slices}{Optional. Numeric vector of \link[=is_slice]{slice numbers} used to
 restrict the content of this layer to specific slices. If \code{NULL}, no restriction
-is applied and the function considers all slices, as denoted in the \link{ggplane}()
+is applied and the function considers all slices, as denoted in the \link{ggvibble}()
 container.}
 
 \item{...}{Additional arguments passed to \code{ggplot2::geom_text()}.}
