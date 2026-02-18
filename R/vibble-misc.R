@@ -85,6 +85,8 @@ binarize_foreground_otsu <- function(x){
 #' @examples
 #' x <- c(0, 0, rnorm(1000, 100), 1e6)
 #' y <- clip_max_quantile(x)
+#'
+#' @export
 clip_max_quantile <- function(x,
                               p = 0.995){
 

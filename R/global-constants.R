@@ -1,6 +1,40 @@
 
 
+bitpix_mapping <- c(
+  UINT8       = 8,
+  INT8        = 8,
+  INT16       = 16,
+  UINT16      = 16,
+  INT32       = 32,
+  UINT32      = 32,
+  FLOAT32     = 32,
+  FLOAT64     = 64,
+  INT64       = 64,
+  UINT64      = 64,
+  FLOAT128    = 128,
+  COMPLEX64   = 64,
+  COMPLEX128  = 128,
+  COMPLEX256  = 256,
+  RGB24       = 24
+)
 
+datatype_mapping <- c(
+  UINT8       = 2,
+  INT16       = 4,
+  INT32       = 8,
+  FLOAT32     = 16,
+  COMPLEX64   = 32,
+  FLOAT64     = 64,
+  RGB24       = 128,
+  INT8        = 256,
+  UINT16      = 512,
+  UINT32      = 768,
+  INT64       = 1024,
+  UINT64      = 1280,
+  FLOAT128    = 1536,
+  COMPLEX128  = 1792,
+  COMPLEX256  = 2048
+)
 
 
 #' @title Default image anchors

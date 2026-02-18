@@ -1,5 +1,6 @@
 
 
+#' @export
 descr_dim <- function(vbl, collapse = "; "){
 
   d <-

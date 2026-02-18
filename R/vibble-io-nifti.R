@@ -90,12 +90,21 @@ vbl_to_nifti <- function(vbl,
                          orientation = "RAS",
                          missing = 0,
                          datatype = NULL,
+                         ref_path = NULL,
                          verbose = vbl_opts("verbose")
                          ){
 
   if(is.null(datatype)){
 
     datatype <- .infer_datatype(vbl, var = var)
+
+  }
+
+  nii <- NULL
+  if(is.character(ref_path)){
+
+    nii <- oro.nifti::readNIfTI(fname = ref_path, reorient = FALSE)
+    orientation <- RNifti::orientation(nii)
 
   }
 
@@ -108,26 +117,39 @@ vbl_to_nifti <- function(vbl,
       verbose = verbose
       )
 
-  nii <- oro.nifti::nifti(data, datatype = datatype)
+   if(is.null(nii)){
 
-  nii@pixdim[1] <- -1 # TODO
+    nii <- oro.nifti::nifti(data, datatype = datatype)
 
-  # basic header geometry
-  nii@pixdim[2:4] <-
-    ccs_steps(vbl) %>%
-    .reorder_lip(x = ., orientation = orientation) %>%
-    purrr::flatten_int()
+    nii@pixdim[1] <- -1 # TODO
 
-  # set a simple sform/qform so orientation is defined
-  # (voxel -> world: diagonal scaling, zero offset)
-  M <- diag(c(nii@pixdim[2:4], 1))
-  nii@sform_code <- 1L
-  nii@qform_code <- 1L
-  nii@srow_x <- M[1, ]
-  nii@srow_y <- M[2, ]
-  nii@srow_z <- M[3, ]
+    # basic header geometry
+    nii@pixdim[2:4] <-
+      ccs_steps(vbl) %>%
+      .reorder_lip(x = ., orientation = orientation) %>%
+      purrr::flatten_int()
 
-  nii
+    # set a simple sform/qform so orientation is defined
+    # (voxel -> world: diagonal scaling, zero offset)
+    M <- diag(c(nii@pixdim[2:4], 1))
+    nii@sform_code <- 1L
+    nii@qform_code <- 1L
+    nii@srow_x <- M[1, ]
+    nii@srow_y <- M[2, ]
+    nii@srow_z <- M[3, ]
+
+   } else {
+
+     nii@.Data <- data
+     nii@datatype <- datatype
+
+     meaning = names(datatype_mapping[datatype_mapping == datatype])
+
+     nii@bitpix <- bitpix_mapping[meaning]
+
+   }
+
+  return(nii)
 
 }
 
@@ -215,7 +237,12 @@ write_nifti <- function(vbl,
   if(is.character(path_native)){
 
     nii <- oro.nifti::readNIfTI(path_native, reorient = FALSE)
-    orientation <- RNifti::orientation(nii)
+
+    if(!is.character(orientation)){
+
+      orientation <- RNifti::orientation(nii)
+
+    }
 
     nii@.Data <-
       vbl_to_array(
@@ -390,9 +417,16 @@ nifti_to_vbl <- function(x,
   pointer_strings <- purrr::flatten_chr(ccs_orientation_mapping)
 
   # ensure compatibility with `pointers` downstream
+  if(var %in% c("t", "x", "y", "z")){
+
+    msg <- "`var` must not be t, x, y or z."
+    rlang::abort(msg)
+
+  }
+
   var_orig <- NULL
   xpath <- NULL
-  if(var %in% pointer_strings){
+  if(var %in% c(pointer_strings, "T")){
 
     var_orig <- var
     var <- paste0(var, "xxx")
@@ -442,27 +476,35 @@ nifti_to_vbl <- function(x,
     purrr::keep(.p = ~ .x) %>%
     names()
 
-  if(length(dim(x)) < 3){
+  # create preliminary data
+  data_array <- x@.Data
+  n_dims <- length(dim(data_array))
 
-    rlang::abort("Input NIfTI has less than 3 dimensions. Invalid.")
+  time_resolved <- FALSE
+  if(n_dims == 3) {
 
-  } else if(length(dim(x)) > 3){
+    data <-
+      reshape2::melt(data_array, varnames = unname(pointers), value.name = var) %>%
+      tibble::as_tibble() %>%
+      dplyr::select(!!!pointers[c(ccs_labels)], !!rlang::sym(var))
 
-    rlang::warn("Input NIfTI has more than 3 dimensions. Reducing.")
-    data_array <- x@.Data[,,,1]
+  } else if(n_dims == 4){
+
+    data <-
+      reshape2::melt(data_array, varnames = c(unname(pointers), "t"), value.name = var) %>%
+      tibble::as_tibble() %>%
+      dplyr::select(!!!pointers[c(ccs_labels)], t, !!rlang::sym(var))
+
+    time_resolved <- TRUE
 
   } else {
 
-    data_array <- x@.Data
+    msg <- glue::glue("Input NIfTI file must have 3 or 4 dimensions but has {n_dims}.")
+    rlang::abort(msg)
 
   }
 
-  # create preliminary data for vbl and reorient if required
-  data <-
-    reshape2::melt(data_array, varnames = unname(pointers), value.name = var) %>%
-    tibble::as_tibble() %>%
-    dplyr::select(!!!pointers[c(ccs_labels)], !!rlang::sym(var))
-
+  # flip if required to match XYZ = LPI
   for(fa in flip_axes){
 
     data[[fa]] <- max(data[[fa]]) - data[[fa]] + 1
@@ -548,7 +590,7 @@ nifti_to_vbl <- function(x,
 
   }
 
-  # officially construct vibble with attributes
+  # construct vibble with attributes
   ccs_limits <-
     purrr::map(
       .x = data[,c(vbl_ccs_axes)],
@@ -576,12 +618,23 @@ nifti_to_vbl <- function(x,
 
   .glue_message(msg, verbose = verbose)
 
-
   # post process
   if(is.character(var_orig)){
 
     vbl[[var_orig]] <- vbl[[var]]
     vbl[[var]] <- NULL
+
+    var <- var_orig
+
+  }
+
+  if(isTRUE(time_resolved)){
+
+    vbl <-
+      dplyr::group_by(vbl, x, y, z) %>%
+      dplyr::arrange(t, .by_group = TRUE) %>%
+      dplyr::select(-t) %>%
+      tidyr::nest(.key = {{ var }})
 
   }
 

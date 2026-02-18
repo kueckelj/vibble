@@ -22,4 +22,5 @@ background/air.
 \examples{
 x <- c(0, 0, rnorm(1000, 100), 1e6)
 y <- clip_max_quantile(x)
+
 }

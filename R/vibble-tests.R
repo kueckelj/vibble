@@ -166,11 +166,25 @@ is_label_candidate <- function(x){
 }
 
 #' @rdname voxel_type_candidates
-is_mask_candidate <- function(x){
+is_mask_candidate <- function(x, tol = 1e-6){
 
-  is.numeric(x) && all(x %in% c(0,1))
+  if(!is.numeric(x)){
+
+    return(FALSE)
+
+  }
+
+  if(any(!is.finite(x))){
+
+    return(FALSE)
+
+  }
+
+  all(abs(x - round(x)) < tol) &&
+    all(round(x) %in% c(0,1))
 
 }
+
 
 #' @rdname voxel_type_candidates
 is_numeric_candidate <- function(x){
@@ -426,7 +440,7 @@ is_slice_seq <- function(x){
 
   sr <- as.integer(seq_range(range(x)))
   x <- as.integer(x) # can be interpreted as integer (is_slice_set)
-  identical(x, sr)
+  identical(x, sr) | identical(x, rev(sr))
 
 }
 
@@ -481,8 +495,8 @@ is_slice_seq <- function(x){
 
 is_vartype <- function(vbl, var, type, fdb = rlang::abort){
 
-  type_req <- match.arg(type, choices = vbl_data_var_types)
-  var <- match.arg(var, choices = vars_data(vbl))
+  type_req <- .match_arg(type, choices = vbl_data_var_types)
+  var <- .match_arg(var, choices = vars_data(vbl))
   type_in <- var_type(vbl[[var]])
   res <- type_in == type_req
 

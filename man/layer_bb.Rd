@@ -79,7 +79,7 @@ into this layer by \code{ggvibble}(). See \link[=vbl_doc_cond]{Details}.}
 \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
 }}
 
-\item{linewidth}{Numeric scalar. Controlls the thickness of drawn lines.}
+\item{linewidth}{Numeric scalar. Controls the thickness of drawn lines.}
 
 \item{label}{Logical or character scalar. Controls the legend label with which
 the color of this layer is associated with in the legend.

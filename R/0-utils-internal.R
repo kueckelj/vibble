@@ -731,7 +731,7 @@ NULL
         imessages <-
           c(
             imessages,
-            i = glue::glue("The ggplane() to which this layer was added contains data for slices: {slices_d}")
+            i = glue::glue("The ggvibble() to which this layer was added contains data for slices: {slices_d}")
             )
 
       } else {
@@ -745,7 +745,7 @@ NULL
         i = "See `?slices` for supported ways to specify valid slice numbers."
       )
 
-      rlang::abort(
+      rlang::warn(
         message = c(
           glue::glue("In `slices = {slices_text}`, no data for {fill} {slices_m}{where_str}."),
           imessages

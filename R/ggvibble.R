@@ -504,16 +504,7 @@ Ops.ggvibble <- function(x, y){
 }
 
 
-
-
-
-
-
-
-
-
 # ggvibble constructor -----------------------------------------------------
-
 
 #' @title Initialize a 2D representation of voxel data
 #' @description

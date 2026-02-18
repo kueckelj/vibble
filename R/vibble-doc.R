@@ -889,7 +889,7 @@ NULL
 #'   \item {Numeric codes:}{ c("0", "1", "2", "3", "4", "5", "6") }
 #'   \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
 #' }
-#' @param linewidth Numeric scalar. Controlls the thickness of drawn lines.
+#' @param linewidth Numeric scalar. Controls the thickness of drawn lines.
 #' @param label Logical or character scalar. Controls the legend label with which
 #' the color of this layer is associated with in the legend.
 #'

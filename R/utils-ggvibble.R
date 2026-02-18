@@ -366,11 +366,9 @@ NULL
 
 
 #' @keywords internal
-.eval_tidy_opacity <- function(vbl2D, opacity, var){
+.eval_tidy_opacity <- function(vbl2D, opacity, var = NULL){
 
   opacity_inp <- rlang::eval_tidy(opacity, data = vbl2D)
-
-  assign("opacity_inp", opacity_inp, envir =.GlobalEnv)
 
   if(is.numeric(opacity_inp)){
 

@@ -1088,7 +1088,7 @@ layer_mask <- function(.cond = NULL,
         ggplot2::geom_raster(
           data = dplyr::mutate(data, mask. = {{ name }}),
           mapping = ggplot2::aes(x = col, y = row, fill = mask.),
-          alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
+          alpha = .eval_tidy_opacity(data, opacity = opacity),
           interpolate = vbl_opts("interpolate")
         )
       )
@@ -1100,7 +1100,7 @@ layer_mask <- function(.cond = NULL,
         ggplot2::geom_raster(
           data = data,
           mapping = ggplot2::aes(x = col, y = row),
-          alpha = .eval_tidy_opacity(data, opacity = opacity, var = var),
+          alpha = .eval_tidy_opacity(data, opacity = opacity),
           fill = color,
           interpolate = vbl_opts("interpolate")
         )
@@ -1812,6 +1812,7 @@ layer_slice_projections <- function(plane_proj,
           label_pos = label_pos,
           label_just = label_just,
           label_spacer = label_spacer,
+          slices = slices,
           ...
         )
 

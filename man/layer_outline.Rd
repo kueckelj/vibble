@@ -31,7 +31,7 @@ into this layer by \code{ggvibble}(). See \link[=vbl_doc_cond]{Details}.}
 \item {Custom:}{ c("12", "1F", "F0F0") as examples of hexadecimal dash patterns}
 }}
 
-\item{linewidth}{Numeric scalar. Controlls the thickness of drawn lines.}
+\item{linewidth}{Numeric scalar. Controls the thickness of drawn lines.}
 
 \item{use_dbscan}{Logical. If \code{TRUE}, for every slice \link[dbscan:dbscan]{DBSCAN}
 is used to identify spatial islands of voxels matching the condition which

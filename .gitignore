@@ -6,4 +6,5 @@
 .quarto
 /data_dev/
 /docs/
+/plots/
 /R_scripts/

@@ -4,10 +4,10 @@
 render_animation <- function(p,
                              filename = NULL,
                              folder = getwd(),
-                             zstack = waiver(),
-                             title = waiver(),
-                             subtitle = waiver(),
-                             caption = waiver(),
+                             zstack = vbl_def(),
+                             title = NULL,
+                             subtitle = NULL,
+                             caption = NULL,
                              verbose = vbl_opts("verbose"),
                              ...){
 
